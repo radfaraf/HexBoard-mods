@@ -78,6 +78,9 @@
 #define RAM_FUNC(name) name // do nothing on other architectures
 #endif
 #include <cmath>
+
+// Forward-declare board mode so Arduino's auto-generated prototypes can reference it.
+enum class BoardMode : uint8_t;
 #include <numeric>     // need that GCD function, son
 #include <string>      // standard C++ library string classes (use "std::string" to invoke it); these do not cause the memory corruption that Arduino::String does.
 #include <limits>
@@ -242,6 +245,17 @@ uint8_t envelopeReleaseIndex = 3;
 #define SYNTH_ARPEGGIO 2
 #define SYNTH_POLY 3
 byte playbackMode = SYNTH_OFF;
+
+enum class BoardMode : uint8_t {
+  Keyboard = 0,
+  Sequencer = 1
+};
+
+BoardMode activeBoardMode = BoardMode::Keyboard;
+
+bool isKeyboardMode() {
+  return activeBoardMode == BoardMode::Keyboard;
+}
 
 #define WAVEFORM_SINE 0
 #define WAVEFORM_STRINGS 1
@@ -4235,7 +4249,7 @@ void setupSynth(byte pin, byte slice) {
 }
 
 void arpeggiate() {
-  if (delegatedControl) {
+  if (delegatedControl || !isKeyboardMode()) {
     return;
   }
   if (playbackMode == SYNTH_ARPEGGIO) {
@@ -4489,7 +4503,7 @@ void processIncomingSysEx(const uint8_t* data, const unsigned int len) {
 }
 
 void processIncomingMIDI() {
-  if (delegatedControl) {
+  if (delegatedControl || !isKeyboardMode()) {
     return;
   } else {
     withMIDI([&](auto& M) {
@@ -4518,7 +4532,7 @@ void processIncomingMIDI() {
 }
 
 void animateLEDs() {
-  if (delegatedControl) {
+  if (delegatedControl || !isKeyboardMode()) {
     return;
   }
   for (byte i = 0; i < LED_COUNT; i++) {
@@ -5128,6 +5142,15 @@ void onToggleDisplayPlayedNotes() {
 }
 
 void drawPlayedNotesOverlay() {
+  if (!isKeyboardMode()) {
+    if (noteOverlayVisible) {
+      noteOverlayVisible = false;
+      noteOverlayDirty = false;
+      menu.drawMenu();
+    }
+    return;
+  }
+
   if (!displayPlayedNotes) {
     return;
   }
@@ -5199,7 +5222,13 @@ void drawPlayedNotesOverlay() {
     The first parameter is the item label.
     The second parameter is the destination page when that item is selected.
   */
-GEMPage menuPageMain("HexBoard MIDI Controller");
+void enterKeyboardMode();
+void enterSequencerMode();
+void switchBoardMode(BoardMode newMode);
+void sequencerPlaceholderMenuCallback(GEMCallbackData callbackData);
+
+GEMPage menuPageMain("Keyboard");
+GEMItem menuItemEnterSequencer("Sequencer", enterSequencerMode);
 GEMPage menuPageTuning("Tuning", menuPageMain);
 GEMItem menuGotoTuning("Tuning", menuPageTuning);
 GEMPage menuPageLayout("Layout", menuPageMain);
@@ -5220,6 +5249,8 @@ GEMPage menuPageSave("Save Profiles", menuPageMain);
 GEMItem menuGotoSave("Save", menuPageSave);
 GEMPage menuPageLoad("Load Profiles", menuPageMain);
 GEMItem menuGotoLoad("Load", menuPageLoad);
+GEMPage menuPageSequencer("Sequencer");
+GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMPage menuPageReboot("Ready to flash firmware!");
 
 // --------------------------------------------------------
@@ -5531,6 +5562,13 @@ const GEMSpinnerBoundariesByte spinnerBoundariesBPM = { 1, 255, 1 };
 GEMSpinner spinnerJustIntonationBPM(spinnerBoundariesBPM, GEM_LOOP);
 GEMSpinner spinnerSynthBPM(spinnerBoundariesBPM, GEM_LOOP);
 GEMSpinner spinnerBPM_MultiplierOfJI(spinnerBoundariesBPM, GEM_LOOP);
+
+byte sequencerTempo = 120;
+byte sequencerTransportState = 0;
+SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 } };
+GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
+GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerPlaceholderMenuCallback);
+GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSynthBPM, sequencerPlaceholderMenuCallback);
 
 ///////////////////////////////////////////////////////////////////
 
@@ -6603,8 +6641,31 @@ void syncSettingsToRuntime() {
 
 // Call this procedure to return to the main menu
 void menuHome() {
-  menu.setMenuPageCurrent(menuPageMain);
+  menu.setMenuPageCurrent(isKeyboardMode() ? menuPageMain : menuPageSequencer);
   menu.drawMenu();
+}
+
+void sequencerPlaceholderMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+}
+
+void switchBoardMode(BoardMode newMode) {
+  if (activeBoardMode != newMode) {
+    activeBoardMode = newMode;
+    panicStopOutput();
+  }
+  noteOverlayVisible = false;
+  noteOverlayDirty = true;
+  screenTime = 0;
+  menuHome();
+}
+
+void enterKeyboardMode() {
+  switchBoardMode(BoardMode::Keyboard);
+}
+
+void enterSequencerMode() {
+  switchBoardMode(BoardMode::Sequencer);
 }
 
 void rebootToBootloader() {
@@ -6841,6 +6902,7 @@ void setupMenu() {
       The menu items appear in the order they are added.
       To change the order of the menu, change the order in the code below.
     */
+  menuPageMain.addMenuItem(menuItemEnterSequencer);
   menuPageMain.addMenuItem(menuGotoTuning);
   createTuningMenuItems();
   menuPageTuning.addMenuItem(menuItemToggleDynamicJI);
@@ -6923,6 +6985,10 @@ void setupMenu() {
   menuPageAdvanced.addMenuItem(menuItemUSBBootloader);
   menuPageAdvanced.addMenuItem(menuItemDelegated);
   menuPageAdvanced.addMenuItem(menuItemDebug);
+
+  menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
+  menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
+  menuPageSequencer.addMenuItem(menuItemSequencerTempo);
 }
 void setupGFX() {
   u8g2.begin();                      // Menu and graphics setup
@@ -7052,7 +7118,9 @@ void readHexes() {
   for (byte i = 0; i < BTN_COUNT; i++) {  // For all buttons in the deck
     switch (h[i].btnState) {
       case BTN_STATE_NEWPRESS:  // just pressed
-        if (delegatedControl) {
+        if (!isKeyboardMode()) {
+          break;
+        } else if (delegatedControl) {
           delegatedButtonEvent(i, true);
         } else if (h[i].isCmd) {
           cmdOn(i);
@@ -7062,7 +7130,9 @@ void readHexes() {
         }
         break;
       case BTN_STATE_RELEASED:  // just released
-        if (delegatedControl) {
+        if (!isKeyboardMode()) {
+          break;
+        } else if (delegatedControl) {
           delegatedButtonEvent(i, false);
         } else if (h[i].isCmd) {
           cmdOff(i);
@@ -7079,7 +7149,7 @@ void readHexes() {
   }
 }
 void updateWheels() {
-  if (delegatedControl) {
+  if (delegatedControl || !isKeyboardMode()) {
     return;
   }
   velWheel.setTargetValue();
