@@ -100,8 +100,10 @@ byte Hardware_Version = 0;  // 0 = unknown, 1 = v1.1 board. 2 = v1.2 board.
 std::vector<byte> pressedKeyIDs = {};
 std::array<std::vector<uint8_t>, 128> midiNoteToHexIndices = {};
 
+class colorDef;
 void updateEnvelopeParamsFromSettings();
 void updateArpeggiatorTiming();
+uint32_t getLEDcode(colorDef c);
 /*
     C++ returns a negative value for
     negative N % D. This function
@@ -1553,6 +1555,15 @@ bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colo
     return true;
   }
   return false;
+}
+
+uint32_t getSequencerTransportLedColor(bool running) {
+  colorDef transportColor = {
+    running ? static_cast<float>(HUE_GREEN) : static_cast<float>(HUE_RED),
+    SAT_VIVID,
+    VALUE_FULL
+  };
+  return getLEDcode(transportColor);
 }
 
 void detectHardwareVersion() {
@@ -7327,6 +7338,7 @@ void loop() {        // run on first core
   arpeggiate();      // arpeggiate if synth mode allows it
   updateWheels();    // deal with the pitch/mod wheel
   processIncomingMIDI();  // respond to external MIDI input
+  updateSequencerTransport();
   animateLEDs();     // deal with animations
   lightUpLEDs();     // refresh LEDs
   dealWithRotary();  // deal with menu

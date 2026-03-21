@@ -12,15 +12,22 @@ extern Adafruit_NeoPixel strip;
 
 namespace {
 constexpr byte SEQUENCER_STEP_COUNT = 16;
+constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_DEFAULT_MIDI_NOTE = 60;  // C4
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
+constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
+constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
 
 byte sequencerStepMidiNote[SEQUENCER_STEP_COUNT] = {
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE
+};
+byte sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {
+  100, 100, 100, 100, 100, 100, 100, 100,
+  100, 100, 100, 100, 100, 100, 100, 100
 };
 
 enum class SequencerOverlayMode : uint8_t {
@@ -36,6 +43,14 @@ bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
 int16_t sequencerPreviewButtonIndex = -1;
 byte sequencerPreviewMidiNote = SEQUENCER_DEFAULT_MIDI_NOTE;
+int8_t sequencerPlayingStep = -1;
+bool sequencerPlaybackNoteActive = false;
+byte sequencerPlaybackMidiNote = SEQUENCER_DEFAULT_MIDI_NOTE;
+uint64_t sequencerNextStepAt = 0;
+uint64_t sequencerCurrentStepStartedAt = 0;
+uint64_t sequencerPlaybackNoteOffAt = 0;
+byte sequencerTempo = 120;
+byte sequencerTransportState = 0;
 
 const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
@@ -68,21 +83,54 @@ void formatSequencerStepNote(char* out, size_t outSize, byte midiNote) {
   snprintf(out, outSize, "%s%d", label, octave);
 }
 
-void sequencerPlaceholderMenuCallback(GEMCallbackData callbackData) {
+uint64_t sequencerStepDurationMicros() {
+  byte tempo = (sequencerTempo == 0) ? 1 : sequencerTempo;
+  return 60000000ULL / static_cast<uint64_t>(tempo) / 4ULL;
+}
+
+void stopSequencerPlaybackNote() {
+  if (!sequencerPlaybackNoteActive) {
+    return;
+  }
+  sendBoardPreviewMidiNote(sequencerPlaybackMidiNote, false);
+  sequencerPlaybackNoteActive = false;
+}
+
+void setSequencerTransportState(byte newState) {
+  byte normalizedState = (newState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_PLAY : SEQUENCER_TRANSPORT_STOP;
+  sequencerTransportState = normalizedState;
+  if (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) {
+    sequencerPlayingStep = -1;
+    sequencerNextStepAt = runTime;
+    sequencerCurrentStepStartedAt = runTime;
+    sequencerPlaybackNoteOffAt = 0;
+  } else {
+    stopSequencerPlaybackNote();
+    sequencerPlayingStep = -1;
+    sequencerNextStepAt = 0;
+    sequencerCurrentStepStartedAt = 0;
+    sequencerPlaybackNoteOffAt = 0;
+  }
+  menu.drawMenu();
+}
+
+void sequencerTransportMenuCallback(GEMCallbackData callbackData) {
+  setSequencerTransportState(callbackData.valByte);
+}
+
+void sequencerTempoMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
 }
 
 const GEMSpinnerBoundariesByte spinnerBoundariesSequencerTempo = { 1, 255, 1 };
 GEMSpinner spinnerSequencerTempo(spinnerBoundariesSequencerTempo, GEM_LOOP);
 
-byte sequencerTempo = 120;
-byte sequencerTransportState = 0;
 SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 } };
 GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
-GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerPlaceholderMenuCallback);
-GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerPlaceholderMenuCallback);
+GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
+GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 
 }  // namespace
 
@@ -103,6 +151,12 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (screenSaverOn) {
     screenSaverOn = false;
     u8g2.setContrast(SEQUENCER_OVERLAY_CONTRAST);
+  }
+
+  if (buttonIndex == SEQUENCER_TRANSPORT_BUTTON_INDEX) {
+    setSequencerTransportState(
+      (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_STOP : SEQUENCER_TRANSPORT_PLAY);
+    return;
   }
 
   int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
@@ -199,6 +253,10 @@ void drawSequencerOverlay() {
 }
 
 void applySequencerLedOverrides() {
+  strip.setPixelColor(
+    SEQUENCER_TRANSPORT_BUTTON_INDEX,
+    getSequencerTransportLedColor(sequencerTransportState == SEQUENCER_TRANSPORT_PLAY));
+
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
     int8_t buttonIndex = sequencerStepToButtonIndex(step);
     if (buttonIndex < 0) {
@@ -206,9 +264,35 @@ void applySequencerLedOverrides() {
     }
 
     uint32_t colorCode = 0;
-    bool highlighted = (sequencerSelectedStep == step) && (sequencerOverlayMode != SequencerOverlayMode::Hidden);
+    bool highlighted = ((sequencerSelectedStep == step) && (sequencerOverlayMode != SequencerOverlayMode::Hidden))
+      || (sequencerPlayingStep == step);
     if (getBoardLedColorForMidiNote(sequencerStepMidiNote[step], highlighted, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
     }
   }
+}
+
+void updateSequencerTransport() {
+  if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
+    return;
+  }
+
+  if (sequencerPlaybackNoteActive && runTime >= sequencerPlaybackNoteOffAt) {
+    stopSequencerPlaybackNote();
+  }
+
+  if (runTime < sequencerNextStepAt) {
+    return;
+  }
+
+  uint64_t stepDuration = sequencerStepDurationMicros();
+  sequencerCurrentStepStartedAt = sequencerNextStepAt;
+  sequencerNextStepAt += stepDuration;
+  sequencerPlayingStep = (sequencerPlayingStep + 1) % SEQUENCER_STEP_COUNT;
+
+  byte gatePercent = sequencerStepGatePercent[sequencerPlayingStep];
+  sendBoardPreviewMidiNote(sequencerStepMidiNote[sequencerPlayingStep], true);
+  sequencerPlaybackMidiNote = sequencerStepMidiNote[sequencerPlayingStep];
+  sequencerPlaybackNoteActive = true;
+  sequencerPlaybackNoteOffAt = sequencerCurrentStepStartedAt + ((stepDuration * gatePercent) / 100ULL);
 }
