@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
-extern GEMItem menuItemUSBBootloader;
+extern void rebootToBootloader();
 extern GEM_u8g2 menu;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
@@ -20,6 +20,7 @@ constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
+constexpr uint64_t SEQUENCER_CLEAR_HOLD_MICROS = 1000000ULL;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
 
@@ -33,7 +34,8 @@ byte sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {
 enum class SequencerOverlayMode : uint8_t {
   Hidden = 0,
   AwaitingNote = 1,
-  NoteAssigned = 2
+  NoteAssigned = 2,
+  StepCleared = 3
 };
 
 int8_t sequencerSelectedStep = -1;
@@ -59,6 +61,8 @@ byte sequencerPlaybackNoteCount = 0;
 uint64_t sequencerNextStepAt = 0;
 uint64_t sequencerCurrentStepStartedAt = 0;
 uint64_t sequencerPlaybackNoteOffAt = 0;
+uint64_t sequencerConfirmPressedAt = 0;
+bool sequencerConfirmHeld = false;
 byte sequencerTempo = 120;
 byte sequencerTransportState = 0;
 
@@ -214,6 +218,18 @@ void stopSequencerPlaybackNote() {
   sequencerPlaybackNoteActive = false;
 }
 
+void clearSelectedSequencerStep() {
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+  sequencerOverlayMode = SequencerOverlayMode::StepCleared;
+  sequencerOverlayDirty = true;
+  sequencerConfirmHeld = false;
+  sequencerConfirmPressedAt = 0;
+}
+
 void setSequencerTransportState(byte newState) {
   byte normalizedState = (newState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_PLAY : SEQUENCER_TRANSPORT_STOP;
   sequencerTransportState = normalizedState;
@@ -249,6 +265,7 @@ GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
+GEMItem menuItemSequencerFirmwareUpdate("Update Firmware", rebootToBootloader);
 
 }  // namespace
 
@@ -256,6 +273,22 @@ GEMPage menuPageSequencer("Sequencer");
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (!pressed) {
+    if (buttonIndex == SEQUENCER_CONFIRM_BUTTON_INDEX) {
+      if (sequencerSelectedStep >= 0 && sequencerConfirmHeld) {
+        clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+        for (byte i = 0; i < sequencerUndoNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
+          sequencerEditMidiNotes[i] = sequencerUndoMidiNotes[i];
+        }
+        sequencerEditNoteCount = sequencerUndoNoteCount;
+        saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+        sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+        sequencerOverlayDirty = true;
+      }
+      sequencerConfirmHeld = false;
+      sequencerConfirmPressedAt = 0;
+      return;
+    }
+
     byte releasedMidiNote = 0;
     if (getButtonMidiNoteForSequencer(buttonIndex, releasedMidiNote) && releasedMidiNote < 128) {
       if (sequencerPreviewHeldNoteCounts[releasedMidiNote] > 0) {
@@ -281,15 +314,8 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   }
 
   if (buttonIndex == SEQUENCER_CONFIRM_BUTTON_INDEX) {
-    if (sequencerSelectedStep >= 0) {
-      clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
-      for (byte i = 0; i < sequencerUndoNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-        sequencerEditMidiNotes[i] = sequencerUndoMidiNotes[i];
-      }
-      sequencerEditNoteCount = sequencerUndoNoteCount;
-      saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
-      sequencerOverlayDirty = true;
-    }
+    sequencerConfirmHeld = true;
+    sequencerConfirmPressedAt = runTime;
     return;
   }
 
@@ -312,6 +338,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (getButtonMidiNoteForSequencer(buttonIndex, midiNote)) {
     toggleEditBufferNote(midiNote);
     saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+    sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
     if (midiNote < 128) {
       if (sequencerPreviewHeldNoteCounts[midiNote] == 0) {
         sendBoardPreviewMidiNote(midiNote, true);
@@ -328,7 +355,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
-  menuPageSequencer.addMenuItem(menuItemUSBBootloader);
+  menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
 }
 
 void drawSequencerOverlay() {
@@ -362,11 +389,21 @@ void drawSequencerOverlay() {
   char stepLabel[16];
   char noteLineOne[24];
   char noteLineTwo[24];
+  char hintLineOne[24];
+  char hintLineTwo[24];
   snprintf(stepLabel, sizeof(stepLabel), "Step %02d", sequencerSelectedStep + 1);
   fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
+  hintLineOne[0] = '\0';
+  hintLineTwo[0] = '\0';
 
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
     snprintf(headerLabel, sizeof(headerLabel), "Edit Chord");
+    snprintf(hintLineOne, sizeof(hintLineOne), "Bottom 10 rows");
+    snprintf(hintLineTwo, sizeof(hintLineTwo), "Blue key undoes");
+  } else if (sequencerOverlayMode == SequencerOverlayMode::StepCleared) {
+    snprintf(headerLabel, sizeof(headerLabel), "Note(s) Erased");
+    snprintf(hintLineOne, sizeof(hintLineOne), "Press blue key");
+    snprintf(hintLineTwo, sizeof(hintLineTwo), "to undo");
   } else {
     snprintf(headerLabel, sizeof(headerLabel), "Chord Saved");
   }
@@ -378,9 +415,11 @@ void drawSequencerOverlay() {
   u8g2.setFont(u8g2_font_6x13_tf);
   u8g2.drawStr(20, 18, headerLabel);
   u8g2.drawStr(36, 36, stepLabel);
-  if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
-    u8g2.drawStr(8, 54, "Bottom 10 rows");
-    u8g2.drawStr(4, 68, "Blue key undoes");
+  if (hintLineOne[0] != '\0') {
+    u8g2.drawStr(8, 54, hintLineOne);
+  }
+  if (hintLineTwo[0] != '\0') {
+    u8g2.drawStr(4, 68, hintLineTwo);
   }
   u8g2.setFont(u8g2_font_6x13_tf);
   u8g2.drawStr(12, 96, noteLineOne);
@@ -414,6 +453,13 @@ void applySequencerLedOverrides() {
 }
 
 void updateSequencerTransport() {
+  if (sequencerConfirmHeld && sequencerSelectedStep >= 0) {
+    uint64_t heldMicros = runTime - sequencerConfirmPressedAt;
+    if (heldMicros >= SEQUENCER_CLEAR_HOLD_MICROS) {
+      clearSelectedSequencerStep();
+    }
+  }
+
   if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
     return;
   }
