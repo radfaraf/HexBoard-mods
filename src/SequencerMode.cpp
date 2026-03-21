@@ -215,6 +215,22 @@ void clearSequencerNoteBuffer(byte* notes, byte& count) {
   }
 }
 
+void sortSequencerNoteBuffer(byte* notes, byte count) {
+  if (count < 2) {
+    return;
+  }
+
+  for (byte i = 0; i + 1 < count; i++) {
+    for (byte j = static_cast<byte>(i + 1); j < count; j++) {
+      if (notes[j] < notes[i]) {
+        byte temp = notes[i];
+        notes[i] = notes[j];
+        notes[j] = temp;
+      }
+    }
+  }
+}
+
 byte findNoteInBuffer(const byte* notes, byte count, byte midiNote) {
   for (byte i = 0; i < count; i++) {
     if (notes[i] == midiNote) {
@@ -231,6 +247,7 @@ void loadEditBufferFromStep(byte stepIndex) {
     sequencerEditMidiNotes[i] = sequencerStepMidiNotes[stepIndex][i];
   }
   sequencerEditNoteCount = count;
+  sortSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
 }
 
 void snapshotUndoBufferFromStep(byte stepIndex) {
@@ -243,6 +260,7 @@ void snapshotUndoBufferFromStep(byte stepIndex) {
 }
 
 void saveEditBufferToStep(byte stepIndex) {
+  sortSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
   clearSequencerNoteBuffer(sequencerStepMidiNotes[stepIndex], sequencerStepNoteCount[stepIndex]);
   for (byte i = 0; i < sequencerEditNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
     sequencerStepMidiNotes[stepIndex][i] = sequencerEditMidiNotes[i];
@@ -266,6 +284,7 @@ void toggleEditBufferNote(byte midiNote) {
   if (sequencerEditNoteCount < SEQUENCER_MAX_NOTES_PER_STEP) {
     sequencerEditMidiNotes[sequencerEditNoteCount++] = midiNote;
   }
+  sortSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
 }
 
 byte sequencerPrimaryMidiNote(byte stepIndex) {
@@ -305,12 +324,10 @@ void fillOverlayNoteLines(char* lineOne, size_t lineOneSize, char* lineTwo, size
   char noteLabel[12];
   for (byte i = 0; i < sourceCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
     formatSequencerStepNote(noteLabel, sizeof(noteLabel), sourceNotes[i]);
-    char* target = (i < 2) ? lineOne : lineTwo;
-    size_t targetSize = (i < 2) ? lineOneSize : lineTwoSize;
-    if (target[0] != '\0') {
-      strncat(target, " ", targetSize - strlen(target) - 1);
+    if (lineOne[0] != '\0') {
+      strncat(lineOne, " ", lineOneSize - strlen(lineOne) - 1);
     }
-    strncat(target, noteLabel, targetSize - strlen(target) - 1);
+    strncat(lineOne, noteLabel, lineOneSize - strlen(lineOne) - 1);
   }
 }
 
@@ -610,6 +627,7 @@ void parseSequencerStepNotes(byte stepIndex, const String& value) {
     }
     start = commaIndex + 1;
   }
+  sortSequencerNoteBuffer(sequencerStepMidiNotes[stepIndex], sequencerStepNoteCount[stepIndex]);
 }
 
 bool loadSequencerFromFlash() {
