@@ -1088,7 +1088,8 @@ void drawSequencerOverlay() {
   hintLineTwo[0] = '\0';
 
   if (sequencerOverlayMode != SequencerOverlayMode::StatusMessage &&
-      sequencerOverlayMode != SequencerOverlayMode::AwaitingNote) {
+      sequencerOverlayMode != SequencerOverlayMode::AwaitingNote &&
+      sequencerOverlayMode != SequencerOverlayMode::StepCleared) {
     snprintf(stepLabel, sizeof(stepLabel), "Step %02d", sequencerSelectedStep + 1);
     fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
   } else if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
@@ -1096,16 +1097,15 @@ void drawSequencerOverlay() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
-    snprintf(headerLabel, sizeof(headerLabel), "Edit Note(s) #%02d", sequencerSelectedStep + 1);
+    snprintf(headerLabel, sizeof(headerLabel), "Edit #%02d", sequencerSelectedStep + 1);
     snprintf(hintLineOne, sizeof(hintLineOne), "Length %u%%",
              static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]));
-    snprintf(hintLineTwo, sizeof(hintLineTwo), "Blue key undoes");
   } else if (sequencerOverlayMode == SequencerOverlayMode::LengthEdit) {
     snprintf(headerLabel, sizeof(headerLabel), "Step Length");
     snprintf(hintLineOne, sizeof(hintLineOne), "Length %u%%", static_cast<unsigned>(sequencerLengthPercentDisplay));
     fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
   } else if (sequencerOverlayMode == SequencerOverlayMode::StepCleared) {
-    snprintf(headerLabel, sizeof(headerLabel), "Note(s) Erased");
+    snprintf(headerLabel, sizeof(headerLabel), "Erased #%02d", sequencerSelectedStep + 1);
     snprintf(hintLineOne, sizeof(hintLineOne), "Press blue key");
     snprintf(hintLineTwo, sizeof(hintLineTwo), "to undo");
   } else if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage) {
