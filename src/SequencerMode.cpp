@@ -29,6 +29,8 @@ constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
 constexpr uint64_t SEQUENCER_CLEAR_HOLD_MICROS = 1000000ULL;
+constexpr uint64_t SEQUENCER_SELECTED_ON_MICROS = 1000000ULL;
+constexpr uint64_t SEQUENCER_SELECTED_OFF_MICROS = 200000ULL;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
 
@@ -177,6 +179,14 @@ byte sequencerPrimaryMidiNote(byte stepIndex) {
     return (sequencerEditNoteCount > 0) ? sequencerEditMidiNotes[0] : SEQUENCER_NO_NOTE;
   }
   return (sequencerStepNoteCount[stepIndex] > 0) ? sequencerStepMidiNotes[stepIndex][0] : SEQUENCER_NO_NOTE;
+}
+
+bool isSequencerSelectionLit() {
+  uint64_t cycleMicros = SEQUENCER_SELECTED_ON_MICROS + SEQUENCER_SELECTED_OFF_MICROS;
+  if (cycleMicros == 0) {
+    return true;
+  }
+  return (runTime % cycleMicros) < SEQUENCER_SELECTED_ON_MICROS;
 }
 
 void fillOverlayNoteLines(char* lineOne, size_t lineOneSize, char* lineTwo, size_t lineTwoSize) {
@@ -390,6 +400,13 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
   int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
   if (stepIndex >= 0) {
+    if (sequencerSelectedStep == stepIndex) {
+      sequencerSelectedStep = -1;
+      sequencerOverlayMode = SequencerOverlayMode::Hidden;
+      sequencerOverlayUntil = 0;
+      sequencerOverlayDirty = false;
+      return;
+    }
     sequencerSelectedStep = stepIndex;
     snapshotUndoBufferFromStep(static_cast<byte>(stepIndex));
     loadEditBufferFromStep(static_cast<byte>(stepIndex));
@@ -518,11 +535,19 @@ void applySequencerLedOverrides() {
     }
 
     uint32_t colorCode = 0;
-    bool highlighted = (sequencerSelectedStep == step) || (sequencerPlayingStep == step);
+    bool selected = (sequencerSelectedStep == step);
+    bool playing = (sequencerPlayingStep == step);
+    bool selectionLit = !selected || isSequencerSelectionLit();
     byte primaryMidiNote = sequencerPrimaryMidiNote(step);
+
+    if (!selectionLit) {
+      strip.setPixelColor(buttonIndex, 0);
+      continue;
+    }
+
     if (primaryMidiNote >= 128) {
-      strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(highlighted));
-    } else if (getBoardLedColorForMidiNote(primaryMidiNote, highlighted, colorCode)) {
+      strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing));
+    } else if (getBoardLedColorForMidiNote(primaryMidiNote, playing, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
     }
   }
