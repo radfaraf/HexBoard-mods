@@ -831,7 +831,7 @@ void drawSequencerOverlay() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
-    snprintf(headerLabel, sizeof(headerLabel), "Edit Chord");
+    snprintf(headerLabel, sizeof(headerLabel), "Edit Note(s)");
     snprintf(hintLineOne, sizeof(hintLineOne), "Bottom 10 rows");
     snprintf(hintLineTwo, sizeof(hintLineTwo), "Blue key undoes");
   } else if (sequencerOverlayMode == SequencerOverlayMode::StepCleared) {
