@@ -33,6 +33,12 @@ constexpr uint64_t SEQUENCER_SELECTED_ON_MICROS = 1000000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_OFF_MICROS = 200000ULL;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
+constexpr byte SEQUENCER_DIRECTION_FORWARD = 0;
+constexpr byte SEQUENCER_DIRECTION_BACKWARD = 1;
+constexpr byte SEQUENCER_DIRECTION_PING_PONG = 2;
+constexpr byte SEQUENCER_DIRECTION_RANDOM = 3;
+constexpr byte SEQUENCER_DIRECTION_BROWNIAN = 4;
+constexpr byte SEQUENCER_DIRECTION_DRUNK = 5;
 
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
@@ -74,6 +80,8 @@ uint64_t sequencerPlaybackNoteOffAt = 0;
 uint64_t sequencerConfirmPressedAt = 0;
 bool sequencerConfirmHeld = false;
 byte sequencerStepPlayCount = 16;
+byte sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
+int8_t sequencerPingPongDelta = 1;
 byte sequencerTempo = 120;
 byte sequencerTransportState = 0;
 
@@ -223,6 +231,81 @@ uint64_t sequencerStepDurationMicros() {
   return 60000000ULL / static_cast<uint64_t>(tempo) / 4ULL;
 }
 
+byte sequencerActiveStepCount() {
+  byte activeStepCount = sequencerStepPlayCount;
+  if (activeStepCount < 1) {
+    return 1;
+  }
+  if (activeStepCount > SEQUENCER_STEP_COUNT) {
+    return SEQUENCER_STEP_COUNT;
+  }
+  return activeStepCount;
+}
+
+int8_t nextSequencerStep(byte activeStepCount) {
+  if (activeStepCount <= 1) {
+    return 0;
+  }
+
+  switch (sequencerDirection) {
+    case SEQUENCER_DIRECTION_BACKWARD:
+      if (sequencerPlayingStep < 0) {
+        return static_cast<int8_t>(activeStepCount - 1);
+      }
+      return static_cast<int8_t>((sequencerPlayingStep + activeStepCount - 1) % activeStepCount);
+
+    case SEQUENCER_DIRECTION_PING_PONG:
+      if (sequencerPlayingStep < 0) {
+        sequencerPingPongDelta = 1;
+        return 0;
+      }
+      if (sequencerPlayingStep >= activeStepCount - 1) {
+        sequencerPingPongDelta = -1;
+      } else if (sequencerPlayingStep <= 0) {
+        sequencerPingPongDelta = 1;
+      }
+      return static_cast<int8_t>(sequencerPlayingStep + sequencerPingPongDelta);
+
+    case SEQUENCER_DIRECTION_RANDOM:
+      return static_cast<int8_t>(random(activeStepCount));
+
+    case SEQUENCER_DIRECTION_BROWNIAN:
+      // Brownian wanders to a neighboring step each tick, creating a slow random walk.
+      if (sequencerPlayingStep < 0) {
+        return 0;
+      }
+      if (sequencerPlayingStep <= 0) {
+        return 1;
+      }
+      if (sequencerPlayingStep >= activeStepCount - 1) {
+        return static_cast<int8_t>(activeStepCount - 2);
+      }
+      return static_cast<int8_t>(sequencerPlayingStep + (random(2) == 0 ? -1 : 1));
+
+    case SEQUENCER_DIRECTION_DRUNK:
+      // Drunk usually stays put or stumbles one step left or right for a looser wandering rhythm.
+      if (sequencerPlayingStep < 0) {
+        return 0;
+      }
+      {
+        int8_t candidate = sequencerPlayingStep + static_cast<int8_t>(random(3)) - 1;
+        if (candidate < 0) {
+          candidate = 0;
+        } else if (candidate >= activeStepCount) {
+          candidate = static_cast<int8_t>(activeStepCount - 1);
+        }
+        return candidate;
+      }
+
+    case SEQUENCER_DIRECTION_FORWARD:
+    default:
+      if (sequencerPlayingStep < 0) {
+        return 0;
+      }
+      return static_cast<int8_t>((sequencerPlayingStep + 1) % activeStepCount);
+  }
+}
+
 void stopSequencerPlaybackNote() {
   if (!sequencerPlaybackNoteActive) {
     return;
@@ -254,6 +337,7 @@ void setSequencerTransportState(byte newState) {
   sequencerTransportState = normalizedState;
   if (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) {
     sequencerPlayingStep = -1;
+    sequencerPingPongDelta = 1;
     sequencerNextStepAt = runTime;
     sequencerCurrentStepStartedAt = runTime;
     sequencerPlaybackNoteOffAt = 0;
@@ -282,6 +366,11 @@ void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
   } else if (sequencerStepPlayCount > SEQUENCER_STEP_COUNT) {
     sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
   }
+}
+
+void sequencerDirectionMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  sequencerPingPongDelta = 1;
 }
 
 void sequencerConfirmHueMenuCallback(GEMCallbackData callbackData) {
@@ -350,9 +439,24 @@ GEMSpinner spinnerSequencerVal(spinnerBoundariesSequencerVal, GEM_LOOP);
 SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 } };
 GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
 
+SelectOptionByte optionByteSequencerDirection[] = {
+  { "Forward", SEQUENCER_DIRECTION_FORWARD },
+  { "Backward", SEQUENCER_DIRECTION_BACKWARD },
+  // Ping-Pong runs to the end of the pattern, then reverses direction until it reaches the start again.
+  { "Ping-Pong", SEQUENCER_DIRECTION_PING_PONG },
+  // Random chooses any step in the active range on each tick with no memory of the previous position.
+  { "Random", SEQUENCER_DIRECTION_RANDOM },
+  // Brownian moves only to neighboring steps, so the playhead drifts instead of jumping across the pattern.
+  { "Brownian", SEQUENCER_DIRECTION_BROWNIAN },
+  // Drunk can stay put or stumble one step left or right, making it even less predictable than Brownian.
+  { "Drunk", SEQUENCER_DIRECTION_DRUNK }
+};
+GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof(SelectOptionByte), optionByteSequencerDirection);
+
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
+GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequencerDirection, sequencerDirectionMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerBtnHue("Btn Hue", sequencerConfirmHue, spinnerSequencerHue, sequencerConfirmHueMenuCallback);
 GEMItem menuItemSequencerBtnSat("Btn Sat", sequencerConfirmSaturation, spinnerSequencerSat, sequencerConfirmSatMenuCallback);
@@ -458,6 +562,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
+  menuPageSequencer.addMenuItem(menuItemSequencerDirection);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
   menuPageSequencer.addMenuItem(menuItemSequencerBtnHue);
   menuPageSequencer.addMenuItem(menuItemSequencerBtnSat);
@@ -590,13 +695,8 @@ void updateSequencerTransport() {
   uint64_t stepDuration = sequencerStepDurationMicros();
   sequencerCurrentStepStartedAt = sequencerNextStepAt;
   sequencerNextStepAt += stepDuration;
-  byte activeStepCount = sequencerStepPlayCount;
-  if (activeStepCount < 1) {
-    activeStepCount = 1;
-  } else if (activeStepCount > SEQUENCER_STEP_COUNT) {
-    activeStepCount = SEQUENCER_STEP_COUNT;
-  }
-  sequencerPlayingStep = (sequencerPlayingStep + 1) % activeStepCount;
+  byte activeStepCount = sequencerActiveStepCount();
+  sequencerPlayingStep = nextSequencerStep(activeStepCount);
 
   byte noteCount = sequencerStepNoteCount[sequencerPlayingStep];
   if (noteCount == 0) {
