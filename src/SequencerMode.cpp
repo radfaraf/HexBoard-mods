@@ -10,15 +10,27 @@ extern uint64_t screenTime;
 namespace {
 constexpr byte SEQUENCER_STEP_COUNT = 16;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
+constexpr byte SEQUENCER_DEFAULT_MIDI_NOTE = 60;  // C4
 
 bool sequencerStepHeld[SEQUENCER_STEP_COUNT] = { false };
+byte sequencerStepMidiNote[SEQUENCER_STEP_COUNT] = {
+  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
+  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
+  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
+  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE
+};
 int8_t sequencerSelectedStep = -1;
 bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
 
+const char* sequencerChromaticNames[12] = {
+  "C", "C#", "D", "Eb", "E", "F",
+  "F#", "G", "G#", "A", "Bb", "B"
+};
+
 int8_t buttonIndexToSequencerStep(byte buttonIndex) {
-  if (buttonIndex < 8) {
-    return static_cast<int8_t>(buttonIndex);
+  if (buttonIndex >= 1 && buttonIndex <= 8) {
+    return static_cast<int8_t>(buttonIndex - 1);
   }
   if (buttonIndex >= 10 && buttonIndex < 18) {
     return static_cast<int8_t>(8 + (buttonIndex - 10));
@@ -33,6 +45,12 @@ byte firstHeldSequencerStep() {
     }
   }
   return SEQUENCER_STEP_COUNT;
+}
+
+void formatSequencerStepNote(char* out, size_t outSize, byte midiNote) {
+  const char* label = sequencerChromaticNames[midiNote % 12];
+  int octave = (midiNote / 12) - 1;
+  snprintf(out, outSize, "%s%d", label, octave);
 }
 
 void sequencerPlaceholderMenuCallback(GEMCallbackData callbackData) {
@@ -103,7 +121,9 @@ void drawSequencerOverlay() {
   }
 
   char stepLabel[16];
+  char noteLabel[12];
   snprintf(stepLabel, sizeof(stepLabel), "Step %02d", sequencerSelectedStep + 1);
+  formatSequencerStepNote(noteLabel, sizeof(noteLabel), sequencerStepMidiNote[sequencerSelectedStep]);
 
   sequencerOverlayVisible = true;
   sequencerOverlayDirty = false;
@@ -113,6 +133,6 @@ void drawSequencerOverlay() {
   u8g2.drawStr(18, 18, "Sequencer Note");
   u8g2.drawStr(36, 36, stepLabel);
   u8g2.setFont(u8g2_font_logisoso24_tf);
-  u8g2.drawStr(28, 92, "C4");
+  u8g2.drawStr(28, 92, noteLabel);
   u8g2.sendBuffer();
 }
