@@ -352,7 +352,7 @@ GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
-GEMItem menuItemSequencerStepPlayCount("Step play count", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
+GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerBtnHue("Btn Hue", sequencerConfirmHue, spinnerSequencerHue, sequencerConfirmHueMenuCallback);
 GEMItem menuItemSequencerBtnSat("Btn Sat", sequencerConfirmSaturation, spinnerSequencerSat, sequencerConfirmSatMenuCallback);
