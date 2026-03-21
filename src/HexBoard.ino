@@ -1566,11 +1566,20 @@ uint32_t getSequencerTransportLedColor(bool running) {
   return getLEDcode(transportColor);
 }
 
-uint32_t getSequencerUnsetStepLedColor() {
+uint32_t getSequencerConfirmLedColor() {
+  colorDef confirmColor = {
+    static_cast<float>(HUE_BLUE),
+    SAT_VIVID,
+    VALUE_FULL
+  };
+  return getLEDcode(confirmColor);
+}
+
+uint32_t getSequencerUnsetStepLedColor(bool highlighted) {
   colorDef unsetColor = {
     static_cast<float>(HUE_NONE),
     SAT_BW,
-    VALUE_FULL
+    static_cast<byte>(highlighted ? VALUE_FULL : VALUE_SHADE)
   };
   return getLEDcode(unsetColor);
 }
