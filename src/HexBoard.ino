@@ -1567,10 +1567,13 @@ uint32_t getSequencerTransportLedColor(bool running) {
 }
 
 uint32_t getSequencerConfirmLedColor() {
+  int hue = sequencerConfirmPreviewActive ? sequencerConfirmPreviewHue : sequencerConfirmHue;
+  byte saturation = sequencerConfirmPreviewActive ? sequencerConfirmPreviewSaturation : sequencerConfirmSaturation;
+  byte value = sequencerConfirmPreviewActive ? sequencerConfirmPreviewValue : sequencerConfirmValue;
   colorDef confirmColor = {
-    static_cast<float>(HUE_BLUE),
-    SAT_VIVID,
-    VALUE_FULL
+    static_cast<float>(hue),
+    saturation,
+    value
   };
   return getLEDcode(confirmColor);
 }

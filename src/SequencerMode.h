@@ -3,6 +3,14 @@
 #include <Arduino.h>
 #include <GEM_u8g2.h>
 
+extern int sequencerConfirmHue;
+extern byte sequencerConfirmSaturation;
+extern byte sequencerConfirmValue;
+extern bool sequencerConfirmPreviewActive;
+extern int sequencerConfirmPreviewHue;
+extern byte sequencerConfirmPreviewSaturation;
+extern byte sequencerConfirmPreviewValue;
+
 bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote);
 bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut);
 uint32_t getSequencerTransportLedColor(bool running);

@@ -12,6 +12,14 @@ extern uint64_t screenTime;
 extern uint64_t runTime;
 extern Adafruit_NeoPixel strip;
 
+int sequencerConfirmHue = 250;
+byte sequencerConfirmSaturation = 255;
+byte sequencerConfirmValue = 211;
+bool sequencerConfirmPreviewActive = false;
+int sequencerConfirmPreviewHue = sequencerConfirmHue;
+byte sequencerConfirmPreviewSaturation = sequencerConfirmSaturation;
+byte sequencerConfirmPreviewValue = sequencerConfirmValue;
+
 namespace {
 constexpr byte SEQUENCER_STEP_COUNT = 16;
 constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
@@ -256,8 +264,66 @@ void sequencerTempoMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
 }
 
-const GEMSpinnerBoundariesByte spinnerBoundariesSequencerTempo = { 1, 255, 1 };
+void sequencerConfirmHueMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  sequencerConfirmPreviewActive = false;
+  sequencerConfirmPreviewHue = sequencerConfirmHue;
+}
+
+void sequencerConfirmSatMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  sequencerConfirmPreviewActive = false;
+  sequencerConfirmPreviewSaturation = sequencerConfirmSaturation;
+}
+
+void sequencerConfirmValMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  sequencerConfirmPreviewActive = false;
+  sequencerConfirmPreviewValue = sequencerConfirmValue;
+}
+
+void previewSequencerConfirmHue(GEMPreviewCallbackData previewData) {
+  if (previewData.previewSelectNum < 0) {
+    sequencerConfirmPreviewActive = false;
+    return;
+  }
+  sequencerConfirmPreviewActive = true;
+  sequencerConfirmPreviewSaturation = sequencerConfirmSaturation;
+  sequencerConfirmPreviewValue = sequencerConfirmValue;
+  sequencerConfirmPreviewHue = constrain(previewData.previewValInt, 0, 360);
+}
+
+void previewSequencerConfirmSat(GEMPreviewCallbackData previewData) {
+  if (previewData.previewSelectNum < 0) {
+    sequencerConfirmPreviewActive = false;
+    return;
+  }
+  sequencerConfirmPreviewActive = true;
+  sequencerConfirmPreviewHue = sequencerConfirmHue;
+  sequencerConfirmPreviewValue = sequencerConfirmValue;
+  sequencerConfirmPreviewSaturation = previewData.previewValByte;
+}
+
+void previewSequencerConfirmVal(GEMPreviewCallbackData previewData) {
+  if (previewData.previewSelectNum < 0) {
+    sequencerConfirmPreviewActive = false;
+    return;
+  }
+  sequencerConfirmPreviewActive = true;
+  sequencerConfirmPreviewHue = sequencerConfirmHue;
+  sequencerConfirmPreviewSaturation = sequencerConfirmSaturation;
+  sequencerConfirmPreviewValue = previewData.previewValByte;
+}
+
+const GEMSpinnerBoundariesInt spinnerBoundariesSequencerHue = { 1, 0, 360 };
+const GEMSpinnerBoundariesByte spinnerBoundariesSequencerTempo = { 1, 1, 255 };
+const GEMSpinnerBoundariesByte spinnerBoundariesSequencerSat = { 1, 0, 255 };
+const GEMSpinnerBoundariesByte spinnerBoundariesSequencerVal = { 1, 0, 255 };
+
+GEMSpinner spinnerSequencerHue(spinnerBoundariesSequencerHue, GEM_LOOP);
 GEMSpinner spinnerSequencerTempo(spinnerBoundariesSequencerTempo, GEM_LOOP);
+GEMSpinner spinnerSequencerSat(spinnerBoundariesSequencerSat, GEM_LOOP);
+GEMSpinner spinnerSequencerVal(spinnerBoundariesSequencerVal, GEM_LOOP);
 
 SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 } };
 GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
@@ -265,6 +331,9 @@ GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
+GEMItem menuItemSequencerBtnHue("Btn Hue", sequencerConfirmHue, spinnerSequencerHue, sequencerConfirmHueMenuCallback);
+GEMItem menuItemSequencerBtnSat("Btn Sat", sequencerConfirmSaturation, spinnerSequencerSat, sequencerConfirmSatMenuCallback);
+GEMItem menuItemSequencerBtnVal("Btn Val", sequencerConfirmValue, spinnerSequencerVal, sequencerConfirmValMenuCallback);
 GEMItem menuItemSequencerFirmwareUpdate("Update Firmware", rebootToBootloader);
 
 }  // namespace
@@ -352,9 +421,16 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 }
 
 void setupSequencerMenu() {
+  menuItemSequencerBtnHue.setPreviewCallback(previewSequencerConfirmHue);
+  menuItemSequencerBtnSat.setPreviewCallback(previewSequencerConfirmSat);
+  menuItemSequencerBtnVal.setPreviewCallback(previewSequencerConfirmVal);
+
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
+  menuPageSequencer.addMenuItem(menuItemSequencerBtnHue);
+  menuPageSequencer.addMenuItem(menuItemSequencerBtnSat);
+  menuPageSequencer.addMenuItem(menuItemSequencerBtnVal);
   menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
 }
 
