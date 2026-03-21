@@ -6,6 +6,7 @@
 bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote);
 bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut);
 uint32_t getSequencerTransportLedColor(bool running);
+uint32_t getSequencerUnsetStepLedColor();
 void sendBoardPreviewMidiNote(byte midiNote, bool noteOn);
 void enterKeyboardMode();
 

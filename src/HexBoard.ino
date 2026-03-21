@@ -1566,6 +1566,15 @@ uint32_t getSequencerTransportLedColor(bool running) {
   return getLEDcode(transportColor);
 }
 
+uint32_t getSequencerUnsetStepLedColor() {
+  colorDef unsetColor = {
+    static_cast<float>(HUE_NONE),
+    SAT_BW,
+    VALUE_FULL
+  };
+  return getLEDcode(unsetColor);
+}
+
 void detectHardwareVersion() {
   constexpr byte hardwareFlagIndex = 140;
   const byte targetRow = hardwareFlagIndex / 10;

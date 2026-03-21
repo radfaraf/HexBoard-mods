@@ -14,16 +14,16 @@ namespace {
 constexpr byte SEQUENCER_STEP_COUNT = 16;
 constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
-constexpr byte SEQUENCER_DEFAULT_MIDI_NOTE = 60;  // C4
+constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
 
 byte sequencerStepMidiNote[SEQUENCER_STEP_COUNT] = {
-  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
-  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
-  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
-  SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE
+  SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE,
+  SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE,
+  SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE,
+  SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
 };
 byte sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {
   100, 100, 100, 100, 100, 100, 100, 100,
@@ -42,10 +42,10 @@ uint64_t sequencerOverlayUntil = 0;
 bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
 int16_t sequencerPreviewButtonIndex = -1;
-byte sequencerPreviewMidiNote = SEQUENCER_DEFAULT_MIDI_NOTE;
+byte sequencerPreviewMidiNote = SEQUENCER_NO_NOTE;
 int8_t sequencerPlayingStep = -1;
 bool sequencerPlaybackNoteActive = false;
-byte sequencerPlaybackMidiNote = SEQUENCER_DEFAULT_MIDI_NOTE;
+byte sequencerPlaybackMidiNote = SEQUENCER_NO_NOTE;
 uint64_t sequencerNextStepAt = 0;
 uint64_t sequencerCurrentStepStartedAt = 0;
 uint64_t sequencerPlaybackNoteOffAt = 0;
@@ -78,6 +78,10 @@ int8_t sequencerStepToButtonIndex(byte stepIndex) {
 }
 
 void formatSequencerStepNote(char* out, size_t outSize, byte midiNote) {
+  if (midiNote >= 128) {
+    snprintf(out, outSize, "--");
+    return;
+  }
   const char* label = sequencerChromaticNames[midiNote % 12];
   int octave = (midiNote / 12) - 1;
   snprintf(out, outSize, "%s%d", label, octave);
@@ -266,7 +270,9 @@ void applySequencerLedOverrides() {
     uint32_t colorCode = 0;
     bool highlighted = ((sequencerSelectedStep == step) && (sequencerOverlayMode != SequencerOverlayMode::Hidden))
       || (sequencerPlayingStep == step);
-    if (getBoardLedColorForMidiNote(sequencerStepMidiNote[step], highlighted, colorCode)) {
+    if (sequencerStepMidiNote[step] >= 128) {
+      strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor());
+    } else if (getBoardLedColorForMidiNote(sequencerStepMidiNote[step], highlighted, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
     }
   }
@@ -289,6 +295,10 @@ void updateSequencerTransport() {
   sequencerCurrentStepStartedAt = sequencerNextStepAt;
   sequencerNextStepAt += stepDuration;
   sequencerPlayingStep = (sequencerPlayingStep + 1) % SEQUENCER_STEP_COUNT;
+
+  if (sequencerStepMidiNote[sequencerPlayingStep] >= 128) {
+    return;
+  }
 
   byte gatePercent = sequencerStepGatePercent[sequencerPlayingStep];
   sendBoardPreviewMidiNote(sequencerStepMidiNote[sequencerPlayingStep], true);
