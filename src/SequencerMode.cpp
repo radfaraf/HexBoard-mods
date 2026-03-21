@@ -28,7 +28,7 @@ constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
 constexpr byte SEQUENCER_OVERVIEW_BUTTON_INDEX = 18;
 constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
 constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
-constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 4;
+constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 6;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
@@ -345,7 +345,8 @@ void hideSequencerOverlay() {
 }
 
 void showSequencerOverviewPage(bool advancePage) {
-  constexpr byte pageCount = SEQUENCER_STEP_COUNT / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
+  constexpr byte pageCount =
+    (SEQUENCER_STEP_COUNT + SEQUENCER_OVERVIEW_STEPS_PER_PAGE - 1) / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
   if (advancePage) {
     sequencerOverviewPage = static_cast<byte>((sequencerOverviewPage + 1) % pageCount);
   } else {
@@ -959,20 +960,18 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     return;
   }
 
-  if (sequencerSelectedStep < 0) {
-    return;
-  }
-
   byte midiNote = 0;
   if (getButtonMidiNoteForSequencer(buttonIndex, midiNote)) {
-    toggleEditBufferNote(midiNote);
-    saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
-    sequencerDirty = true;
-    sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
     if (midiNote < 128) {
       sendSequencerManagedNoteOn(midiNote, false);
     }
-    sequencerOverlayDirty = true;
+    if (sequencerSelectedStep >= 0) {
+      toggleEditBufferNote(midiNote);
+      saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+      sequencerDirty = true;
+      sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+      sequencerOverlayDirty = true;
+    }
   }
 }
 
@@ -1045,29 +1044,27 @@ void drawSequencerOverlay() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::Overview) {
-    char headerLabel[24];
-    char lineBuffer[4][24];
-    constexpr byte overviewPageCount = SEQUENCER_STEP_COUNT / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
+    char lineBuffer[SEQUENCER_OVERVIEW_STEPS_PER_PAGE][24];
+    constexpr byte overviewPageCount =
+      (SEQUENCER_STEP_COUNT + SEQUENCER_OVERVIEW_STEPS_PER_PAGE - 1) / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
     if (sequencerOverviewPage >= overviewPageCount) {
       sequencerOverviewPage = 0;
     }
     byte firstStep = static_cast<byte>(sequencerOverviewPage * SEQUENCER_OVERVIEW_STEPS_PER_PAGE);
-    byte lastStep = static_cast<byte>(firstStep + SEQUENCER_OVERVIEW_STEPS_PER_PAGE);
-    snprintf(headerLabel, sizeof(headerLabel), "Steps %02u-%02u",
-             static_cast<unsigned>(firstStep + 1), static_cast<unsigned>(lastStep));
 
     sequencerOverlayVisible = true;
     sequencerOverlayDirty = false;
 
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_5x7_tf);
-    u8g2.drawStr(36, 10, headerLabel);
     u8g2.setFont(u8g2_font_6x13_tf);
 
     for (byte row = 0; row < SEQUENCER_OVERVIEW_STEPS_PER_PAGE; row++) {
       byte stepIndex = static_cast<byte>(firstStep + row);
+      if (stepIndex >= SEQUENCER_STEP_COUNT) {
+        break;
+      }
       fillOverviewStepLine(stepIndex, lineBuffer[row], sizeof(lineBuffer[row]));
-      int y = 32 + (row * 24);
+      int y = 16 + (row * 18);
       u8g2.drawStr(4, y, lineBuffer[row]);
     }
 
