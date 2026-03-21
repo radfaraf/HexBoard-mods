@@ -190,7 +190,7 @@ void drawSequencerOverlay() {
   u8g2.drawStr(20, 18, headerLabel);
   u8g2.drawStr(36, 36, stepLabel);
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
-    u8g2.drawStr(18, 54, "Bottom rows");
+    u8g2.drawStr(10, 54, "Bottom 10 rows");
     u8g2.drawStr(20, 68, "choose pitch");
   }
   u8g2.setFont(u8g2_font_logisoso24_tf);

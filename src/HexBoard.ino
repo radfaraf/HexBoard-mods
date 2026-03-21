@@ -1525,7 +1525,7 @@ bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote) {
     return false;
   }
   byte row = buttonIndex / COLCOUNT;
-  if (row < 12 || row > 13) {
+  if (row < 4 || row > 13) {
     return false;
   }
   if (h[buttonIndex].isCmd || h[buttonIndex].note == UNUSED_NOTE) {
