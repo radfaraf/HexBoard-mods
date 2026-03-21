@@ -25,8 +25,10 @@ byte sequencerConfirmPreviewValue = sequencerConfirmValue;
 namespace {
 constexpr byte SEQUENCER_STEP_COUNT = 32;
 constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
+constexpr byte SEQUENCER_OVERVIEW_BUTTON_INDEX = 18;
 constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
 constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
+constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 4;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
@@ -55,7 +57,8 @@ enum class SequencerOverlayMode : uint8_t {
   NoteAssigned = 2,
   StepCleared = 3,
   StatusMessage = 4,
-  LengthEdit = 5
+  LengthEdit = 5,
+  Overview = 6
 };
 
 struct SequencerPlaybackGroup {
@@ -98,6 +101,7 @@ byte sequencerTransportState = 0;
 bool sequencerDirty = false;
 bool sequencerStorageInitialized = false;
 uint16_t sequencerLengthPercentDisplay = 100;
+byte sequencerOverviewPage = 0;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 
@@ -308,6 +312,49 @@ void fillOverlayNoteLines(char* lineOne, size_t lineOneSize, char* lineTwo, size
     }
     strncat(target, noteLabel, targetSize - strlen(target) - 1);
   }
+}
+
+void fillOverviewStepLine(byte stepIndex, char* lineOut, size_t lineOutSize) {
+  if (stepIndex >= SEQUENCER_STEP_COUNT || lineOutSize == 0) {
+    return;
+  }
+
+  snprintf(lineOut, lineOutSize, "%02u ", static_cast<unsigned>(stepIndex + 1));
+
+  if (sequencerStepNoteCount[stepIndex] == 0) {
+    strncat(lineOut, "_", lineOutSize - strlen(lineOut) - 1);
+    return;
+  }
+
+  char noteLabel[8];
+  for (byte noteIndex = 0; noteIndex < sequencerStepNoteCount[stepIndex] &&
+                           noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
+    formatSequencerStepNote(noteLabel, sizeof(noteLabel), sequencerStepMidiNotes[stepIndex][noteIndex]);
+    if (noteIndex > 0) {
+      strncat(lineOut, " ", lineOutSize - strlen(lineOut) - 1);
+    }
+    strncat(lineOut, noteLabel, lineOutSize - strlen(lineOut) - 1);
+  }
+}
+
+void hideSequencerOverlay() {
+  sequencerOverlayMode = SequencerOverlayMode::Hidden;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = false;
+}
+
+void showSequencerOverviewPage(bool advancePage) {
+  constexpr byte pageCount = SEQUENCER_STEP_COUNT / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
+  if (advancePage) {
+    sequencerOverviewPage = static_cast<byte>((sequencerOverviewPage + 1) % pageCount);
+  } else {
+    sequencerOverviewPage = 0;
+  }
+  sequencerOverlayMode = SequencerOverlayMode::Overview;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
 }
 
 uint64_t sequencerStepDurationMicros() {
@@ -535,9 +582,8 @@ void resetSequencerState() {
   sequencerConfirmPressedAt = 0;
   sequencerNextStepAt = 0;
   sequencerCurrentStepStartedAt = 0;
-  sequencerOverlayMode = SequencerOverlayMode::Hidden;
-  sequencerOverlayVisible = false;
-  sequencerOverlayDirty = false;
+  sequencerOverviewPage = 0;
+  hideSequencerOverlay();
   stopSequencerPlaybackNote();
 }
 
@@ -842,6 +888,9 @@ GEMPage menuPageSequencer("Sequencer");
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (!pressed) {
+    if (buttonIndex == SEQUENCER_OVERVIEW_BUTTON_INDEX) {
+      return;
+    }
     if (buttonIndex == SEQUENCER_CONFIRM_BUTTON_INDEX) {
       if (sequencerSelectedStep >= 0 && sequencerConfirmHeld) {
         clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
@@ -872,6 +921,16 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     u8g2.setContrast(SEQUENCER_OVERLAY_CONTRAST);
   }
 
+  if (buttonIndex == SEQUENCER_OVERVIEW_BUTTON_INDEX) {
+    bool advancePage = (sequencerOverlayMode == SequencerOverlayMode::Overview);
+    showSequencerOverviewPage(advancePage);
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::Overview) {
+    hideSequencerOverlay();
+  }
+
   if (buttonIndex == SEQUENCER_TRANSPORT_BUTTON_INDEX) {
     setSequencerTransportState(
       (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_STOP : SEQUENCER_TRANSPORT_PLAY);
@@ -888,9 +947,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (stepIndex >= 0) {
     if (sequencerSelectedStep == stepIndex) {
       sequencerSelectedStep = -1;
-      sequencerOverlayMode = SequencerOverlayMode::Hidden;
-      sequencerOverlayUntil = 0;
-      sequencerOverlayDirty = false;
+      hideSequencerOverlay();
       return;
     }
     sequencerSelectedStep = stepIndex;
@@ -945,10 +1002,13 @@ void setupSequencerMenu() {
 void drawSequencerOverlay() {
   bool hasSelectedStepOverlay = (sequencerOverlayMode != SequencerOverlayMode::Hidden &&
                                  sequencerOverlayMode != SequencerOverlayMode::StatusMessage &&
+                                 sequencerOverlayMode != SequencerOverlayMode::Overview &&
                                  sequencerSelectedStep >= 0);
   bool hasStatusOverlay = (sequencerOverlayMode == SequencerOverlayMode::StatusMessage);
+  bool hasOverviewOverlay = (sequencerOverlayMode == SequencerOverlayMode::Overview);
 
-  if (sequencerOverlayMode == SequencerOverlayMode::Hidden || (!hasSelectedStepOverlay && !hasStatusOverlay)) {
+  if (sequencerOverlayMode == SequencerOverlayMode::Hidden ||
+      (!hasSelectedStepOverlay && !hasStatusOverlay && !hasOverviewOverlay)) {
     if (sequencerOverlayVisible) {
       sequencerOverlayVisible = false;
       sequencerOverlayDirty = false;
@@ -981,6 +1041,37 @@ void drawSequencerOverlay() {
   }
 
   if (!sequencerOverlayDirty && sequencerOverlayVisible) {
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::Overview) {
+    char headerLabel[24];
+    char lineBuffer[4][24];
+    constexpr byte overviewPageCount = SEQUENCER_STEP_COUNT / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
+    if (sequencerOverviewPage >= overviewPageCount) {
+      sequencerOverviewPage = 0;
+    }
+    byte firstStep = static_cast<byte>(sequencerOverviewPage * SEQUENCER_OVERVIEW_STEPS_PER_PAGE);
+    byte lastStep = static_cast<byte>(firstStep + SEQUENCER_OVERVIEW_STEPS_PER_PAGE);
+    snprintf(headerLabel, sizeof(headerLabel), "Steps %02u-%02u",
+             static_cast<unsigned>(firstStep + 1), static_cast<unsigned>(lastStep));
+
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_5x7_tf);
+    u8g2.drawStr(36, 10, headerLabel);
+    u8g2.setFont(u8g2_font_6x13_tf);
+
+    for (byte row = 0; row < SEQUENCER_OVERVIEW_STEPS_PER_PAGE; row++) {
+      byte stepIndex = static_cast<byte>(firstStep + row);
+      fillOverviewStepLine(stepIndex, lineBuffer[row], sizeof(lineBuffer[row]));
+      int y = 32 + (row * 24);
+      u8g2.drawStr(4, y, lineBuffer[row]);
+    }
+
+    u8g2.sendBuffer();
     return;
   }
 
@@ -1050,6 +1141,9 @@ void applySequencerLedOverrides() {
   strip.setPixelColor(
     SEQUENCER_TRANSPORT_BUTTON_INDEX,
     getSequencerTransportLedColor(sequencerTransportState == SEQUENCER_TRANSPORT_PLAY));
+  strip.setPixelColor(
+    SEQUENCER_OVERVIEW_BUTTON_INDEX,
+    getSequencerUnsetStepLedColor(sequencerOverlayMode == SequencerOverlayMode::Overview));
   strip.setPixelColor(SEQUENCER_CONFIRM_BUTTON_INDEX, getSequencerConfirmLedColor());
 
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
