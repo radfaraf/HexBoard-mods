@@ -23,7 +23,7 @@ byte sequencerConfirmPreviewSaturation = sequencerConfirmSaturation;
 byte sequencerConfirmPreviewValue = sequencerConfirmValue;
 
 namespace {
-constexpr byte SEQUENCER_STEP_COUNT = 16;
+constexpr byte SEQUENCER_STEP_COUNT = 32;
 constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
 constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
 constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
@@ -43,14 +43,11 @@ constexpr byte SEQUENCER_DIRECTION_BROWNIAN = 4;
 constexpr byte SEQUENCER_DIRECTION_DRUNK = 5;
 constexpr const char* SEQUENCER_STORAGE_PATH = "/sequence.hbseq";
 constexpr byte SEQUENCER_GATE_CHOICE_COUNT = 12;
-constexpr byte SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS = 4;
+constexpr byte SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS = 16;
 
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
-uint16_t sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {
-  100, 100, 100, 100, 100, 100, 100, 100,
-  100, 100, 100, 100, 100, 100, 100, 100
-};
+uint16_t sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {};
 
 enum class SequencerOverlayMode : uint8_t {
   Hidden = 0,
@@ -93,7 +90,7 @@ uint64_t sequencerNextStepAt = 0;
 uint64_t sequencerCurrentStepStartedAt = 0;
 uint64_t sequencerConfirmPressedAt = 0;
 bool sequencerConfirmHeld = false;
-byte sequencerStepPlayCount = 16;
+byte sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
 byte sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
 int8_t sequencerPingPongDelta = 1;
 byte sequencerTempo = 120;
@@ -121,6 +118,12 @@ int8_t buttonIndexToSequencerStep(byte buttonIndex) {
   if (buttonIndex >= 10 && buttonIndex < 18) {
     return static_cast<int8_t>(8 + (buttonIndex - 10));
   }
+  if (buttonIndex >= 20 && buttonIndex < 28) {
+    return static_cast<int8_t>(16 + (buttonIndex - 20));
+  }
+  if (buttonIndex >= 30 && buttonIndex < 38) {
+    return static_cast<int8_t>(24 + (buttonIndex - 30));
+  }
   return -1;
 }
 
@@ -128,8 +131,14 @@ int8_t sequencerStepToButtonIndex(byte stepIndex) {
   if (stepIndex < 8) {
     return static_cast<int8_t>(stepIndex + 1);
   }
-  if (stepIndex < SEQUENCER_STEP_COUNT) {
+  if (stepIndex < 16) {
     return static_cast<int8_t>(10 + (stepIndex - 8));
+  }
+  if (stepIndex < 24) {
+    return static_cast<int8_t>(20 + (stepIndex - 16));
+  }
+  if (stepIndex < SEQUENCER_STEP_COUNT) {
+    return static_cast<int8_t>(30 + (stepIndex - 24));
   }
   return -1;
 }
@@ -518,7 +527,7 @@ void resetSequencerState() {
   clearSequencerNoteBuffer(sequencerUndoMidiNotes, sequencerUndoNoteCount);
   sequencerSelectedStep = -1;
   sequencerPlayingStep = -1;
-  sequencerStepPlayCount = 16;
+  sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
   sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
   sequencerPingPongDelta = 1;
   sequencerTempo = 120;
