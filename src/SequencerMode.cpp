@@ -1,10 +1,12 @@
 #include "SequencerMode.h"
 
 #include <Adafruit_NeoPixel.h>
+#include <LittleFS.h>
 #include <cstdio>
 #include <cstring>
 
 extern void rebootToBootloader();
+extern bool fileSystemExists;
 extern GEM_u8g2 menu;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
@@ -39,6 +41,7 @@ constexpr byte SEQUENCER_DIRECTION_PING_PONG = 2;
 constexpr byte SEQUENCER_DIRECTION_RANDOM = 3;
 constexpr byte SEQUENCER_DIRECTION_BROWNIAN = 4;
 constexpr byte SEQUENCER_DIRECTION_DRUNK = 5;
+constexpr const char* SEQUENCER_STORAGE_PATH = "/sequence.hbseq";
 
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
@@ -51,7 +54,8 @@ enum class SequencerOverlayMode : uint8_t {
   Hidden = 0,
   AwaitingNote = 1,
   NoteAssigned = 2,
-  StepCleared = 3
+  StepCleared = 3,
+  StatusMessage = 4
 };
 
 int8_t sequencerSelectedStep = -1;
@@ -59,6 +63,8 @@ SequencerOverlayMode sequencerOverlayMode = SequencerOverlayMode::Hidden;
 uint64_t sequencerOverlayUntil = 0;
 bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
+char sequencerStatusLineOne[24] = "";
+char sequencerStatusLineTwo[24] = "";
 byte sequencerEditMidiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
   SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
 };
@@ -84,6 +90,10 @@ byte sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
 int8_t sequencerPingPongDelta = 1;
 byte sequencerTempo = 120;
 byte sequencerTransportState = 0;
+bool sequencerDirty = false;
+bool sequencerStorageInitialized = false;
+
+void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 
 const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
@@ -326,10 +336,193 @@ void clearSelectedSequencerStep() {
   }
   clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
   saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+  sequencerDirty = true;
   sequencerOverlayMode = SequencerOverlayMode::StepCleared;
   sequencerOverlayDirty = true;
   sequencerConfirmHeld = false;
   sequencerConfirmPressedAt = 0;
+}
+
+void resetSequencerState() {
+  for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
+    clearSequencerNoteBuffer(sequencerStepMidiNotes[step], sequencerStepNoteCount[step]);
+    sequencerStepGatePercent[step] = 100;
+  }
+  memset(sequencerPreviewHeldNoteCounts, 0, sizeof(sequencerPreviewHeldNoteCounts));
+  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  clearSequencerNoteBuffer(sequencerUndoMidiNotes, sequencerUndoNoteCount);
+  sequencerSelectedStep = -1;
+  sequencerPlayingStep = -1;
+  sequencerStepPlayCount = 16;
+  sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
+  sequencerPingPongDelta = 1;
+  sequencerTempo = 120;
+  sequencerConfirmHeld = false;
+  sequencerConfirmPressedAt = 0;
+  sequencerNextStepAt = 0;
+  sequencerCurrentStepStartedAt = 0;
+  sequencerPlaybackNoteOffAt = 0;
+  sequencerOverlayMode = SequencerOverlayMode::Hidden;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = false;
+  stopSequencerPlaybackNote();
+}
+
+void parseSequencerStepNotes(byte stepIndex, const String& value) {
+  clearSequencerNoteBuffer(sequencerStepMidiNotes[stepIndex], sequencerStepNoteCount[stepIndex]);
+  if (value.length() == 0) {
+    return;
+  }
+
+  int start = 0;
+  while (start <= value.length() && sequencerStepNoteCount[stepIndex] < SEQUENCER_MAX_NOTES_PER_STEP) {
+    int commaIndex = value.indexOf(',', start);
+    String token = (commaIndex >= 0) ? value.substring(start, commaIndex) : value.substring(start);
+    token.trim();
+    if (token.length() > 0) {
+      int noteValue = token.toInt();
+      if (noteValue >= 0 && noteValue < 128) {
+        sequencerStepMidiNotes[stepIndex][sequencerStepNoteCount[stepIndex]++] = static_cast<byte>(noteValue);
+      }
+    }
+    if (commaIndex < 0) {
+      break;
+    }
+    start = commaIndex + 1;
+  }
+}
+
+bool loadSequencerFromFlash() {
+  resetSequencerState();
+  if (!fileSystemExists) {
+    sequencerDirty = false;
+    return false;
+  }
+
+  File f = LittleFS.open(SEQUENCER_STORAGE_PATH, "r");
+  if (!f) {
+    sequencerDirty = false;
+    return false;
+  }
+
+  bool sawFormat = false;
+  while (f.available()) {
+    String line = f.readStringUntil('\n');
+    line.trim();
+    if (line.length() == 0 || line.startsWith("#")) {
+      continue;
+    }
+
+    int equalsIndex = line.indexOf('=');
+    if (equalsIndex < 0) {
+      continue;
+    }
+
+    String key = line.substring(0, equalsIndex);
+    String value = line.substring(equalsIndex + 1);
+    key.trim();
+    value.trim();
+
+    if (key == "format") {
+      sawFormat = (value == "HBSEQ");
+    } else if (key == "tempo") {
+      int tempoValue = value.toInt();
+      if (tempoValue >= 1 && tempoValue <= 255) {
+        sequencerTempo = static_cast<byte>(tempoValue);
+      }
+    } else if (key == "steps") {
+      int stepCount = value.toInt();
+      if (stepCount >= 1 && stepCount <= SEQUENCER_STEP_COUNT) {
+        sequencerStepPlayCount = static_cast<byte>(stepCount);
+      }
+    } else if (key == "direction") {
+      int directionValue = value.toInt();
+      if (directionValue >= SEQUENCER_DIRECTION_FORWARD && directionValue <= SEQUENCER_DIRECTION_DRUNK) {
+        sequencerDirection = static_cast<byte>(directionValue);
+      }
+    } else if (key.startsWith("step")) {
+      int stepNumber = key.substring(4).toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT) {
+        parseSequencerStepNotes(static_cast<byte>(stepNumber - 1), value);
+      }
+    } else if (key.startsWith("gate")) {
+      int stepNumber = key.substring(4).toInt();
+      int gateValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && gateValue >= 0 && gateValue <= 100) {
+        sequencerStepGatePercent[stepNumber - 1] = static_cast<byte>(gateValue);
+      }
+    }
+  }
+
+  f.close();
+  sequencerDirty = false;
+  return sawFormat;
+}
+
+bool saveSequencerToFlash() {
+  if (!fileSystemExists) {
+    return false;
+  }
+
+  File f = LittleFS.open(SEQUENCER_STORAGE_PATH, "w");
+  if (!f) {
+    return false;
+  }
+
+  f.println("format=HBSEQ");
+  f.println("version=1");
+  f.print("tempo=");
+  f.println(sequencerTempo);
+  f.print("steps=");
+  f.println(sequencerStepPlayCount);
+  f.print("direction=");
+  f.println(sequencerDirection);
+
+  for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
+    f.print("step");
+    f.print(step + 1);
+    f.print('=');
+    for (byte noteIndex = 0; noteIndex < sequencerStepNoteCount[step]; noteIndex++) {
+      if (noteIndex > 0) {
+        f.print(',');
+      }
+      f.print(sequencerStepMidiNotes[step][noteIndex]);
+    }
+    f.println();
+    f.print("gate");
+    f.print(step + 1);
+    f.print('=');
+    f.println(sequencerStepGatePercent[step]);
+  }
+
+  f.close();
+  sequencerDirty = false;
+  return true;
+}
+
+void saveSequencerMenuCallback() {
+  if (saveSequencerToFlash()) {
+    showSequencerStatusMessage("Sequence Saved", "Flash write OK");
+  } else {
+    showSequencerStatusMessage("Error Saving", "Flash write failed");
+  }
+}
+
+void revertSequencerMenuCallback() {
+  if (loadSequencerFromFlash()) {
+    showSequencerStatusMessage("Reverted", "Loaded saved file");
+  } else {
+    showSequencerStatusMessage("Error Reverting", "Load failed");
+  }
+}
+
+void showSequencerStatusMessage(const char* lineOne, const char* lineTwo) {
+  snprintf(sequencerStatusLineOne, sizeof(sequencerStatusLineOne), "%s", lineOne);
+  snprintf(sequencerStatusLineTwo, sizeof(sequencerStatusLineTwo), "%s", lineTwo);
+  sequencerOverlayMode = SequencerOverlayMode::StatusMessage;
+  sequencerOverlayUntil = runTime + SEQUENCER_NOTE_CONFIRM_MICROS;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
 }
 
 void setSequencerTransportState(byte newState) {
@@ -357,6 +550,7 @@ void sequencerTransportMenuCallback(GEMCallbackData callbackData) {
 
 void sequencerTempoMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
+  sequencerDirty = true;
 }
 
 void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
@@ -366,11 +560,13 @@ void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
   } else if (sequencerStepPlayCount > SEQUENCER_STEP_COUNT) {
     sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
   }
+  sequencerDirty = true;
 }
 
 void sequencerDirectionMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   sequencerPingPongDelta = 1;
+  sequencerDirty = true;
 }
 
 void sequencerConfirmHueMenuCallback(GEMCallbackData callbackData) {
@@ -454,6 +650,8 @@ SelectOptionByte optionByteSequencerDirection[] = {
 GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof(SelectOptionByte), optionByteSequencerDirection);
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
+GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
+GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequencerDirection, sequencerDirectionMenuCallback);
@@ -477,6 +675,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
         }
         sequencerEditNoteCount = sequencerUndoNoteCount;
         saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+        sequencerDirty = true;
         sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
         sequencerOverlayDirty = true;
       }
@@ -541,6 +740,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (getButtonMidiNoteForSequencer(buttonIndex, midiNote)) {
     toggleEditBufferNote(midiNote);
     saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+    sequencerDirty = true;
     sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
     if (midiNote < 128) {
       if (sequencerPreviewHeldNoteCounts[midiNote] == 0) {
@@ -555,11 +755,18 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 }
 
 void setupSequencerMenu() {
+  if (!sequencerStorageInitialized) {
+    loadSequencerFromFlash();
+    sequencerStorageInitialized = true;
+  }
+
   menuItemSequencerBtnHue.setPreviewCallback(previewSequencerConfirmHue);
   menuItemSequencerBtnSat.setPreviewCallback(previewSequencerConfirmSat);
   menuItemSequencerBtnVal.setPreviewCallback(previewSequencerConfirmVal);
 
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
+  menuPageSequencer.addMenuItem(menuItemSequencerSave);
+  menuPageSequencer.addMenuItem(menuItemSequencerRevert);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
   menuPageSequencer.addMenuItem(menuItemSequencerDirection);
@@ -571,7 +778,12 @@ void setupSequencerMenu() {
 }
 
 void drawSequencerOverlay() {
-  if (sequencerOverlayMode == SequencerOverlayMode::Hidden || sequencerSelectedStep < 0) {
+  bool hasSelectedStepOverlay = (sequencerOverlayMode != SequencerOverlayMode::Hidden &&
+                                 sequencerOverlayMode != SequencerOverlayMode::StatusMessage &&
+                                 sequencerSelectedStep >= 0);
+  bool hasStatusOverlay = (sequencerOverlayMode == SequencerOverlayMode::StatusMessage);
+
+  if (sequencerOverlayMode == SequencerOverlayMode::Hidden || (!hasSelectedStepOverlay && !hasStatusOverlay)) {
     if (sequencerOverlayVisible) {
       sequencerOverlayVisible = false;
       sequencerOverlayDirty = false;
@@ -584,8 +796,12 @@ void drawSequencerOverlay() {
     return;
   }
 
-  if (sequencerOverlayMode == SequencerOverlayMode::NoteAssigned && runTime >= sequencerOverlayUntil) {
-    sequencerSelectedStep = -1;
+  if ((sequencerOverlayMode == SequencerOverlayMode::NoteAssigned ||
+       sequencerOverlayMode == SequencerOverlayMode::StatusMessage) &&
+      runTime >= sequencerOverlayUntil) {
+    if (sequencerOverlayMode == SequencerOverlayMode::NoteAssigned) {
+      sequencerSelectedStep = -1;
+    }
     sequencerOverlayMode = SequencerOverlayMode::Hidden;
     sequencerOverlayVisible = false;
     sequencerOverlayDirty = false;
@@ -603,10 +819,16 @@ void drawSequencerOverlay() {
   char noteLineTwo[24];
   char hintLineOne[24];
   char hintLineTwo[24];
-  snprintf(stepLabel, sizeof(stepLabel), "Step %02d", sequencerSelectedStep + 1);
-  fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
+  stepLabel[0] = '\0';
+  noteLineOne[0] = '\0';
+  noteLineTwo[0] = '\0';
   hintLineOne[0] = '\0';
   hintLineTwo[0] = '\0';
+
+  if (sequencerOverlayMode != SequencerOverlayMode::StatusMessage) {
+    snprintf(stepLabel, sizeof(stepLabel), "Step %02d", sequencerSelectedStep + 1);
+    fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
+  }
 
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
     snprintf(headerLabel, sizeof(headerLabel), "Edit Chord");
@@ -616,6 +838,9 @@ void drawSequencerOverlay() {
     snprintf(headerLabel, sizeof(headerLabel), "Note(s) Erased");
     snprintf(hintLineOne, sizeof(hintLineOne), "Press blue key");
     snprintf(hintLineTwo, sizeof(hintLineTwo), "to undo");
+  } else if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage) {
+    snprintf(headerLabel, sizeof(headerLabel), "%s", sequencerStatusLineOne);
+    snprintf(hintLineOne, sizeof(hintLineOne), "%s", sequencerStatusLineTwo);
   } else {
     snprintf(headerLabel, sizeof(headerLabel), "Chord Saved");
   }
@@ -626,7 +851,9 @@ void drawSequencerOverlay() {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x13_tf);
   u8g2.drawStr(20, 18, headerLabel);
-  u8g2.drawStr(36, 36, stepLabel);
+  if (stepLabel[0] != '\0') {
+    u8g2.drawStr(36, 36, stepLabel);
+  }
   if (hintLineOne[0] != '\0') {
     u8g2.drawStr(8, 54, hintLineOne);
   }
@@ -634,7 +861,9 @@ void drawSequencerOverlay() {
     u8g2.drawStr(4, 68, hintLineTwo);
   }
   u8g2.setFont(u8g2_font_6x13_tf);
-  u8g2.drawStr(12, 96, noteLineOne);
+  if (noteLineOne[0] != '\0') {
+    u8g2.drawStr(12, 96, noteLineOne);
+  }
   if (noteLineTwo[0] != '\0') {
     u8g2.drawStr(12, 112, noteLineTwo);
   }
