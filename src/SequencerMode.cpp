@@ -73,6 +73,7 @@ uint64_t sequencerCurrentStepStartedAt = 0;
 uint64_t sequencerPlaybackNoteOffAt = 0;
 uint64_t sequencerConfirmPressedAt = 0;
 bool sequencerConfirmHeld = false;
+byte sequencerStepPlayCount = 16;
 byte sequencerTempo = 120;
 byte sequencerTransportState = 0;
 
@@ -274,6 +275,15 @@ void sequencerTempoMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
 }
 
+void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  if (sequencerStepPlayCount < 1) {
+    sequencerStepPlayCount = 1;
+  } else if (sequencerStepPlayCount > SEQUENCER_STEP_COUNT) {
+    sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
+  }
+}
+
 void sequencerConfirmHueMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   sequencerConfirmPreviewActive = false;
@@ -326,11 +336,13 @@ void previewSequencerConfirmVal(GEMPreviewCallbackData previewData) {
 }
 
 const GEMSpinnerBoundariesInt spinnerBoundariesSequencerHue = { 1, 0, 360 };
+const GEMSpinnerBoundariesByte spinnerBoundariesSequencerStepPlayCount = { 1, 1, SEQUENCER_STEP_COUNT };
 const GEMSpinnerBoundariesByte spinnerBoundariesSequencerTempo = { 1, 1, 255 };
 const GEMSpinnerBoundariesByte spinnerBoundariesSequencerSat = { 1, 0, 255 };
 const GEMSpinnerBoundariesByte spinnerBoundariesSequencerVal = { 1, 0, 255 };
 
 GEMSpinner spinnerSequencerHue(spinnerBoundariesSequencerHue, GEM_LOOP);
+GEMSpinner spinnerSequencerStepPlayCount(spinnerBoundariesSequencerStepPlayCount, GEM_LOOP);
 GEMSpinner spinnerSequencerTempo(spinnerBoundariesSequencerTempo, GEM_LOOP);
 GEMSpinner spinnerSequencerSat(spinnerBoundariesSequencerSat, GEM_LOOP);
 GEMSpinner spinnerSequencerVal(spinnerBoundariesSequencerVal, GEM_LOOP);
@@ -340,6 +352,7 @@ GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
+GEMItem menuItemSequencerStepPlayCount("Step play count", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerBtnHue("Btn Hue", sequencerConfirmHue, spinnerSequencerHue, sequencerConfirmHueMenuCallback);
 GEMItem menuItemSequencerBtnSat("Btn Sat", sequencerConfirmSaturation, spinnerSequencerSat, sequencerConfirmSatMenuCallback);
@@ -444,6 +457,7 @@ void setupSequencerMenu() {
 
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
+  menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
   menuPageSequencer.addMenuItem(menuItemSequencerBtnHue);
   menuPageSequencer.addMenuItem(menuItemSequencerBtnSat);
@@ -576,7 +590,13 @@ void updateSequencerTransport() {
   uint64_t stepDuration = sequencerStepDurationMicros();
   sequencerCurrentStepStartedAt = sequencerNextStepAt;
   sequencerNextStepAt += stepDuration;
-  sequencerPlayingStep = (sequencerPlayingStep + 1) % SEQUENCER_STEP_COUNT;
+  byte activeStepCount = sequencerStepPlayCount;
+  if (activeStepCount < 1) {
+    activeStepCount = 1;
+  } else if (activeStepCount > SEQUENCER_STEP_COUNT) {
+    activeStepCount = SEQUENCER_STEP_COUNT;
+  }
+  sequencerPlayingStep = (sequencerPlayingStep + 1) % activeStepCount;
 
   byte noteCount = sequencerStepNoteCount[sequencerPlayingStep];
   if (noteCount == 0) {

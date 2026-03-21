@@ -1579,10 +1579,11 @@ uint32_t getSequencerConfirmLedColor() {
 }
 
 uint32_t getSequencerUnsetStepLedColor(bool highlighted) {
+  (void)highlighted;
   colorDef unsetColor = {
     static_cast<float>(HUE_NONE),
     SAT_BW,
-    static_cast<byte>(highlighted ? VALUE_FULL : VALUE_SHADE)
+    VALUE_BLACK
   };
   return getLEDcode(unsetColor);
 }
