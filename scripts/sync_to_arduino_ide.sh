@@ -16,6 +16,15 @@ echo "Synced sketch files to: $TARGET_DIR"
 open "$TARGET_DIR/HexBoard.ino"
 
 osascript <<'APPLESCRIPT'
+set actionChoices to {"Verify/Compile", "Export Compiled Binary", "Upload Using Programmer"}
+set chosenActionList to choose from list actionChoices with prompt "Choose Arduino IDE action" default items {"Verify/Compile"}
+
+if chosenActionList is false then
+  return
+end if
+
+set chosenAction to item 1 of chosenActionList
+
 tell application "Arduino IDE" to activate
 tell application "System Events"
   tell process "Arduino IDE"
@@ -25,11 +34,17 @@ tell application "System Events"
       end if
       delay 0.5
     end repeat
-    if exists menu bar item "Sketch" of menu bar 1 then
-      delay 5
+
+    if not (exists menu bar item "Sketch" of menu bar 1) then
+      error "Arduino IDE Sketch menu did not become available."
+    end if
+
+    if chosenAction is "Verify/Compile" then
       click menu item "Verify/Compile" of menu "Sketch" of menu bar item "Sketch" of menu bar 1
-    else
-      keystroke "r" using command down
+    else if chosenAction is "Export Compiled Binary" then
+      click menu item "Export Compiled Binary" of menu "Sketch" of menu bar item "Sketch" of menu bar 1
+    else if chosenAction is "Upload Using Programmer" then
+      click menu item "Upload Using Programmer" of menu "Sketch" of menu bar item "Sketch" of menu bar 1
     end if
   end tell
 end tell

@@ -1087,13 +1087,16 @@ void drawSequencerOverlay() {
   hintLineOne[0] = '\0';
   hintLineTwo[0] = '\0';
 
-  if (sequencerOverlayMode != SequencerOverlayMode::StatusMessage) {
+  if (sequencerOverlayMode != SequencerOverlayMode::StatusMessage &&
+      sequencerOverlayMode != SequencerOverlayMode::AwaitingNote) {
     snprintf(stepLabel, sizeof(stepLabel), "Step %02d", sequencerSelectedStep + 1);
+    fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
+  } else if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
     fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
-    snprintf(headerLabel, sizeof(headerLabel), "Edit Note(s)");
+    snprintf(headerLabel, sizeof(headerLabel), "Edit Note(s) #%02d", sequencerSelectedStep + 1);
     snprintf(hintLineOne, sizeof(hintLineOne), "Length %u%%",
              static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]));
     snprintf(hintLineTwo, sizeof(hintLineTwo), "Blue key undoes");
@@ -1118,21 +1121,25 @@ void drawSequencerOverlay() {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x13_tf);
   u8g2.drawStr(20, 18, headerLabel);
+  int hintLineOneY = (stepLabel[0] != '\0') ? 54 : 40;
+  int hintLineTwoY = (stepLabel[0] != '\0') ? 68 : 54;
+  int noteLineOneY = (stepLabel[0] != '\0') ? 96 : 88;
+  int noteLineTwoY = (stepLabel[0] != '\0') ? 112 : 104;
   if (stepLabel[0] != '\0') {
     u8g2.drawStr(36, 36, stepLabel);
   }
   if (hintLineOne[0] != '\0') {
-    u8g2.drawStr(8, 54, hintLineOne);
+    u8g2.drawStr(8, hintLineOneY, hintLineOne);
   }
   if (hintLineTwo[0] != '\0') {
-    u8g2.drawStr(4, 68, hintLineTwo);
+    u8g2.drawStr(4, hintLineTwoY, hintLineTwo);
   }
   u8g2.setFont(u8g2_font_6x13_tf);
   if (noteLineOne[0] != '\0') {
-    u8g2.drawStr(12, 96, noteLineOne);
+    u8g2.drawStr(12, noteLineOneY, noteLineOne);
   }
   if (noteLineTwo[0] != '\0') {
-    u8g2.drawStr(12, 112, noteLineTwo);
+    u8g2.drawStr(12, noteLineTwoY, noteLineTwo);
   }
   u8g2.sendBuffer();
 }
