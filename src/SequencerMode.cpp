@@ -42,10 +42,12 @@ constexpr byte SEQUENCER_DIRECTION_RANDOM = 3;
 constexpr byte SEQUENCER_DIRECTION_BROWNIAN = 4;
 constexpr byte SEQUENCER_DIRECTION_DRUNK = 5;
 constexpr const char* SEQUENCER_STORAGE_PATH = "/sequence.hbseq";
+constexpr byte SEQUENCER_GATE_CHOICE_COUNT = 12;
+constexpr byte SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS = 4;
 
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
-byte sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {
+uint16_t sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {
   100, 100, 100, 100, 100, 100, 100, 100,
   100, 100, 100, 100, 100, 100, 100, 100
 };
@@ -55,7 +57,17 @@ enum class SequencerOverlayMode : uint8_t {
   AwaitingNote = 1,
   NoteAssigned = 2,
   StepCleared = 3,
-  StatusMessage = 4
+  StatusMessage = 4,
+  LengthEdit = 5
+};
+
+struct SequencerPlaybackGroup {
+  bool active = false;
+  byte midiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
+    SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
+  };
+  byte noteCount = 0;
+  uint64_t noteOffAt = 0;
 };
 
 int8_t sequencerSelectedStep = -1;
@@ -73,16 +85,12 @@ byte sequencerUndoMidiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
   SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
 };
 byte sequencerUndoNoteCount = 0;
-byte sequencerPreviewHeldNoteCounts[128] = {};
+byte sequencerAuditionHeldNoteCounts[128] = {};
+byte sequencerPlaybackHeldNoteCounts[128] = {};
 int8_t sequencerPlayingStep = -1;
-bool sequencerPlaybackNoteActive = false;
-byte sequencerPlaybackMidiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
-  SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
-};
-byte sequencerPlaybackNoteCount = 0;
+SequencerPlaybackGroup sequencerPlaybackGroups[SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS] = {};
 uint64_t sequencerNextStepAt = 0;
 uint64_t sequencerCurrentStepStartedAt = 0;
-uint64_t sequencerPlaybackNoteOffAt = 0;
 uint64_t sequencerConfirmPressedAt = 0;
 bool sequencerConfirmHeld = false;
 byte sequencerStepPlayCount = 16;
@@ -92,6 +100,7 @@ byte sequencerTempo = 120;
 byte sequencerTransportState = 0;
 bool sequencerDirty = false;
 bool sequencerStorageInitialized = false;
+uint16_t sequencerLengthPercentDisplay = 100;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 
@@ -99,6 +108,11 @@ const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
   "F#", "G", "G#", "A", "Bb", "B"
 };
+const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
+  0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 1000
+};
+
+byte sequencerGateChoiceIndex(uint16_t gatePercent);
 
 int8_t buttonIndexToSequencerStep(byte buttonIndex) {
   if (buttonIndex >= 1 && buttonIndex <= 8) {
@@ -118,6 +132,57 @@ int8_t sequencerStepToButtonIndex(byte stepIndex) {
     return static_cast<int8_t>(10 + (stepIndex - 8));
   }
   return -1;
+}
+
+bool handleSequencerRotaryTurnInternal(int8_t direction) {
+  if (sequencerSelectedStep < 0 || direction == 0) {
+    return false;
+  }
+
+  int8_t buttonIndex = sequencerStepToButtonIndex(static_cast<byte>(sequencerSelectedStep));
+  if (buttonIndex < 0 || !isBoardButtonPressed(static_cast<byte>(buttonIndex))) {
+    return false;
+  }
+
+  uint16_t currentGate = sequencerStepGatePercent[sequencerSelectedStep];
+  byte gateIndex = sequencerGateChoiceIndex(currentGate);
+  int nextIndex = static_cast<int>(gateIndex) + direction;
+  if (nextIndex < 0) {
+    nextIndex = 0;
+  } else if (nextIndex >= SEQUENCER_GATE_CHOICE_COUNT) {
+    nextIndex = SEQUENCER_GATE_CHOICE_COUNT - 1;
+  }
+
+  uint16_t newGate = sequencerGateChoices[nextIndex];
+  if (newGate == currentGate) {
+    return true;
+  }
+
+  sequencerStepGatePercent[sequencerSelectedStep] = newGate;
+  sequencerLengthPercentDisplay = newGate;
+  sequencerDirty = true;
+  sequencerOverlayMode = SequencerOverlayMode::LengthEdit;
+  sequencerOverlayUntil = runTime + SEQUENCER_NOTE_CONFIRM_MICROS;
+  sequencerOverlayDirty = true;
+  return true;
+}
+
+byte sequencerGateChoiceIndex(uint16_t gatePercent) {
+  for (byte i = 0; i < SEQUENCER_GATE_CHOICE_COUNT; i++) {
+    if (sequencerGateChoices[i] == gatePercent) {
+      return i;
+    }
+  }
+  byte nearestIndex = 0;
+  uint16_t nearestDistance = 65535;
+  for (byte i = 0; i < SEQUENCER_GATE_CHOICE_COUNT; i++) {
+    uint16_t distance = static_cast<uint16_t>(abs(static_cast<int>(sequencerGateChoices[i]) - static_cast<int>(gatePercent)));
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = i;
+    }
+  }
+  return nearestIndex;
 }
 
 void formatSequencerStepNote(char* out, size_t outSize, byte midiNote) {
@@ -241,6 +306,32 @@ uint64_t sequencerStepDurationMicros() {
   return 60000000ULL / static_cast<uint64_t>(tempo) / 4ULL;
 }
 
+void sendSequencerManagedNoteOn(byte midiNote, bool playbackNote) {
+  if (midiNote >= 128) {
+    return;
+  }
+  byte& heldCount = playbackNote ? sequencerPlaybackHeldNoteCounts[midiNote] : sequencerAuditionHeldNoteCounts[midiNote];
+  if (heldCount == 0 && sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
+    sendBoardPreviewMidiNote(midiNote, true);
+  }
+  if (heldCount < 255) {
+    heldCount++;
+  }
+}
+
+void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote) {
+  if (midiNote >= 128) {
+    return;
+  }
+  byte& heldCount = playbackNote ? sequencerPlaybackHeldNoteCounts[midiNote] : sequencerAuditionHeldNoteCounts[midiNote];
+  if (heldCount > 0) {
+    heldCount--;
+  }
+  if (sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
+    sendBoardPreviewMidiNote(midiNote, false);
+  }
+}
+
 byte sequencerActiveStepCount() {
   byte activeStepCount = sequencerStepPlayCount;
   if (activeStepCount < 1) {
@@ -317,17 +408,87 @@ int8_t nextSequencerStep(byte activeStepCount) {
 }
 
 void stopSequencerPlaybackNote() {
-  if (!sequencerPlaybackNoteActive) {
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+    if (!group.active) {
+      continue;
+    }
+    for (byte noteIndex = 0; noteIndex < group.noteCount; noteIndex++) {
+      if (group.midiNotes[noteIndex] < 128) {
+        sendSequencerManagedNoteOff(group.midiNotes[noteIndex], true);
+      }
+      group.midiNotes[noteIndex] = SEQUENCER_NO_NOTE;
+    }
+    group.noteCount = 0;
+    group.noteOffAt = 0;
+    group.active = false;
+  }
+}
+
+void serviceSequencerPlaybackGroups() {
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+    if (!group.active || runTime < group.noteOffAt) {
+      continue;
+    }
+    for (byte noteIndex = 0; noteIndex < group.noteCount; noteIndex++) {
+      if (group.midiNotes[noteIndex] < 128) {
+        sendSequencerManagedNoteOff(group.midiNotes[noteIndex], true);
+      }
+      group.midiNotes[noteIndex] = SEQUENCER_NO_NOTE;
+    }
+    group.noteCount = 0;
+    group.noteOffAt = 0;
+    group.active = false;
+  }
+}
+
+void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration) {
+  uint16_t gatePercent = sequencerStepGatePercent[stepIndex];
+  byte noteCount = sequencerStepNoteCount[stepIndex];
+  if (noteCount == 0 || gatePercent == 0) {
     return;
   }
-  for (byte i = 0; i < sequencerPlaybackNoteCount; i++) {
-    if (sequencerPlaybackMidiNotes[i] < 128) {
-      sendBoardPreviewMidiNote(sequencerPlaybackMidiNotes[i], false);
+
+  int freeGroupIndex = -1;
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    if (!sequencerPlaybackGroups[groupIndex].active) {
+      freeGroupIndex = groupIndex;
+      break;
     }
-    sequencerPlaybackMidiNotes[i] = SEQUENCER_NO_NOTE;
   }
-  sequencerPlaybackNoteCount = 0;
-  sequencerPlaybackNoteActive = false;
+  if (freeGroupIndex < 0) {
+    freeGroupIndex = 0;
+    for (byte groupIndex = 1; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+      if (sequencerPlaybackGroups[groupIndex].noteOffAt < sequencerPlaybackGroups[freeGroupIndex].noteOffAt) {
+        freeGroupIndex = groupIndex;
+      }
+    }
+    SequencerPlaybackGroup& oldestGroup = sequencerPlaybackGroups[freeGroupIndex];
+    for (byte noteIndex = 0; noteIndex < oldestGroup.noteCount; noteIndex++) {
+      if (oldestGroup.midiNotes[noteIndex] < 128) {
+        sendSequencerManagedNoteOff(oldestGroup.midiNotes[noteIndex], true);
+      }
+    }
+  }
+
+  SequencerPlaybackGroup& group = sequencerPlaybackGroups[freeGroupIndex];
+  group.active = true;
+  group.noteCount = 0;
+  uint64_t playbackStartedAt = runTime;
+  group.noteOffAt = playbackStartedAt + ((stepDuration * gatePercent) / 100ULL);
+  for (byte noteIndex = 0; noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
+    group.midiNotes[noteIndex] = SEQUENCER_NO_NOTE;
+  }
+
+  for (byte noteIndex = 0; noteIndex < noteCount && noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
+    byte midiNote = sequencerStepMidiNotes[stepIndex][noteIndex];
+    if (midiNote >= 128) {
+      continue;
+    }
+    sendSequencerManagedNoteOn(midiNote, true);
+    group.midiNotes[group.noteCount++] = midiNote;
+  }
 }
 
 void clearSelectedSequencerStep() {
@@ -348,7 +509,11 @@ void resetSequencerState() {
     clearSequencerNoteBuffer(sequencerStepMidiNotes[step], sequencerStepNoteCount[step]);
     sequencerStepGatePercent[step] = 100;
   }
-  memset(sequencerPreviewHeldNoteCounts, 0, sizeof(sequencerPreviewHeldNoteCounts));
+  memset(sequencerAuditionHeldNoteCounts, 0, sizeof(sequencerAuditionHeldNoteCounts));
+  memset(sequencerPlaybackHeldNoteCounts, 0, sizeof(sequencerPlaybackHeldNoteCounts));
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    sequencerPlaybackGroups[groupIndex] = SequencerPlaybackGroup{};
+  }
   clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
   clearSequencerNoteBuffer(sequencerUndoMidiNotes, sequencerUndoNoteCount);
   sequencerSelectedStep = -1;
@@ -361,7 +526,6 @@ void resetSequencerState() {
   sequencerConfirmPressedAt = 0;
   sequencerNextStepAt = 0;
   sequencerCurrentStepStartedAt = 0;
-  sequencerPlaybackNoteOffAt = 0;
   sequencerOverlayMode = SequencerOverlayMode::Hidden;
   sequencerOverlayVisible = false;
   sequencerOverlayDirty = false;
@@ -448,8 +612,8 @@ bool loadSequencerFromFlash() {
     } else if (key.startsWith("gate")) {
       int stepNumber = key.substring(4).toInt();
       int gateValue = value.toInt();
-      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && gateValue >= 0 && gateValue <= 100) {
-        sequencerStepGatePercent[stepNumber - 1] = static_cast<byte>(gateValue);
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && gateValue >= 0 && gateValue <= 1000) {
+        sequencerStepGatePercent[stepNumber - 1] = static_cast<uint16_t>(gateValue);
       }
     }
   }
@@ -533,13 +697,11 @@ void setSequencerTransportState(byte newState) {
     sequencerPingPongDelta = 1;
     sequencerNextStepAt = runTime;
     sequencerCurrentStepStartedAt = runTime;
-    sequencerPlaybackNoteOffAt = 0;
   } else {
     stopSequencerPlaybackNote();
     sequencerPlayingStep = -1;
     sequencerNextStepAt = 0;
     sequencerCurrentStepStartedAt = 0;
-    sequencerPlaybackNoteOffAt = 0;
   }
   menu.drawMenu();
 }
@@ -663,6 +825,10 @@ GEMItem menuItemSequencerFirmwareUpdate("Update Firmware", rebootToBootloader);
 
 }  // namespace
 
+bool handleSequencerRotaryTurn(int8_t direction) {
+  return handleSequencerRotaryTurnInternal(direction);
+}
+
 GEMPage menuPageSequencer("Sequencer");
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
@@ -686,12 +852,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
     byte releasedMidiNote = 0;
     if (getButtonMidiNoteForSequencer(buttonIndex, releasedMidiNote) && releasedMidiNote < 128) {
-      if (sequencerPreviewHeldNoteCounts[releasedMidiNote] > 0) {
-        sequencerPreviewHeldNoteCounts[releasedMidiNote]--;
-        if (sequencerPreviewHeldNoteCounts[releasedMidiNote] == 0) {
-          sendBoardPreviewMidiNote(releasedMidiNote, false);
-        }
-      }
+      sendSequencerManagedNoteOff(releasedMidiNote, false);
     }
     return;
   }
@@ -743,12 +904,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     sequencerDirty = true;
     sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
     if (midiNote < 128) {
-      if (sequencerPreviewHeldNoteCounts[midiNote] == 0) {
-        sendBoardPreviewMidiNote(midiNote, true);
-      }
-      if (sequencerPreviewHeldNoteCounts[midiNote] < 255) {
-        sequencerPreviewHeldNoteCounts[midiNote]++;
-      }
+      sendSequencerManagedNoteOn(midiNote, false);
     }
     sequencerOverlayDirty = true;
   }
@@ -797,10 +953,16 @@ void drawSequencerOverlay() {
   }
 
   if ((sequencerOverlayMode == SequencerOverlayMode::NoteAssigned ||
+       sequencerOverlayMode == SequencerOverlayMode::LengthEdit ||
        sequencerOverlayMode == SequencerOverlayMode::StatusMessage) &&
       runTime >= sequencerOverlayUntil) {
     if (sequencerOverlayMode == SequencerOverlayMode::NoteAssigned) {
       sequencerSelectedStep = -1;
+    } else if (sequencerOverlayMode == SequencerOverlayMode::LengthEdit && sequencerSelectedStep >= 0) {
+      sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+      sequencerOverlayVisible = false;
+      sequencerOverlayDirty = true;
+      return;
     }
     sequencerOverlayMode = SequencerOverlayMode::Hidden;
     sequencerOverlayVisible = false;
@@ -832,8 +994,13 @@ void drawSequencerOverlay() {
 
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
     snprintf(headerLabel, sizeof(headerLabel), "Edit Note(s)");
-    snprintf(hintLineOne, sizeof(hintLineOne), "Bottom 10 rows");
+    snprintf(hintLineOne, sizeof(hintLineOne), "Length %u%%",
+             static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]));
     snprintf(hintLineTwo, sizeof(hintLineTwo), "Blue key undoes");
+  } else if (sequencerOverlayMode == SequencerOverlayMode::LengthEdit) {
+    snprintf(headerLabel, sizeof(headerLabel), "Step Length");
+    snprintf(hintLineOne, sizeof(hintLineOne), "Length %u%%", static_cast<unsigned>(sequencerLengthPercentDisplay));
+    fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
   } else if (sequencerOverlayMode == SequencerOverlayMode::StepCleared) {
     snprintf(headerLabel, sizeof(headerLabel), "Note(s) Erased");
     snprintf(hintLineOne, sizeof(hintLineOne), "Press blue key");
@@ -909,12 +1076,10 @@ void updateSequencerTransport() {
     }
   }
 
+  serviceSequencerPlaybackGroups();
+
   if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
     return;
-  }
-
-  if (sequencerPlaybackNoteActive && runTime >= sequencerPlaybackNoteOffAt) {
-    stopSequencerPlaybackNote();
   }
 
   if (runTime < sequencerNextStepAt) {
@@ -932,19 +1097,5 @@ void updateSequencerTransport() {
     return;
   }
 
-  byte gatePercent = sequencerStepGatePercent[sequencerPlayingStep];
-  sequencerPlaybackNoteCount = 0;
-  for (byte i = 0; i < noteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    byte midiNote = sequencerStepMidiNotes[sequencerPlayingStep][i];
-    if (midiNote >= 128) {
-      continue;
-    }
-    sendBoardPreviewMidiNote(midiNote, true);
-    sequencerPlaybackMidiNotes[sequencerPlaybackNoteCount++] = midiNote;
-  }
-  if (sequencerPlaybackNoteCount == 0) {
-    return;
-  }
-  sequencerPlaybackNoteActive = true;
-  sequencerPlaybackNoteOffAt = sequencerCurrentStepStartedAt + ((stepDuration * gatePercent) / 100ULL);
+  startSequencerPlaybackGroup(static_cast<byte>(sequencerPlayingStep), stepDuration);
 }

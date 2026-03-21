@@ -12,6 +12,7 @@ extern byte sequencerConfirmPreviewSaturation;
 extern byte sequencerConfirmPreviewValue;
 
 bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote);
+bool isBoardButtonPressed(byte buttonIndex);
 bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut);
 uint32_t getSequencerTransportLedColor(bool running);
 uint32_t getSequencerConfirmLedColor();
@@ -25,4 +26,5 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed);
 void setupSequencerMenu();
 void drawSequencerOverlay();
 void applySequencerLedOverrides();
+bool handleSequencerRotaryTurn(int8_t direction);
 void updateSequencerTransport();

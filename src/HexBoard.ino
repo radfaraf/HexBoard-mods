@@ -1537,6 +1537,13 @@ bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote) {
   return true;
 }
 
+bool isBoardButtonPressed(byte buttonIndex) {
+  if (buttonIndex >= BTN_COUNT) {
+    return false;
+  }
+  return h[buttonIndex].btnState == BTN_STATE_NEWPRESS || h[buttonIndex].btnState == BTN_STATE_HELD;
+}
+
 bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut) {
   for (byte i = 0; i < LED_COUNT; i++) {
     if (h[i].isCmd || h[i].note != midiNote) {
@@ -7269,6 +7276,19 @@ void dealWithRotary() {
   }
 
   bool suppressClick = rotaryPanicSuppressClick;
+
+  if (!isKeyboardMode() && storeRotaryTurn != 0) {
+    int8_t direction = 0;
+    if (rotaryInvert == true) {
+      direction = (storeRotaryTurn == 8) ? 1 : -1;
+    } else {
+      direction = (storeRotaryTurn == 8) ? -1 : 1;
+    }
+    if (handleSequencerRotaryTurn(direction)) {
+      storeRotaryTurn = 0;
+      screenTime = 0;
+    }
+  }
 
   if (menu.readyForKey()) {
     if (justReleased) {
