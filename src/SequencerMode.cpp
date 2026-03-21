@@ -37,6 +37,8 @@ constexpr uint64_t SEQUENCER_SELECTED_ON_MICROS = 1000000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_OFF_MICROS = 200000ULL;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
+constexpr byte SEQUENCER_TAP_PREVIEW_OFF = 0;
+constexpr byte SEQUENCER_TAP_PREVIEW_ON = 1;
 constexpr byte SEQUENCER_DIRECTION_FORWARD = 0;
 constexpr byte SEQUENCER_DIRECTION_BACKWARD = 1;
 constexpr byte SEQUENCER_DIRECTION_PING_PONG = 2;
@@ -94,6 +96,7 @@ uint64_t sequencerCurrentStepStartedAt = 0;
 uint64_t sequencerConfirmPressedAt = 0;
 bool sequencerConfirmHeld = false;
 byte sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
+byte sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
 byte sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
 int8_t sequencerPingPongDelta = 1;
 byte sequencerTempo = 120;
@@ -565,6 +568,13 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration) {
   }
 }
 
+void previewSequencerStep(byte stepIndex) {
+  if (stepIndex >= SEQUENCER_STEP_COUNT) {
+    return;
+  }
+  startSequencerPlaybackGroup(stepIndex, sequencerStepDurationMicros());
+}
+
 void clearSelectedSequencerStep() {
   if (sequencerSelectedStep < 0) {
     return;
@@ -593,6 +603,7 @@ void resetSequencerState() {
   sequencerSelectedStep = -1;
   sequencerPlayingStep = -1;
   sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
+  sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
   sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
   sequencerPingPongDelta = 1;
   sequencerTempo = 120;
@@ -673,6 +684,9 @@ bool loadSequencerFromFlash() {
       if (stepCount >= 1 && stepCount <= SEQUENCER_STEP_COUNT) {
         sequencerStepPlayCount = static_cast<byte>(stepCount);
       }
+    } else if (key == "tapPreview") {
+      int tapPreviewValue = value.toInt();
+      sequencerTapPreview = (tapPreviewValue == SEQUENCER_TAP_PREVIEW_ON) ? SEQUENCER_TAP_PREVIEW_ON : SEQUENCER_TAP_PREVIEW_OFF;
     } else if (key == "direction") {
       int directionValue = value.toInt();
       if (directionValue >= SEQUENCER_DIRECTION_FORWARD && directionValue <= SEQUENCER_DIRECTION_DRUNK) {
@@ -713,6 +727,8 @@ bool saveSequencerToFlash() {
   f.println(sequencerTempo);
   f.print("steps=");
   f.println(sequencerStepPlayCount);
+  f.print("tapPreview=");
+  f.println(sequencerTapPreview);
   f.print("direction=");
   f.println(sequencerDirection);
 
@@ -799,6 +815,11 @@ void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
   sequencerDirty = true;
 }
 
+void sequencerTapPreviewMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  sequencerDirty = true;
+}
+
 void sequencerDirectionMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   sequencerPingPongDelta = 1;
@@ -870,6 +891,8 @@ GEMSpinner spinnerSequencerVal(spinnerBoundariesSequencerVal, GEM_LOOP);
 
 SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 } };
 GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
+SelectOptionByte optionByteSequencerTapPreview[] = { { "Off", SEQUENCER_TAP_PREVIEW_OFF }, { "On", SEQUENCER_TAP_PREVIEW_ON } };
+GEMSelect selectSequencerTapPreview(sizeof(optionByteSequencerTapPreview) / sizeof(SelectOptionByte), optionByteSequencerTapPreview);
 
 SelectOptionByte optionByteSequencerDirection[] = {
   { "Forward", SEQUENCER_DIRECTION_FORWARD },
@@ -890,6 +913,7 @@ GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
 GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
+GEMItem menuItemSequencerTapPreview("Tap Preview", sequencerTapPreview, selectSequencerTapPreview, sequencerTapPreviewMenuCallback);
 GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequencerDirection, sequencerDirectionMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerBtnHue("Btn Hue", sequencerConfirmHue, spinnerSequencerHue, sequencerConfirmHueMenuCallback);
@@ -964,6 +988,9 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
   int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
   if (stepIndex >= 0) {
+    if (sequencerTapPreview == SEQUENCER_TAP_PREVIEW_ON) {
+      previewSequencerStep(static_cast<byte>(stepIndex));
+    }
     if (sequencerSelectedStep == stepIndex) {
       sequencerSelectedStep = -1;
       hideSequencerOverlay();
@@ -1008,6 +1035,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerRevert);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
+  menuPageSequencer.addMenuItem(menuItemSequencerTapPreview);
   menuPageSequencer.addMenuItem(menuItemSequencerDirection);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
   menuPageSequencer.addMenuItem(menuItemSequencerBtnHue);
