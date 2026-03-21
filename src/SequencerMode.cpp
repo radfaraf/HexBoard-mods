@@ -1,5 +1,6 @@
 #include "SequencerMode.h"
 
+#include <Adafruit_NeoPixel.h>
 #include <cstdio>
 
 extern GEM_u8g2 menu;
@@ -7,6 +8,7 @@ extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
 extern uint64_t screenTime;
 extern uint64_t runTime;
+extern Adafruit_NeoPixel strip;
 
 namespace {
 constexpr byte SEQUENCER_STEP_COUNT = 16;
@@ -32,6 +34,8 @@ SequencerOverlayMode sequencerOverlayMode = SequencerOverlayMode::Hidden;
 uint64_t sequencerOverlayUntil = 0;
 bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
+int8_t sequencerPreviewButtonIndex = -1;
+byte sequencerPreviewMidiNote = SEQUENCER_DEFAULT_MIDI_NOTE;
 
 const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
@@ -44,6 +48,16 @@ int8_t buttonIndexToSequencerStep(byte buttonIndex) {
   }
   if (buttonIndex >= 10 && buttonIndex < 18) {
     return static_cast<int8_t>(8 + (buttonIndex - 10));
+  }
+  return -1;
+}
+
+int8_t sequencerStepToButtonIndex(byte stepIndex) {
+  if (stepIndex < 8) {
+    return static_cast<int8_t>(stepIndex + 1);
+  }
+  if (stepIndex < SEQUENCER_STEP_COUNT) {
+    return static_cast<int8_t>(10 + (stepIndex - 8));
   }
   return -1;
 }
@@ -75,6 +89,12 @@ GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, s
 GEMPage menuPageSequencer("Sequencer");
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
+  if (!pressed && sequencerPreviewButtonIndex == buttonIndex) {
+    sendBoardPreviewMidiNote(sequencerPreviewMidiNote, false);
+    sequencerPreviewButtonIndex = -1;
+    return;
+  }
+
   if (!pressed) {
     return;
   }
@@ -87,6 +107,10 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
   int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
   if (stepIndex >= 0) {
+    if (sequencerPreviewButtonIndex >= 0) {
+      sendBoardPreviewMidiNote(sequencerPreviewMidiNote, false);
+      sequencerPreviewButtonIndex = -1;
+    }
     sequencerSelectedStep = stepIndex;
     sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
     sequencerOverlayUntil = 0;
@@ -100,7 +124,13 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
   byte midiNote = 0;
   if (getButtonMidiNoteForSequencer(buttonIndex, midiNote)) {
+    if (sequencerPreviewButtonIndex >= 0) {
+      sendBoardPreviewMidiNote(sequencerPreviewMidiNote, false);
+    }
     sequencerStepMidiNote[sequencerSelectedStep] = midiNote;
+    sequencerPreviewButtonIndex = buttonIndex;
+    sequencerPreviewMidiNote = midiNote;
+    sendBoardPreviewMidiNote(midiNote, true);
     sequencerOverlayMode = SequencerOverlayMode::NoteAssigned;
     sequencerOverlayUntil = runTime + SEQUENCER_NOTE_CONFIRM_MICROS;
     sequencerOverlayDirty = true;
@@ -166,4 +196,19 @@ void drawSequencerOverlay() {
   u8g2.setFont(u8g2_font_logisoso24_tf);
   u8g2.drawStr(28, 92, noteLabel);
   u8g2.sendBuffer();
+}
+
+void applySequencerLedOverrides() {
+  for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
+    int8_t buttonIndex = sequencerStepToButtonIndex(step);
+    if (buttonIndex < 0) {
+      continue;
+    }
+
+    uint32_t colorCode = 0;
+    bool highlighted = (sequencerSelectedStep == step) && (sequencerOverlayMode != SequencerOverlayMode::Hidden);
+    if (getBoardLedColorForMidiNote(sequencerStepMidiNote[step], highlighted, colorCode)) {
+      strip.setPixelColor(buttonIndex, colorCode);
+    }
+  }
 }

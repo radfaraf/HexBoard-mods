@@ -1535,6 +1535,26 @@ bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote) {
   return true;
 }
 
+bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut) {
+  for (byte i = 0; i < LED_COUNT; i++) {
+    if (h[i].isCmd || h[i].note != midiNote) {
+      continue;
+    }
+
+    if (highlighted) {
+      colorOut = h[i].LEDcodePlay;
+    } else if (h[i].inScale) {
+      colorOut = h[i].LEDcodeRest;
+    } else if (scaleLock) {
+      colorOut = h[i].LEDcodeOff;
+    } else {
+      colorOut = h[i].LEDcodeDim;
+    }
+    return true;
+  }
+  return false;
+}
+
 void detectHardwareVersion() {
   constexpr byte hardwareFlagIndex = 140;
   const byte targetRow = hardwareFlagIndex / 10;
@@ -2024,6 +2044,9 @@ void lightUpLEDs() {
         strip.setPixelColor(i, applyNotePixelColor(i));
       }
     }
+    if (!isKeyboardMode()) {
+      applySequencerLedOverrides();
+    }
     resetVelocityLEDs();
     resetWheelLEDs();
   }
@@ -2138,6 +2161,21 @@ template <class F>
 inline void withMIDI(F&& f) {
   if (midiD & MIDID_USB) f(UMIDI);
   if (midiD & MIDID_SER) f(SMIDI);
+}
+
+void sendBoardPreviewMidiNote(byte midiNote, bool noteOn) {
+  if (midiNote >= 128) {
+    return;
+  }
+  byte targetChannel = defaultMidiChannel;
+  if (targetChannel < 1 || targetChannel > 16) {
+    targetChannel = 1;
+  }
+  if (noteOn) {
+    withMIDI([&](auto& M) { M.sendNoteOn(midiNote, 127, targetChannel); });
+  } else {
+    withMIDI([&](auto& M) { M.sendNoteOff(midiNote, 0, targetChannel); });
+  }
 }
 
 void setPitchBendRange(byte Ch, byte semitones) {
