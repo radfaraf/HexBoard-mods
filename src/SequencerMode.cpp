@@ -3,6 +3,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <cstdio>
 
+extern GEMItem menuItemUSBBootloader;
 extern GEM_u8g2 menu;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
@@ -199,6 +200,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
+  menuPageSequencer.addMenuItem(menuItemUSBBootloader);
 }
 
 void drawSequencerOverlay() {
