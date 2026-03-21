@@ -1520,6 +1520,21 @@ void setupGrid() {
   h[140].note = HARDWARE_V1_2;
 }
 
+bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote) {
+  if (buttonIndex >= LED_COUNT) {
+    return false;
+  }
+  byte row = buttonIndex / COLCOUNT;
+  if (row < 12 || row > 13) {
+    return false;
+  }
+  if (h[buttonIndex].isCmd || h[buttonIndex].note == UNUSED_NOTE) {
+    return false;
+  }
+  midiNote = h[buttonIndex].note;
+  return true;
+}
+
 void detectHardwareVersion() {
   constexpr byte hardwareFlagIndex = 140;
   const byte targetRow = hardwareFlagIndex / 10;

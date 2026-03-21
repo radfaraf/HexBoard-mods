@@ -6,20 +6,30 @@ extern GEM_u8g2 menu;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
 extern uint64_t screenTime;
+extern uint64_t runTime;
 
 namespace {
 constexpr byte SEQUENCER_STEP_COUNT = 16;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_DEFAULT_MIDI_NOTE = 60;  // C4
+constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
 
-bool sequencerStepHeld[SEQUENCER_STEP_COUNT] = { false };
 byte sequencerStepMidiNote[SEQUENCER_STEP_COUNT] = {
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE,
   SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE, SEQUENCER_DEFAULT_MIDI_NOTE
 };
+
+enum class SequencerOverlayMode : uint8_t {
+  Hidden = 0,
+  AwaitingNote = 1,
+  NoteAssigned = 2
+};
+
 int8_t sequencerSelectedStep = -1;
+SequencerOverlayMode sequencerOverlayMode = SequencerOverlayMode::Hidden;
+uint64_t sequencerOverlayUntil = 0;
 bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
 
@@ -36,15 +46,6 @@ int8_t buttonIndexToSequencerStep(byte buttonIndex) {
     return static_cast<int8_t>(8 + (buttonIndex - 10));
   }
   return -1;
-}
-
-byte firstHeldSequencerStep() {
-  for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
-    if (sequencerStepHeld[step]) {
-      return step;
-    }
-  }
-  return SEQUENCER_STEP_COUNT;
 }
 
 void formatSequencerStepNote(char* out, size_t outSize, byte midiNote) {
@@ -74,26 +75,36 @@ GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, s
 GEMPage menuPageSequencer("Sequencer");
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
-  int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
-  if (stepIndex < 0) {
+  if (!pressed) {
     return;
   }
 
-  sequencerStepHeld[stepIndex] = pressed;
   screenTime = 0;
   if (screenSaverOn) {
     screenSaverOn = false;
     u8g2.setContrast(SEQUENCER_OVERLAY_CONTRAST);
   }
 
-  if (pressed) {
+  int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
+  if (stepIndex >= 0) {
     sequencerSelectedStep = stepIndex;
-  } else if (sequencerSelectedStep == stepIndex) {
-    byte replacementStep = firstHeldSequencerStep();
-    sequencerSelectedStep = (replacementStep < SEQUENCER_STEP_COUNT) ? static_cast<int8_t>(replacementStep) : -1;
+    sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+    sequencerOverlayUntil = 0;
+    sequencerOverlayDirty = true;
+    return;
   }
 
-  sequencerOverlayDirty = true;
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+
+  byte midiNote = 0;
+  if (getButtonMidiNoteForSequencer(buttonIndex, midiNote)) {
+    sequencerStepMidiNote[sequencerSelectedStep] = midiNote;
+    sequencerOverlayMode = SequencerOverlayMode::NoteAssigned;
+    sequencerOverlayUntil = runTime + SEQUENCER_NOTE_CONFIRM_MICROS;
+    sequencerOverlayDirty = true;
+  }
 }
 
 void setupSequencerMenu() {
@@ -103,7 +114,7 @@ void setupSequencerMenu() {
 }
 
 void drawSequencerOverlay() {
-  if (sequencerSelectedStep < 0) {
+  if (sequencerOverlayMode == SequencerOverlayMode::Hidden || sequencerSelectedStep < 0) {
     if (sequencerOverlayVisible) {
       sequencerOverlayVisible = false;
       sequencerOverlayDirty = false;
@@ -116,22 +127,42 @@ void drawSequencerOverlay() {
     return;
   }
 
+  if (sequencerOverlayMode == SequencerOverlayMode::NoteAssigned && runTime >= sequencerOverlayUntil) {
+    sequencerSelectedStep = -1;
+    sequencerOverlayMode = SequencerOverlayMode::Hidden;
+    sequencerOverlayVisible = false;
+    sequencerOverlayDirty = false;
+    menu.drawMenu();
+    return;
+  }
+
   if (!sequencerOverlayDirty && sequencerOverlayVisible) {
     return;
   }
 
+  char headerLabel[20];
   char stepLabel[16];
   char noteLabel[12];
   snprintf(stepLabel, sizeof(stepLabel), "Step %02d", sequencerSelectedStep + 1);
   formatSequencerStepNote(noteLabel, sizeof(noteLabel), sequencerStepMidiNote[sequencerSelectedStep]);
+
+  if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
+    snprintf(headerLabel, sizeof(headerLabel), "Pick Note");
+  } else {
+    snprintf(headerLabel, sizeof(headerLabel), "Note Assigned");
+  }
 
   sequencerOverlayVisible = true;
   sequencerOverlayDirty = false;
 
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x13_tf);
-  u8g2.drawStr(18, 18, "Sequencer Note");
+  u8g2.drawStr(20, 18, headerLabel);
   u8g2.drawStr(36, 36, stepLabel);
+  if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
+    u8g2.drawStr(18, 54, "Bottom rows");
+    u8g2.drawStr(20, 68, "choose pitch");
+  }
   u8g2.setFont(u8g2_font_logisoso24_tf);
   u8g2.drawStr(28, 92, noteLabel);
   u8g2.sendBuffer();

@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <GEM_u8g2.h>
 
+bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote);
 void enterKeyboardMode();
 
 extern GEMPage menuPageSequencer;
