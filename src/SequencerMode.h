@@ -7,4 +7,6 @@ void enterKeyboardMode();
 
 extern GEMPage menuPageSequencer;
 
+void handleSequencerButtonEvent(byte buttonIndex, bool pressed);
 void setupSequencerMenu();
+void drawSequencerOverlay();

@@ -7101,6 +7101,7 @@ void readHexes() {
     switch (h[i].btnState) {
       case BTN_STATE_NEWPRESS:  // just pressed
         if (!isKeyboardMode()) {
+          handleSequencerButtonEvent(i, true);
           break;
         } else if (delegatedControl) {
           delegatedButtonEvent(i, true);
@@ -7113,6 +7114,7 @@ void readHexes() {
         break;
       case BTN_STATE_RELEASED:  // just released
         if (!isKeyboardMode()) {
+          handleSequencerButtonEvent(i, false);
           break;
         } else if (delegatedControl) {
           delegatedButtonEvent(i, false);
@@ -7275,6 +7277,7 @@ void loop() {        // run on first core
   animateLEDs();     // deal with animations
   lightUpLEDs();     // refresh LEDs
   dealWithRotary();  // deal with menu
+  drawSequencerOverlay();
   drawPlayedNotesOverlay(); // shows the notes of keys pressed on the screen
   checkAndAutoSave();// save settings
 }
