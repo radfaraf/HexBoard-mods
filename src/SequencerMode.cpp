@@ -28,7 +28,7 @@ constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
 constexpr byte SEQUENCER_OVERVIEW_BUTTON_INDEX = 18;
 constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
 constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
-constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 6;
+constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
@@ -1110,7 +1110,7 @@ void drawSequencerOverlay() {
         break;
       }
       fillOverviewStepLine(stepIndex, lineBuffer[row], sizeof(lineBuffer[row]));
-      int y = 16 + (row * 18);
+      int y = 3 + (row * 15);
       u8g2.drawStr(4, y, lineBuffer[row]);
     }
 
