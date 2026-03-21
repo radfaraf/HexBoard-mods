@@ -78,9 +78,6 @@
 #define RAM_FUNC(name) name // do nothing on other architectures
 #endif
 #include <cmath>
-
-// Forward-declare board mode so Arduino's auto-generated prototypes can reference it.
-enum class BoardMode : uint8_t;
 #include <numeric>     // need that GCD function, son
 #include <string>      // standard C++ library string classes (use "std::string" to invoke it); these do not cause the memory corruption that Arduino::String does.
 #include <limits>
@@ -88,6 +85,7 @@ enum class BoardMode : uint8_t;
 #include <vector>
 #include "pico/time.h" // Allows me to set delays that don't disable interrupts
 #include "hardware/structs/sio.h" // For fast GPIO read/write
+#include "SequencerMode.h"
 
 enum class EnvelopeCommand : uint8_t;
 
@@ -5225,7 +5223,6 @@ void drawPlayedNotesOverlay() {
 void enterKeyboardMode();
 void enterSequencerMode();
 void switchBoardMode(BoardMode newMode);
-void sequencerPlaceholderMenuCallback(GEMCallbackData callbackData);
 
 GEMPage menuPageMain("Keyboard");
 GEMItem menuItemEnterSequencer("Sequencer", enterSequencerMode);
@@ -5249,8 +5246,6 @@ GEMPage menuPageSave("Save Profiles", menuPageMain);
 GEMItem menuGotoSave("Save", menuPageSave);
 GEMPage menuPageLoad("Load Profiles", menuPageMain);
 GEMItem menuGotoLoad("Load", menuPageLoad);
-GEMPage menuPageSequencer("Sequencer");
-GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMPage menuPageReboot("Ready to flash firmware!");
 
 // --------------------------------------------------------
@@ -5562,13 +5557,6 @@ const GEMSpinnerBoundariesByte spinnerBoundariesBPM = { 1, 255, 1 };
 GEMSpinner spinnerJustIntonationBPM(spinnerBoundariesBPM, GEM_LOOP);
 GEMSpinner spinnerSynthBPM(spinnerBoundariesBPM, GEM_LOOP);
 GEMSpinner spinnerBPM_MultiplierOfJI(spinnerBoundariesBPM, GEM_LOOP);
-
-byte sequencerTempo = 120;
-byte sequencerTransportState = 0;
-SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 } };
-GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
-GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerPlaceholderMenuCallback);
-GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSynthBPM, sequencerPlaceholderMenuCallback);
 
 ///////////////////////////////////////////////////////////////////
 
@@ -6645,10 +6633,6 @@ void menuHome() {
   menu.drawMenu();
 }
 
-void sequencerPlaceholderMenuCallback(GEMCallbackData callbackData) {
-  (void)callbackData;
-}
-
 void switchBoardMode(BoardMode newMode) {
   if (activeBoardMode != newMode) {
     activeBoardMode = newMode;
@@ -6986,9 +6970,7 @@ void setupMenu() {
   menuPageAdvanced.addMenuItem(menuItemDelegated);
   menuPageAdvanced.addMenuItem(menuItemDebug);
 
-  menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
-  menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
-  menuPageSequencer.addMenuItem(menuItemSequencerTempo);
+  setupSequencerMenu();
 }
 void setupGFX() {
   u8g2.begin();                      // Menu and graphics setup
