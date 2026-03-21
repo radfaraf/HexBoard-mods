@@ -34,7 +34,7 @@ SequencerOverlayMode sequencerOverlayMode = SequencerOverlayMode::Hidden;
 uint64_t sequencerOverlayUntil = 0;
 bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
-int8_t sequencerPreviewButtonIndex = -1;
+int16_t sequencerPreviewButtonIndex = -1;
 byte sequencerPreviewMidiNote = SEQUENCER_DEFAULT_MIDI_NOTE;
 
 const char* sequencerChromaticNames[12] = {
