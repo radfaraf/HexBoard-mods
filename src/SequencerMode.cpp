@@ -138,6 +138,7 @@ char sequencerBrowserEntryTitles[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT][SEQUENCE
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 void refreshSequencerBrowserMenu(bool resetSelection = true);
+void sequencerBrowserNewFolderCallback();
 
 const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
@@ -432,6 +433,22 @@ bool generateSequencerAutoPath(const char* directoryPath, char* out, size_t outS
   char candidateName[32];
   for (unsigned index = 1; index <= 9999; index++) {
     snprintf(candidateName, sizeof(candidateName), "Sequence %03u%s", index, SEQUENCER_FILE_EXTENSION);
+    joinSequencerPath(directoryPath, candidateName, out, outSize);
+    if (!LittleFS.exists(out)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool generateSequencerAutoFolderPath(const char* directoryPath, char* out, size_t outSize) {
+  if (!fileSystemExists || !ensureSequencerStorageRoot()) {
+    return false;
+  }
+
+  char candidateName[32];
+  for (unsigned index = 1; index <= 9999; index++) {
+    snprintf(candidateName, sizeof(candidateName), "Folder %03u", index);
     joinSequencerPath(directoryPath, candidateName, out, outSize);
     if (!LittleFS.exists(out)) {
       return true;
@@ -1348,6 +1365,24 @@ void sequencerBrowserSaveHereCallback() {
   }
 }
 
+void sequencerBrowserNewFolderCallback() {
+  char folderPath[SEQUENCER_MAX_PATH_LENGTH];
+  if (!generateSequencerAutoFolderPath(sequencerBrowserPath, folderPath, sizeof(folderPath))) {
+    showSequencerStatusMessage("Error Folder", "No folder name");
+    return;
+  }
+
+  if (!LittleFS.mkdir(folderPath)) {
+    showSequencerStatusMessage("Error Folder", "Create failed");
+    return;
+  }
+
+  copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), folderPath);
+  sequencerBrowserOffset = 0;
+  refreshSequencerBrowserMenu();
+  showSequencerPathStatusMessage("Folder Created", folderPath);
+}
+
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo) {
   snprintf(sequencerStatusLineOne, sizeof(sequencerStatusLineOne), "%s", lineOne);
   snprintf(sequencerStatusLineTwo, sizeof(sequencerStatusLineTwo), "%s", lineTwo);
@@ -1450,6 +1485,7 @@ GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequen
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerFirmwareUpdate("Update Firmware", rebootToBootloader);
 GEMItem menuItemSequencerBrowserSaveHere("Save Here", sequencerBrowserSaveHereCallback);
+GEMItem menuItemSequencerBrowserNewFolder("New Folder", sequencerBrowserNewFolderCallback);
 GEMItem menuItemSequencerBrowserUp("..", sequencerBrowserUpCallback);
 GEMItem menuItemSequencerBrowserEntry0("", sequencerBrowserEntryCallback, 0);
 GEMItem menuItemSequencerBrowserEntry1("", sequencerBrowserEntryCallback, 1);
@@ -1481,6 +1517,7 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 
   bool showSaveHere = (sequencerBrowserMode == SequencerBrowserMode::SaveNew);
   menuItemSequencerBrowserSaveHere.hide(!showSaveHere);
+  menuItemSequencerBrowserNewFolder.hide(!showSaveHere);
   menuItemSequencerBrowserUp.hide(sequencerPathIsRoot(sequencerBrowserPath));
 
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
@@ -1627,6 +1664,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
 
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserSaveHere);
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserNewFolder);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserUp);
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
     menuPageSequencerBrowser.addMenuItem(*sequencerBrowserEntryItems[i]);
@@ -1635,6 +1673,7 @@ void setupSequencerMenu() {
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserNext);
 
   menuItemSequencerBrowserSaveHere.hide();
+  menuItemSequencerBrowserNewFolder.hide();
   menuItemSequencerBrowserUp.hide();
   menuItemSequencerBrowserPrev.hide();
   menuItemSequencerBrowserNext.hide();
