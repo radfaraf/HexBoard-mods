@@ -6,10 +6,6 @@
 extern int sequencerConfirmHue;
 extern byte sequencerConfirmSaturation;
 extern byte sequencerConfirmValue;
-extern bool sequencerConfirmPreviewActive;
-extern int sequencerConfirmPreviewHue;
-extern byte sequencerConfirmPreviewSaturation;
-extern byte sequencerConfirmPreviewValue;
 
 bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote);
 bool isBoardButtonPressed(byte buttonIndex);
