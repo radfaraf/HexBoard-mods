@@ -2,6 +2,7 @@
 
 #include <Adafruit_NeoPixel.h>
 #include <LittleFS.h>
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 
@@ -9,6 +10,8 @@ extern void rebootToBootloader();
 extern bool fileSystemExists;
 extern GEM_u8g2 menu;
 extern GEMPage menuPageSynthSequencer;
+extern GEMPage menuPageSequencer;
+extern GEMPage menuPageSequencerBrowser;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
 extern uint64_t screenTime;
@@ -44,9 +47,16 @@ constexpr byte SEQUENCER_DIRECTION_PING_PONG = 2;
 constexpr byte SEQUENCER_DIRECTION_RANDOM = 3;
 constexpr byte SEQUENCER_DIRECTION_BROWNIAN = 4;
 constexpr byte SEQUENCER_DIRECTION_DRUNK = 5;
-constexpr const char* SEQUENCER_STORAGE_PATH = "/sequence.hbseq";
+constexpr const char* SEQUENCER_STORAGE_ROOT = "/Sequences";
+constexpr const char* SEQUENCER_CURRENT_PATH_FILE = "/Sequences/.current";
+constexpr const char* SEQUENCER_LEGACY_STORAGE_PATH = "/sequence.hbseq";
+constexpr const char* SEQUENCER_FILE_EXTENSION = ".hbseq";
 constexpr byte SEQUENCER_GATE_CHOICE_COUNT = 12;
 constexpr byte SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS = 16;
+constexpr byte SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT = 6;
+constexpr byte SEQUENCER_BROWSER_MAX_ENTRIES = 24;
+constexpr size_t SEQUENCER_MAX_PATH_LENGTH = 255;
+constexpr size_t SEQUENCER_BROWSER_TITLE_LENGTH = 28;
 
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
@@ -69,6 +79,18 @@ struct SequencerPlaybackGroup {
   };
   byte noteCount = 0;
   uint64_t noteOffAt = 0;
+};
+
+enum class SequencerBrowserMode : uint8_t {
+  None = 0,
+  Load = 1,
+  SaveNew = 2
+};
+
+struct SequencerBrowserEntry {
+  bool isDirectory = false;
+  char title[SEQUENCER_BROWSER_TITLE_LENGTH] = "";
+  char path[SEQUENCER_MAX_PATH_LENGTH] = "";
 };
 
 int8_t sequencerSelectedStep = -1;
@@ -105,8 +127,17 @@ bool sequencerDirty = false;
 bool sequencerStorageInitialized = false;
 uint16_t sequencerLengthPercentDisplay = 100;
 byte sequencerOverviewPage = 0;
+char sequencerCurrentSequencePath[SEQUENCER_MAX_PATH_LENGTH] = "";
+char sequencerBrowserPath[SEQUENCER_MAX_PATH_LENGTH] = "";
+SequencerBrowserMode sequencerBrowserMode = SequencerBrowserMode::None;
+SequencerBrowserEntry sequencerBrowserEntries[SEQUENCER_BROWSER_MAX_ENTRIES] = {};
+byte sequencerBrowserEntryCount = 0;
+byte sequencerBrowserOffset = 0;
+char sequencerBrowserPageTitle[20] = "Sequences";
+char sequencerBrowserEntryTitles[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT][SEQUENCER_BROWSER_TITLE_LENGTH] = {};
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
+void refreshSequencerBrowserMenu(bool resetSelection = true);
 
 const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
@@ -117,6 +148,297 @@ const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
 };
 
 byte sequencerGateChoiceIndex(uint16_t gatePercent);
+void sortSequencerBrowserEntriesRange(byte startIndex, byte endExclusive);
+
+void copySequencerString(char* destination, size_t destinationSize, const char* source) {
+  if (destinationSize == 0) {
+    return;
+  }
+  snprintf(destination, destinationSize, "%s", (source != nullptr) ? source : "");
+}
+
+bool sequencerPathIsRoot(const char* path) {
+  return path != nullptr && strcmp(path, SEQUENCER_STORAGE_ROOT) == 0;
+}
+
+bool sequencerPathHasExtension(const char* path, const char* extension) {
+  if (path == nullptr || extension == nullptr) {
+    return false;
+  }
+  size_t pathLength = strlen(path);
+  size_t extensionLength = strlen(extension);
+  return pathLength > extensionLength && strcmp(path + pathLength - extensionLength, extension) == 0;
+}
+
+bool isSequencerFilePath(const char* path) {
+  return sequencerPathHasExtension(path, SEQUENCER_FILE_EXTENSION);
+}
+
+void joinSequencerPath(const char* directoryPath, const char* leafName, char* out, size_t outSize) {
+  if (outSize == 0) {
+    return;
+  }
+  if (directoryPath == nullptr || directoryPath[0] == '\0') {
+    snprintf(out, outSize, "%s", (leafName != nullptr) ? leafName : "");
+    return;
+  }
+  if (leafName == nullptr || leafName[0] == '\0') {
+    snprintf(out, outSize, "%s", directoryPath);
+    return;
+  }
+  if (strcmp(directoryPath, "/") == 0) {
+    snprintf(out, outSize, "/%s", leafName);
+    return;
+  }
+  snprintf(out, outSize, "%s/%s", directoryPath, leafName);
+}
+
+void extractSequencerLeafName(const char* path, char* out, size_t outSize) {
+  if (outSize == 0) {
+    return;
+  }
+  if (path == nullptr || path[0] == '\0') {
+    out[0] = '\0';
+    return;
+  }
+  const char* slash = strrchr(path, '/');
+  const char* leaf = (slash != nullptr) ? slash + 1 : path;
+  snprintf(out, outSize, "%s", leaf);
+}
+
+void stripSequencerFileExtension(char* text) {
+  if (text == nullptr) {
+    return;
+  }
+  size_t textLength = strlen(text);
+  size_t extensionLength = strlen(SEQUENCER_FILE_EXTENSION);
+  if (textLength > extensionLength &&
+      strcmp(text + textLength - extensionLength, SEQUENCER_FILE_EXTENSION) == 0) {
+    text[textLength - extensionLength] = '\0';
+  }
+}
+
+void extractSequencerDisplayName(const char* path, char* out, size_t outSize) {
+  extractSequencerLeafName(path, out, outSize);
+  stripSequencerFileExtension(out);
+}
+
+void extractSequencerParentPath(const char* path, char* out, size_t outSize) {
+  if (outSize == 0) {
+    return;
+  }
+  if (path == nullptr || path[0] == '\0' || sequencerPathIsRoot(path)) {
+    copySequencerString(out, outSize, SEQUENCER_STORAGE_ROOT);
+    return;
+  }
+
+  char working[SEQUENCER_MAX_PATH_LENGTH];
+  copySequencerString(working, sizeof(working), path);
+  char* slash = strrchr(working, '/');
+  if (slash == nullptr || slash == working) {
+    copySequencerString(out, outSize, SEQUENCER_STORAGE_ROOT);
+    return;
+  }
+  *slash = '\0';
+  copySequencerString(out, outSize, working);
+}
+
+void extractSequencerDirectoryPath(const char* filePath, char* out, size_t outSize) {
+  if (filePath == nullptr || filePath[0] == '\0') {
+    copySequencerString(out, outSize, SEQUENCER_STORAGE_ROOT);
+    return;
+  }
+  if (!isSequencerFilePath(filePath)) {
+    copySequencerString(out, outSize, filePath);
+    return;
+  }
+  extractSequencerParentPath(filePath, out, outSize);
+}
+
+int compareSequencerStringsIgnoreCase(const char* left, const char* right) {
+  while (*left != '\0' && *right != '\0') {
+    int leftValue = tolower(static_cast<unsigned char>(*left));
+    int rightValue = tolower(static_cast<unsigned char>(*right));
+    if (leftValue != rightValue) {
+      return leftValue - rightValue;
+    }
+    left++;
+    right++;
+  }
+  return tolower(static_cast<unsigned char>(*left)) - tolower(static_cast<unsigned char>(*right));
+}
+
+void formatSequencerBrowserEntryTitle(const char* path, bool isDirectory, char* out, size_t outSize) {
+  char displayName[SEQUENCER_BROWSER_TITLE_LENGTH];
+  extractSequencerDisplayName(path, displayName, sizeof(displayName));
+  if (displayName[0] == '\0') {
+    copySequencerString(displayName, sizeof(displayName), isDirectory ? "Folder" : "Sequence");
+  }
+  snprintf(out, outSize, "%s%s", displayName, isDirectory ? "/" : "");
+}
+
+void clearSequencerBrowserEntries() {
+  sequencerBrowserEntryCount = 0;
+  for (byte index = 0; index < SEQUENCER_BROWSER_MAX_ENTRIES; index++) {
+    sequencerBrowserEntries[index] = SequencerBrowserEntry{};
+  }
+}
+
+bool ensureSequencerStorageRoot() {
+  if (!fileSystemExists) {
+    return false;
+  }
+  if (LittleFS.exists(SEQUENCER_STORAGE_ROOT)) {
+    return true;
+  }
+  return LittleFS.mkdir(SEQUENCER_STORAGE_ROOT);
+}
+
+bool rememberSequencerCurrentPath() {
+  if (!fileSystemExists || !ensureSequencerStorageRoot()) {
+    return false;
+  }
+  if (sequencerCurrentSequencePath[0] == '\0') {
+    if (LittleFS.exists(SEQUENCER_CURRENT_PATH_FILE)) {
+      LittleFS.remove(SEQUENCER_CURRENT_PATH_FILE);
+    }
+    return true;
+  }
+
+  File f = LittleFS.open(SEQUENCER_CURRENT_PATH_FILE, "w");
+  if (!f) {
+    return false;
+  }
+  f.println(sequencerCurrentSequencePath);
+  f.close();
+  return true;
+}
+
+void setSequencerCurrentPath(const char* path) {
+  copySequencerString(sequencerCurrentSequencePath, sizeof(sequencerCurrentSequencePath), path);
+  rememberSequencerCurrentPath();
+}
+
+bool loadRememberedSequencerCurrentPath() {
+  sequencerCurrentSequencePath[0] = '\0';
+  if (!fileSystemExists || !LittleFS.exists(SEQUENCER_CURRENT_PATH_FILE)) {
+    return false;
+  }
+
+  File f = LittleFS.open(SEQUENCER_CURRENT_PATH_FILE, "r");
+  if (!f) {
+    return false;
+  }
+
+  String path = f.readStringUntil('\n');
+  f.close();
+  path.trim();
+  if (path.length() == 0 || !path.startsWith(SEQUENCER_STORAGE_ROOT) || !isSequencerFilePath(path.c_str())) {
+    return false;
+  }
+
+  copySequencerString(sequencerCurrentSequencePath, sizeof(sequencerCurrentSequencePath), path.c_str());
+  return true;
+}
+
+bool addSequencerBrowserEntry(const char* path, bool isDirectory) {
+  if (sequencerBrowserEntryCount >= SEQUENCER_BROWSER_MAX_ENTRIES) {
+    return false;
+  }
+  SequencerBrowserEntry& entry = sequencerBrowserEntries[sequencerBrowserEntryCount++];
+  entry.isDirectory = isDirectory;
+  copySequencerString(entry.path, sizeof(entry.path), path);
+  formatSequencerBrowserEntryTitle(path, isDirectory, entry.title, sizeof(entry.title));
+  return true;
+}
+
+void sortSequencerBrowserEntries() {
+  if (sequencerBrowserEntryCount < 2) {
+    return;
+  }
+  sortSequencerBrowserEntriesRange(0, sequencerBrowserEntryCount);
+}
+
+void sortSequencerBrowserEntriesRange(byte startIndex, byte endExclusive) {
+  if (endExclusive <= startIndex + 1) {
+    return;
+  }
+  for (byte i = startIndex; i + 1 < endExclusive; i++) {
+    for (byte j = static_cast<byte>(i + 1); j < endExclusive; j++) {
+      if (compareSequencerStringsIgnoreCase(sequencerBrowserEntries[j].title, sequencerBrowserEntries[i].title) < 0) {
+        SequencerBrowserEntry temp = sequencerBrowserEntries[i];
+        sequencerBrowserEntries[i] = sequencerBrowserEntries[j];
+        sequencerBrowserEntries[j] = temp;
+      }
+    }
+  }
+}
+
+void scanSequencerBrowserEntries(bool includeDirectories, bool includeFiles) {
+  Dir dir = LittleFS.openDir(sequencerBrowserPath);
+  while (dir.next() && sequencerBrowserEntryCount < SEQUENCER_BROWSER_MAX_ENTRIES) {
+    String fileName = dir.fileName();
+    if (fileName.length() == 0 || fileName.startsWith(".")) {
+      continue;
+    }
+
+    if (dir.isDirectory()) {
+      if (!includeDirectories) {
+        continue;
+      }
+      char childPath[SEQUENCER_MAX_PATH_LENGTH];
+      joinSequencerPath(sequencerBrowserPath, fileName.c_str(), childPath, sizeof(childPath));
+      addSequencerBrowserEntry(childPath, true);
+    } else if (includeFiles && isSequencerFilePath(fileName.c_str())) {
+      char childPath[SEQUENCER_MAX_PATH_LENGTH];
+      joinSequencerPath(sequencerBrowserPath, fileName.c_str(), childPath, sizeof(childPath));
+      addSequencerBrowserEntry(childPath, false);
+    }
+  }
+}
+
+void rebuildSequencerBrowserEntries() {
+  clearSequencerBrowserEntries();
+  if (!fileSystemExists || !ensureSequencerStorageRoot()) {
+    return;
+  }
+
+  if (sequencerBrowserPath[0] == '\0' || !LittleFS.exists(sequencerBrowserPath)) {
+    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), SEQUENCER_STORAGE_ROOT);
+  }
+
+  scanSequencerBrowserEntries(true, false);
+  sortSequencerBrowserEntriesRange(0, sequencerBrowserEntryCount);
+  if (sequencerBrowserMode == SequencerBrowserMode::Load) {
+    byte directoryCount = sequencerBrowserEntryCount;
+    scanSequencerBrowserEntries(false, true);
+    sortSequencerBrowserEntriesRange(directoryCount, sequencerBrowserEntryCount);
+  }
+
+  if (sequencerBrowserEntryCount == 0) {
+    sequencerBrowserOffset = 0;
+  } else if (sequencerBrowserOffset >= sequencerBrowserEntryCount) {
+    sequencerBrowserOffset =
+      static_cast<byte>(((sequencerBrowserEntryCount - 1) / SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) *
+                        SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT);
+  }
+}
+
+bool generateSequencerAutoPath(const char* directoryPath, char* out, size_t outSize) {
+  if (!fileSystemExists || !ensureSequencerStorageRoot()) {
+    return false;
+  }
+
+  char candidateName[32];
+  for (unsigned index = 1; index <= 9999; index++) {
+    snprintf(candidateName, sizeof(candidateName), "Sequence %03u%s", index, SEQUENCER_FILE_EXTENSION);
+    joinSequencerPath(directoryPath, candidateName, out, outSize);
+    if (!LittleFS.exists(out)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 int8_t buttonIndexToSequencerStep(byte buttonIndex) {
   if (buttonIndex >= 1 && buttonIndex <= 8) {
@@ -657,7 +979,7 @@ bool loadSequencerFromFlash() {
     return false;
   }
 
-  File f = LittleFS.open(SEQUENCER_STORAGE_PATH, "r");
+  File f = LittleFS.open(SEQUENCER_LEGACY_STORAGE_PATH, "r");
   if (!f) {
     sequencerDirty = false;
     return false;
@@ -723,12 +1045,91 @@ bool loadSequencerFromFlash() {
   return sawFormat;
 }
 
-bool saveSequencerToFlash() {
-  if (!fileSystemExists) {
+bool loadSequencerFromPath(const char* path) {
+  resetSequencerState();
+  if (!fileSystemExists || path == nullptr || path[0] == '\0') {
+    sequencerDirty = false;
     return false;
   }
 
-  File f = LittleFS.open(SEQUENCER_STORAGE_PATH, "w");
+  File f = LittleFS.open(path, "r");
+  if (!f) {
+    sequencerDirty = false;
+    return false;
+  }
+
+  bool sawFormat = false;
+  while (f.available()) {
+    String line = f.readStringUntil('\n');
+    line.trim();
+    if (line.length() == 0 || line.startsWith("#")) {
+      continue;
+    }
+
+    int equalsIndex = line.indexOf('=');
+    if (equalsIndex < 0) {
+      continue;
+    }
+
+    String key = line.substring(0, equalsIndex);
+    String value = line.substring(equalsIndex + 1);
+    key.trim();
+    value.trim();
+
+    if (key == "format") {
+      sawFormat = (value == "HBSEQ");
+    } else if (key == "tempo") {
+      int tempoValue = value.toInt();
+      if (tempoValue >= 1 && tempoValue <= 255) {
+        sequencerTempo = static_cast<byte>(tempoValue);
+      }
+    } else if (key == "steps") {
+      int stepCount = value.toInt();
+      if (stepCount >= 1 && stepCount <= SEQUENCER_STEP_COUNT) {
+        sequencerStepPlayCount = static_cast<byte>(stepCount);
+      }
+    } else if (key == "tapPreview") {
+      int tapPreviewValue = value.toInt();
+      sequencerTapPreview = (tapPreviewValue == SEQUENCER_TAP_PREVIEW_ON) ? SEQUENCER_TAP_PREVIEW_ON : SEQUENCER_TAP_PREVIEW_OFF;
+    } else if (key == "playType") {
+      int playTypeValue = value.toInt();
+      sequencerPlayType = (playTypeValue == SEQUENCER_PLAY_TYPE_OB_SYNTH) ? SEQUENCER_PLAY_TYPE_OB_SYNTH : SEQUENCER_PLAY_TYPE_MIDI;
+    } else if (key == "direction") {
+      int directionValue = value.toInt();
+      if (directionValue >= SEQUENCER_DIRECTION_FORWARD && directionValue <= SEQUENCER_DIRECTION_DRUNK) {
+        sequencerDirection = static_cast<byte>(directionValue);
+      }
+    } else if (key.startsWith("step")) {
+      int stepNumber = key.substring(4).toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT) {
+        parseSequencerStepNotes(static_cast<byte>(stepNumber - 1), value);
+      }
+    } else if (key.startsWith("gate")) {
+      int stepNumber = key.substring(4).toInt();
+      int gateValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && gateValue >= 0 && gateValue <= 1000) {
+        sequencerStepGatePercent[stepNumber - 1] = static_cast<uint16_t>(gateValue);
+      }
+    }
+  }
+
+  f.close();
+  sequencerDirty = false;
+  return sawFormat;
+}
+
+bool saveSequencerToPath(const char* path) {
+  if (!fileSystemExists || path == nullptr || path[0] == '\0' || !ensureSequencerStorageRoot()) {
+    return false;
+  }
+
+  char tempPath[SEQUENCER_MAX_PATH_LENGTH];
+  snprintf(tempPath, sizeof(tempPath), "%s.tmp", path);
+  if (LittleFS.exists(tempPath)) {
+    LittleFS.remove(tempPath);
+  }
+
+  File f = LittleFS.open(tempPath, "w");
   if (!f) {
     return false;
   }
@@ -764,23 +1165,186 @@ bool saveSequencerToFlash() {
   }
 
   f.close();
+  if (LittleFS.exists(path)) {
+    LittleFS.remove(path);
+  }
+  if (!LittleFS.rename(tempPath, path)) {
+    LittleFS.remove(tempPath);
+    return false;
+  }
   sequencerDirty = false;
   return true;
 }
 
+bool saveSequencerToCurrentPath() {
+  if (!fileSystemExists || !ensureSequencerStorageRoot()) {
+    return false;
+  }
+
+  char targetPath[SEQUENCER_MAX_PATH_LENGTH];
+  if (sequencerCurrentSequencePath[0] == '\0') {
+    if (!generateSequencerAutoPath(SEQUENCER_STORAGE_ROOT, targetPath, sizeof(targetPath))) {
+      return false;
+    }
+  } else {
+    copySequencerString(targetPath, sizeof(targetPath), sequencerCurrentSequencePath);
+  }
+
+  if (!saveSequencerToPath(targetPath)) {
+    return false;
+  }
+
+  setSequencerCurrentPath(targetPath);
+  return true;
+}
+
+bool saveSequencerAsNewInDirectory(const char* directoryPath, char* savedPath, size_t savedPathSize) {
+  if (savedPathSize == 0 || !fileSystemExists || !ensureSequencerStorageRoot()) {
+    return false;
+  }
+
+  char targetPath[SEQUENCER_MAX_PATH_LENGTH];
+  if (!generateSequencerAutoPath(directoryPath, targetPath, sizeof(targetPath))) {
+    return false;
+  }
+  if (!saveSequencerToPath(targetPath)) {
+    return false;
+  }
+
+  setSequencerCurrentPath(targetPath);
+  copySequencerString(savedPath, savedPathSize, targetPath);
+  return true;
+}
+
+bool loadSequencerAtStartup() {
+  resetSequencerState();
+  if (!fileSystemExists || !ensureSequencerStorageRoot()) {
+    sequencerDirty = false;
+    return false;
+  }
+
+  if (loadRememberedSequencerCurrentPath() && sequencerCurrentSequencePath[0] != '\0') {
+    if (loadSequencerFromPath(sequencerCurrentSequencePath)) {
+      return true;
+    }
+    sequencerCurrentSequencePath[0] = '\0';
+    rememberSequencerCurrentPath();
+  }
+
+  return loadSequencerFromFlash();
+}
+
+void showSequencerPathStatusMessage(const char* lineOne, const char* path) {
+  char displayName[24];
+  extractSequencerDisplayName(path, displayName, sizeof(displayName));
+  if (displayName[0] == '\0') {
+    copySequencerString(displayName, sizeof(displayName), "Sequence");
+  }
+  showSequencerStatusMessage(lineOne, displayName);
+}
+
 void saveSequencerMenuCallback() {
-  if (saveSequencerToFlash()) {
-    showSequencerStatusMessage("Sequence Saved", "Flash write OK");
+  if (saveSequencerToCurrentPath()) {
+    showSequencerPathStatusMessage("Saved", sequencerCurrentSequencePath);
   } else {
     showSequencerStatusMessage("Error Saving", "Flash write failed");
   }
 }
 
 void revertSequencerMenuCallback() {
-  if (loadSequencerFromFlash()) {
-    showSequencerStatusMessage("Reverted", "Loaded saved file");
+  if (sequencerCurrentSequencePath[0] != '\0' && loadSequencerFromPath(sequencerCurrentSequencePath)) {
+    showSequencerPathStatusMessage("Reverted", sequencerCurrentSequencePath);
+  } else if (LittleFS.exists(SEQUENCER_LEGACY_STORAGE_PATH) && loadSequencerFromFlash()) {
+    showSequencerStatusMessage("Reverted", "Legacy sequence");
   } else {
-    showSequencerStatusMessage("Error Reverting", "Load failed");
+    resetSequencerState();
+    sequencerDirty = false;
+    showSequencerStatusMessage("Reverted", "Blank sequence");
+  }
+}
+
+void openSequencerBrowser(SequencerBrowserMode browserMode) {
+  sequencerBrowserMode = browserMode;
+  sequencerBrowserOffset = 0;
+  if (sequencerCurrentSequencePath[0] != '\0') {
+    extractSequencerDirectoryPath(sequencerCurrentSequencePath, sequencerBrowserPath, sizeof(sequencerBrowserPath));
+  } else {
+    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), SEQUENCER_STORAGE_ROOT);
+  }
+  refreshSequencerBrowserMenu();
+}
+
+void openSequencerLoadBrowser() {
+  openSequencerBrowser(SequencerBrowserMode::Load);
+}
+
+void openSequencerSaveNewBrowser() {
+  openSequencerBrowser(SequencerBrowserMode::SaveNew);
+}
+
+void sequencerBrowserUpCallback() {
+  extractSequencerParentPath(sequencerBrowserPath, sequencerBrowserPath, sizeof(sequencerBrowserPath));
+  sequencerBrowserOffset = 0;
+  refreshSequencerBrowserMenu();
+}
+
+void sequencerBrowserPrevPageCallback() {
+  if (sequencerBrowserOffset >= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) {
+    sequencerBrowserOffset -= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
+  } else {
+    sequencerBrowserOffset = 0;
+  }
+  refreshSequencerBrowserMenu(false);
+}
+
+void sequencerBrowserNextPageCallback() {
+  if (sequencerBrowserOffset + SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT < sequencerBrowserEntryCount) {
+    sequencerBrowserOffset += SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
+  }
+  refreshSequencerBrowserMenu(false);
+}
+
+void sequencerBrowserEntryCallback(GEMCallbackData callbackData) {
+  int entryIndex = callbackData.valInt;
+  if (entryIndex < 0 || entryIndex >= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) {
+    return;
+  }
+
+  byte actualIndex = static_cast<byte>(sequencerBrowserOffset + entryIndex);
+  if (actualIndex >= sequencerBrowserEntryCount) {
+    return;
+  }
+
+  SequencerBrowserEntry& entry = sequencerBrowserEntries[actualIndex];
+  if (entry.isDirectory) {
+    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), entry.path);
+    sequencerBrowserOffset = 0;
+    refreshSequencerBrowserMenu();
+    return;
+  }
+
+  if (sequencerBrowserMode == SequencerBrowserMode::Load && loadSequencerFromPath(entry.path)) {
+    setSequencerCurrentPath(entry.path);
+    menu.setMenuPageCurrent(menuPageSequencer);
+    menu.drawMenu();
+    showSequencerPathStatusMessage("Loaded", entry.path);
+  } else {
+    menu.setMenuPageCurrent(menuPageSequencer);
+    menu.drawMenu();
+    showSequencerStatusMessage("Error Loading", "Read failed");
+  }
+}
+
+void sequencerBrowserSaveHereCallback() {
+  char savedPath[SEQUENCER_MAX_PATH_LENGTH];
+  if (saveSequencerAsNewInDirectory(sequencerBrowserPath, savedPath, sizeof(savedPath))) {
+    menu.setMenuPageCurrent(menuPageSequencer);
+    menu.drawMenu();
+    showSequencerPathStatusMessage("Saved New", savedPath);
+  } else {
+    menu.setMenuPageCurrent(menuPageSequencer);
+    menu.drawMenu();
+    showSequencerStatusMessage("Error Saving", "Save New failed");
   }
 }
 
@@ -875,6 +1439,8 @@ GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
 GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
+GEMItem menuItemSequencerSaveNew("Save New", openSequencerSaveNewBrowser);
+GEMItem menuItemSequencerLoad("Load", openSequencerLoadBrowser);
 GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
@@ -883,6 +1449,60 @@ GEMItem menuItemSequencerPlayType("Play Type", sequencerPlayType, selectSequence
 GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequencerDirection, sequencerDirectionMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerFirmwareUpdate("Update Firmware", rebootToBootloader);
+GEMItem menuItemSequencerBrowserSaveHere("Save Here", sequencerBrowserSaveHereCallback);
+GEMItem menuItemSequencerBrowserUp("..", sequencerBrowserUpCallback);
+GEMItem menuItemSequencerBrowserEntry0("", sequencerBrowserEntryCallback, 0);
+GEMItem menuItemSequencerBrowserEntry1("", sequencerBrowserEntryCallback, 1);
+GEMItem menuItemSequencerBrowserEntry2("", sequencerBrowserEntryCallback, 2);
+GEMItem menuItemSequencerBrowserEntry3("", sequencerBrowserEntryCallback, 3);
+GEMItem menuItemSequencerBrowserEntry4("", sequencerBrowserEntryCallback, 4);
+GEMItem menuItemSequencerBrowserEntry5("", sequencerBrowserEntryCallback, 5);
+GEMItem menuItemSequencerBrowserPrev("Prev", sequencerBrowserPrevPageCallback);
+GEMItem menuItemSequencerBrowserNext("Next", sequencerBrowserNextPageCallback);
+GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
+  &menuItemSequencerBrowserEntry0,
+  &menuItemSequencerBrowserEntry1,
+  &menuItemSequencerBrowserEntry2,
+  &menuItemSequencerBrowserEntry3,
+  &menuItemSequencerBrowserEntry4,
+  &menuItemSequencerBrowserEntry5
+};
+
+void refreshSequencerBrowserMenu(bool resetSelection) {
+  rebuildSequencerBrowserEntries();
+
+  if (sequencerBrowserMode == SequencerBrowserMode::SaveNew) {
+    copySequencerString(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Save New");
+  } else {
+    copySequencerString(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Load");
+  }
+
+  menuPageSequencerBrowser.setTitle(sequencerBrowserPageTitle);
+
+  bool showSaveHere = (sequencerBrowserMode == SequencerBrowserMode::SaveNew);
+  menuItemSequencerBrowserSaveHere.hide(!showSaveHere);
+  menuItemSequencerBrowserUp.hide(sequencerPathIsRoot(sequencerBrowserPath));
+
+  for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
+    GEMItem* item = sequencerBrowserEntryItems[i];
+    byte actualIndex = static_cast<byte>(sequencerBrowserOffset + i);
+    if (actualIndex < sequencerBrowserEntryCount) {
+      copySequencerString(sequencerBrowserEntryTitles[i], sizeof(sequencerBrowserEntryTitles[i]), sequencerBrowserEntries[actualIndex].title);
+      item->setTitle(sequencerBrowserEntryTitles[i]).show();
+    } else {
+      item->hide();
+    }
+  }
+
+  menuItemSequencerBrowserPrev.hide(sequencerBrowserOffset == 0);
+  menuItemSequencerBrowserNext.hide(sequencerBrowserOffset + SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT >= sequencerBrowserEntryCount);
+
+  if (resetSelection) {
+    menuPageSequencerBrowser.setCurrentMenuItemIndex(0);
+  }
+  menu.setMenuPageCurrent(menuPageSequencerBrowser);
+  menu.drawMenu();
+}
 
 }  // namespace
 
@@ -891,6 +1511,7 @@ bool handleSequencerRotaryTurn(int8_t direction) {
 }
 
 GEMPage menuPageSequencer("Sequencer");
+GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (!pressed) {
@@ -985,13 +1606,17 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
 void setupSequencerMenu() {
   if (!sequencerStorageInitialized) {
-    loadSequencerFromFlash();
+    ensureSequencerStorageRoot();
+    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), SEQUENCER_STORAGE_ROOT);
+    loadSequencerAtStartup();
     sequencerStorageInitialized = true;
   }
 
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
   menuPageSequencer.addMenuItem(menuGotoSynthFromSequencer);
   menuPageSequencer.addMenuItem(menuItemSequencerSave);
+  menuPageSequencer.addMenuItem(menuItemSequencerSaveNew);
+  menuPageSequencer.addMenuItem(menuItemSequencerLoad);
   menuPageSequencer.addMenuItem(menuItemSequencerRevert);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
@@ -1000,6 +1625,22 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerTapPreview);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayType);
   menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
+
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserSaveHere);
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserUp);
+  for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
+    menuPageSequencerBrowser.addMenuItem(*sequencerBrowserEntryItems[i]);
+  }
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserPrev);
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserNext);
+
+  menuItemSequencerBrowserSaveHere.hide();
+  menuItemSequencerBrowserUp.hide();
+  menuItemSequencerBrowserPrev.hide();
+  menuItemSequencerBrowserNext.hide();
+  for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
+    sequencerBrowserEntryItems[i]->hide();
+  }
 }
 
 void drawSequencerOverlay() {
