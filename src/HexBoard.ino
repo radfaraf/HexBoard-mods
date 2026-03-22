@@ -5258,6 +5258,7 @@ GEM_u8g2 menu(
   MENU_ITEM_HEIGHT, MENU_PAGE_SCREEN_TOP_OFFSET, MENU_VALUES_LEFT_OFFSET);
 bool screenSaverOn = 0;
 bool audioMenuItemInserted = false;
+bool audioMenuItemInsertedSequencer = false;
 uint64_t screenTime = 0;                         // GFX timer to count if screensaver should go on
 const uint64_t screenSaverTimeout = (1u << 25);  // 2^25 microseconds ~ 33 seconds
 
@@ -5409,6 +5410,7 @@ GEMPage menuPageColors("Color Options", menuPageMain);
 GEMItem menuGotoColors("Color Options", menuPageColors);
 GEMPage menuPageSynth("Synth Options", menuPageMain);
 GEMItem menuGotoSynth("Synth Options", menuPageSynth);
+GEMPage menuPageSynthSequencer("Synth Options", menuPageSequencer);
 GEMPage menuPageMIDI("MIDI Options", menuPageMain);
 GEMItem menuGotoMIDI("MIDI Options", menuPageMIDI);
 GEMPage menuPageControl("Control Wheel", menuPageMain);
@@ -5709,6 +5711,8 @@ PersistentCallbackInfo callbackInfoPlayback = {
 };
 GEMItem menuItemPlayback("Synth Mode", playbackMode, selectPlayback, universalSaveCallback,
                          reinterpret_cast<void*>(&callbackInfoPlayback));
+GEMItem menuItemPlaybackSequencer("Synth Mode", playbackMode, selectPlayback, universalSaveCallback,
+                                  reinterpret_cast<void*>(&callbackInfoPlayback));
 
 // Hardware V1.2-only
 SelectOptionByte optionByteAudioD[] = {
@@ -5723,6 +5727,8 @@ PersistentCallbackInfo callbackInfoAudioDest = {
 };
 GEMItem menuItemAudioD("SynthOutput", audioD, selectAudioD, universalSaveCallback,
                        reinterpret_cast<void*>(&callbackInfoAudioDest));
+GEMItem menuItemAudioDSequencer("SynthOutput", audioD, selectAudioD, universalSaveCallback,
+                                reinterpret_cast<void*>(&callbackInfoAudioDest));
 
 ////////////////////////////////////////////////////////////////
 
@@ -6543,6 +6549,8 @@ PersistentCallbackInfo callbackInfoWaveform = {
 };
 GEMItem menuItemWaveform("Waveform", currWave, selectWaveform, universalSaveCallback,
                          reinterpret_cast<void*>(&callbackInfoWaveform));
+GEMItem menuItemWaveformSequencer("Waveform", currWave, selectWaveform, universalSaveCallback,
+                                  reinterpret_cast<void*>(&callbackInfoWaveform));
 void previewWaveform(GEMPreviewCallbackData previewData) {
   currWave = previewData.previewValByte;
   resetSynthFreqs();
@@ -6556,6 +6564,8 @@ PersistentCallbackInfo callbackInfoSynthBPM = {
 };
 GEMItem menuItemSynthBPM("Arp BPM", synthBPM, spinnerSynthBPM, universalSaveCallback,
                          reinterpret_cast<void*>(&callbackInfoSynthBPM));
+GEMItem menuItemSynthBPMSequencer("Arp BPM", synthBPM, spinnerSynthBPM, universalSaveCallback,
+                                  reinterpret_cast<void*>(&callbackInfoSynthBPM));
 void previewSynthBPM(GEMPreviewCallbackData previewData) {
   synthBPM = previewData.previewValByte;
   updateArpeggiatorTiming();
@@ -6581,6 +6591,8 @@ PersistentCallbackInfo callbackInfoArpSpeed = {
 };
 GEMItem menuItemArpSpeed("Arp Speed", arpeggiatorDivision, selectArpSpeed, universalSaveCallback,
                          reinterpret_cast<void*>(&callbackInfoArpSpeed));
+GEMItem menuItemArpSpeedSequencer("Arp Speed", arpeggiatorDivision, selectArpSpeed, universalSaveCallback,
+                                  reinterpret_cast<void*>(&callbackInfoArpSpeed));
 void previewArpSpeed(GEMPreviewCallbackData previewData) {
   arpeggiatorDivision = previewData.previewValByte;
   updateArpeggiatorTiming();
@@ -6639,24 +6651,32 @@ PersistentCallbackInfo callbackInfoEnvelopeRelease = {
 
 GEMItem menuItemEnvelopeAttack("Attack", envelopeAttackIndex, selectEnvelopeAttack, universalSaveCallback,
                                reinterpret_cast<void*>(&callbackInfoEnvelopeAttack));
+GEMItem menuItemEnvelopeAttackSequencer("Attack", envelopeAttackIndex, selectEnvelopeAttack, universalSaveCallback,
+                                        reinterpret_cast<void*>(&callbackInfoEnvelopeAttack));
 void previewEnvelopeAttack(GEMPreviewCallbackData previewData) {
   envelopeAttackIndex = previewData.previewValByte;
   updateEnvelopeParamsFromSettings();
 }
 GEMItem menuItemEnvelopeDecay("Decay", envelopeDecayIndex, selectEnvelopeDecay, universalSaveCallback,
                               reinterpret_cast<void*>(&callbackInfoEnvelopeDecay));
+GEMItem menuItemEnvelopeDecaySequencer("Decay", envelopeDecayIndex, selectEnvelopeDecay, universalSaveCallback,
+                                       reinterpret_cast<void*>(&callbackInfoEnvelopeDecay));
 void previewEnvelopeDecay(GEMPreviewCallbackData previewData) {
   envelopeDecayIndex = previewData.previewValByte;
   updateEnvelopeParamsFromSettings();
 }
 GEMItem menuItemEnvelopeSustain("Sustain", envelopeSustainLevel, selectEnvelopeSustain, universalSaveCallback,
                                 reinterpret_cast<void*>(&callbackInfoEnvelopeSustain));
+GEMItem menuItemEnvelopeSustainSequencer("Sustain", envelopeSustainLevel, selectEnvelopeSustain, universalSaveCallback,
+                                         reinterpret_cast<void*>(&callbackInfoEnvelopeSustain));
 void previewEnvelopeSustain(GEMPreviewCallbackData previewData) {
   envelopeSustainLevel = previewData.previewValByte;
   updateEnvelopeParamsFromSettings();
 }
 GEMItem menuItemEnvelopeRelease("Release", envelopeReleaseIndex, selectEnvelopeRelease, universalSaveCallback,
                                 reinterpret_cast<void*>(&callbackInfoEnvelopeRelease));
+GEMItem menuItemEnvelopeReleaseSequencer("Release", envelopeReleaseIndex, selectEnvelopeRelease, universalSaveCallback,
+                                         reinterpret_cast<void*>(&callbackInfoEnvelopeRelease));
 void previewEnvelopeRelease(GEMPreviewCallbackData previewData) {
   envelopeReleaseIndex = previewData.previewValByte;
   updateEnvelopeParamsFromSettings();
@@ -7088,21 +7108,36 @@ void setupMenu() {
   menuItemDimLedLevel.setPreviewCallback(previewDimLedLevel);
   menuPageMain.addMenuItem(menuGotoSynth);
   menuPageSynth.addMenuItem(menuItemPlayback);
+  menuPageSynthSequencer.addMenuItem(menuItemPlaybackSequencer);
   // menuItemAudioD added here for hardware V1.2
   menuPageSynth.addMenuItem(menuItemWaveform);
   menuItemWaveform.setPreviewCallback(previewWaveform);
+  menuPageSynthSequencer.addMenuItem(menuItemWaveformSequencer);
+  menuItemWaveformSequencer.setPreviewCallback(previewWaveform);
   menuPageSynth.addMenuItem(menuItemEnvelopeAttack);
   menuItemEnvelopeAttack.setPreviewCallback(previewEnvelopeAttack);
+  menuPageSynthSequencer.addMenuItem(menuItemEnvelopeAttackSequencer);
+  menuItemEnvelopeAttackSequencer.setPreviewCallback(previewEnvelopeAttack);
   menuPageSynth.addMenuItem(menuItemEnvelopeDecay);
   menuItemEnvelopeDecay.setPreviewCallback(previewEnvelopeDecay);
+  menuPageSynthSequencer.addMenuItem(menuItemEnvelopeDecaySequencer);
+  menuItemEnvelopeDecaySequencer.setPreviewCallback(previewEnvelopeDecay);
   menuPageSynth.addMenuItem(menuItemEnvelopeSustain);
   menuItemEnvelopeSustain.setPreviewCallback(previewEnvelopeSustain);
+  menuPageSynthSequencer.addMenuItem(menuItemEnvelopeSustainSequencer);
+  menuItemEnvelopeSustainSequencer.setPreviewCallback(previewEnvelopeSustain);
   menuPageSynth.addMenuItem(menuItemEnvelopeRelease);
   menuItemEnvelopeRelease.setPreviewCallback(previewEnvelopeRelease);
+  menuPageSynthSequencer.addMenuItem(menuItemEnvelopeReleaseSequencer);
+  menuItemEnvelopeReleaseSequencer.setPreviewCallback(previewEnvelopeRelease);
   menuPageSynth.addMenuItem(menuItemArpSpeed);
   menuItemArpSpeed.setPreviewCallback(previewArpSpeed);
+  menuPageSynthSequencer.addMenuItem(menuItemArpSpeedSequencer);
+  menuItemArpSpeedSequencer.setPreviewCallback(previewArpSpeed);
   menuPageSynth.addMenuItem(menuItemSynthBPM);
   menuItemSynthBPM.setPreviewCallback(previewSynthBPM);
+  menuPageSynthSequencer.addMenuItem(menuItemSynthBPMSequencer);
+  menuItemSynthBPMSequencer.setPreviewCallback(previewSynthBPM);
   menuPageMain.addMenuItem(menuGotoMIDI);
   menuPageMIDI.addMenuItem(menuItemSelectMIDIChannel);
   menuPageMIDI.addMenuItem(menuItemSelectMPEMode);
@@ -7407,6 +7442,10 @@ void setupHardware() {
     if (!audioMenuItemInserted) {
       menuPageSynth.addMenuItem(menuItemAudioD, 2);
       audioMenuItemInserted = true;
+    }
+    if (!audioMenuItemInsertedSequencer) {
+      menuPageSynthSequencer.addMenuItem(menuItemAudioDSequencer, 2);
+      audioMenuItemInsertedSequencer = true;
     }
   }
 }

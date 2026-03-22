@@ -8,6 +8,7 @@
 extern void rebootToBootloader();
 extern bool fileSystemExists;
 extern GEM_u8g2 menu;
+extern GEMPage menuPageSynthSequencer;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
 extern uint64_t screenTime;
@@ -933,6 +934,7 @@ SelectOptionByte optionByteSequencerDirection[] = {
 GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof(SelectOptionByte), optionByteSequencerDirection);
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
+GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
 GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
 GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
@@ -1056,6 +1058,7 @@ void setupSequencerMenu() {
   menuItemSequencerBtnVal.setPreviewCallback(previewSequencerConfirmVal);
 
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
+  menuPageSequencer.addMenuItem(menuGotoSynthFromSequencer);
   menuPageSequencer.addMenuItem(menuItemSequencerSave);
   menuPageSequencer.addMenuItem(menuItemSequencerRevert);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
