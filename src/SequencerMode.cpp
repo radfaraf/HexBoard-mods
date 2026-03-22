@@ -39,6 +39,8 @@ constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
 constexpr byte SEQUENCER_TAP_PREVIEW_OFF = 0;
 constexpr byte SEQUENCER_TAP_PREVIEW_ON = 1;
+constexpr byte SEQUENCER_PLAY_TYPE_MIDI = 0;
+constexpr byte SEQUENCER_PLAY_TYPE_OB_SYNTH = 1;
 constexpr byte SEQUENCER_DIRECTION_FORWARD = 0;
 constexpr byte SEQUENCER_DIRECTION_BACKWARD = 1;
 constexpr byte SEQUENCER_DIRECTION_PING_PONG = 2;
@@ -97,6 +99,7 @@ uint64_t sequencerConfirmPressedAt = 0;
 bool sequencerConfirmHeld = false;
 byte sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
 byte sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
+byte sequencerPlayType = SEQUENCER_PLAY_TYPE_MIDI;
 byte sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
 int8_t sequencerPingPongDelta = 1;
 byte sequencerTempo = 120;
@@ -389,7 +392,11 @@ void sendSequencerManagedNoteOn(byte midiNote, bool playbackNote) {
   }
   byte& heldCount = playbackNote ? sequencerPlaybackHeldNoteCounts[midiNote] : sequencerAuditionHeldNoteCounts[midiNote];
   if (heldCount == 0 && sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
-    sendBoardPreviewMidiNote(midiNote, true);
+    if (sequencerPlayType == SEQUENCER_PLAY_TYPE_OB_SYNTH) {
+      sendBoardPreviewSynthNote(midiNote, true);
+    } else {
+      sendBoardPreviewMidiNote(midiNote, true);
+    }
   }
   if (heldCount < 255) {
     heldCount++;
@@ -405,7 +412,11 @@ void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote) {
     heldCount--;
   }
   if (sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
-    sendBoardPreviewMidiNote(midiNote, false);
+    if (sequencerPlayType == SEQUENCER_PLAY_TYPE_OB_SYNTH) {
+      sendBoardPreviewSynthNote(midiNote, false);
+    } else {
+      sendBoardPreviewMidiNote(midiNote, false);
+    }
   }
 }
 
@@ -604,6 +615,7 @@ void resetSequencerState() {
   sequencerPlayingStep = -1;
   sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
   sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
+  sequencerPlayType = SEQUENCER_PLAY_TYPE_MIDI;
   sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
   sequencerPingPongDelta = 1;
   sequencerTempo = 120;
@@ -687,6 +699,9 @@ bool loadSequencerFromFlash() {
     } else if (key == "tapPreview") {
       int tapPreviewValue = value.toInt();
       sequencerTapPreview = (tapPreviewValue == SEQUENCER_TAP_PREVIEW_ON) ? SEQUENCER_TAP_PREVIEW_ON : SEQUENCER_TAP_PREVIEW_OFF;
+    } else if (key == "playType") {
+      int playTypeValue = value.toInt();
+      sequencerPlayType = (playTypeValue == SEQUENCER_PLAY_TYPE_OB_SYNTH) ? SEQUENCER_PLAY_TYPE_OB_SYNTH : SEQUENCER_PLAY_TYPE_MIDI;
     } else if (key == "direction") {
       int directionValue = value.toInt();
       if (directionValue >= SEQUENCER_DIRECTION_FORWARD && directionValue <= SEQUENCER_DIRECTION_DRUNK) {
@@ -729,6 +744,8 @@ bool saveSequencerToFlash() {
   f.println(sequencerStepPlayCount);
   f.print("tapPreview=");
   f.println(sequencerTapPreview);
+  f.print("playType=");
+  f.println(sequencerPlayType);
   f.print("direction=");
   f.println(sequencerDirection);
 
@@ -820,6 +837,11 @@ void sequencerTapPreviewMenuCallback(GEMCallbackData callbackData) {
   sequencerDirty = true;
 }
 
+void sequencerPlayTypeMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  sequencerDirty = true;
+}
+
 void sequencerDirectionMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   sequencerPingPongDelta = 1;
@@ -893,6 +915,8 @@ SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 }
 GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
 SelectOptionByte optionByteSequencerTapPreview[] = { { "Off", SEQUENCER_TAP_PREVIEW_OFF }, { "On", SEQUENCER_TAP_PREVIEW_ON } };
 GEMSelect selectSequencerTapPreview(sizeof(optionByteSequencerTapPreview) / sizeof(SelectOptionByte), optionByteSequencerTapPreview);
+SelectOptionByte optionByteSequencerPlayType[] = { { "MIDI", SEQUENCER_PLAY_TYPE_MIDI }, { "OB Synth", SEQUENCER_PLAY_TYPE_OB_SYNTH } };
+GEMSelect selectSequencerPlayType(sizeof(optionByteSequencerPlayType) / sizeof(SelectOptionByte), optionByteSequencerPlayType);
 
 SelectOptionByte optionByteSequencerDirection[] = {
   { "Forward", SEQUENCER_DIRECTION_FORWARD },
@@ -914,6 +938,7 @@ GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerTapPreview("Tap Preview", sequencerTapPreview, selectSequencerTapPreview, sequencerTapPreviewMenuCallback);
+GEMItem menuItemSequencerPlayType("Play Type", sequencerPlayType, selectSequencerPlayType, sequencerPlayTypeMenuCallback);
 GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequencerDirection, sequencerDirectionMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerBtnHue("Btn Hue", sequencerConfirmHue, spinnerSequencerHue, sequencerConfirmHueMenuCallback);
@@ -1036,6 +1061,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
   menuPageSequencer.addMenuItem(menuItemSequencerTapPreview);
+  menuPageSequencer.addMenuItem(menuItemSequencerPlayType);
   menuPageSequencer.addMenuItem(menuItemSequencerDirection);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
   menuPageSequencer.addMenuItem(menuItemSequencerBtnHue);

@@ -104,6 +104,9 @@ class colorDef;
 void updateEnvelopeParamsFromSettings();
 void updateArpeggiatorTiming();
 uint32_t getLEDcode(colorDef c);
+void trySynthNoteOn(byte x);
+void trySynthNoteOff(byte x);
+void resetBoardPreviewSynthSlots();
 /*
     C++ returns a negative value for
     negative N % D. This function
@@ -1520,6 +1523,53 @@ void setupGrid() {
   }
   // On version 1.2, "button" 140 is shorted (always connected)
   h[140].note = HARDWARE_V1_2;
+  resetBoardPreviewSynthSlots();
+}
+
+constexpr byte BOARD_PREVIEW_SYNTH_SLOT_START = 141;
+constexpr int16_t BOARD_PREVIEW_SYNTH_SLOT_NONE = -1;
+int16_t boardPreviewSynthSlotForMidi[128];
+byte boardPreviewSynthMidiForSlot[BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START];
+
+void resetBoardPreviewSynthSlots() {
+  for (byte i = 0; i < 128; i++) {
+    boardPreviewSynthSlotForMidi[i] = BOARD_PREVIEW_SYNTH_SLOT_NONE;
+  }
+  for (byte i = 0; i < (BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START); i++) {
+    boardPreviewSynthMidiForSlot[i] = UNUSED_NOTE;
+  }
+}
+
+int16_t allocateBoardPreviewSynthSlot(byte midiNote) {
+  if (midiNote >= 128) {
+    return BOARD_PREVIEW_SYNTH_SLOT_NONE;
+  }
+  if (boardPreviewSynthSlotForMidi[midiNote] != BOARD_PREVIEW_SYNTH_SLOT_NONE) {
+    return boardPreviewSynthSlotForMidi[midiNote];
+  }
+  for (byte i = 0; i < (BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START); i++) {
+    if (boardPreviewSynthMidiForSlot[i] != UNUSED_NOTE) {
+      continue;
+    }
+    int16_t slot = static_cast<int16_t>(BOARD_PREVIEW_SYNTH_SLOT_START + i);
+    boardPreviewSynthMidiForSlot[i] = midiNote;
+    boardPreviewSynthSlotForMidi[midiNote] = slot;
+    return slot;
+  }
+  return BOARD_PREVIEW_SYNTH_SLOT_NONE;
+}
+
+void releaseBoardPreviewSynthSlot(byte midiNote) {
+  if (midiNote >= 128) {
+    return;
+  }
+  int16_t slot = boardPreviewSynthSlotForMidi[midiNote];
+  if (slot < BOARD_PREVIEW_SYNTH_SLOT_START || slot >= BTN_COUNT) {
+    boardPreviewSynthSlotForMidi[midiNote] = BOARD_PREVIEW_SYNTH_SLOT_NONE;
+    return;
+  }
+  boardPreviewSynthMidiForSlot[slot - BOARD_PREVIEW_SYNTH_SLOT_START] = UNUSED_NOTE;
+  boardPreviewSynthSlotForMidi[midiNote] = BOARD_PREVIEW_SYNTH_SLOT_NONE;
 }
 
 bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote) {
@@ -2214,6 +2264,36 @@ void sendBoardPreviewMidiNote(byte midiNote, bool noteOn) {
     withMIDI([&](auto& M) { M.sendNoteOn(midiNote, 127, targetChannel); });
   } else {
     withMIDI([&](auto& M) { M.sendNoteOff(midiNote, 0, targetChannel); });
+  }
+}
+
+void sendBoardPreviewSynthNote(byte midiNote, bool noteOn) {
+  if (midiNote >= 128) {
+    return;
+  }
+
+  if (noteOn) {
+    int16_t slot = allocateBoardPreviewSynthSlot(midiNote);
+    if (slot < BOARD_PREVIEW_SYNTH_SLOT_START || slot >= BTN_COUNT) {
+      return;
+    }
+    h[slot].note = midiNote;
+    h[slot].frequency = MIDItoFreq(static_cast<float>(midiNote));
+    h[slot].MIDIch = 1;
+    h[slot].mappedMidiChannel = defaultMidiChannel;
+    h[slot].jiRetune = 0;
+    h[slot].jiFrequencyMultiplier = 1.0f;
+    trySynthNoteOn(static_cast<byte>(slot));
+  } else {
+    int16_t slot = boardPreviewSynthSlotForMidi[midiNote];
+    if (slot < BOARD_PREVIEW_SYNTH_SLOT_START || slot >= BTN_COUNT) {
+      return;
+    }
+    trySynthNoteOff(static_cast<byte>(slot));
+    h[slot].MIDIch = 0;
+    h[slot].note = UNUSED_NOTE;
+    h[slot].frequency = 0.0f;
+    releaseBoardPreviewSynthSlot(midiNote);
   }
 }
 
@@ -4109,6 +4189,7 @@ void resetSynthFreqs() {
   while (!synthChQueue.empty()) {
     synthChQueue.pop();
   }
+  resetBoardPreviewSynthSlots();
   nextVoiceGeneration.store(1, std::memory_order_relaxed);
   for (byte i = 0; i < POLYPHONY_LIMIT; i++) {
     synth[i].increment = 0;
