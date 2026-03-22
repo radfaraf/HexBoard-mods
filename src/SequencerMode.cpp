@@ -995,10 +995,10 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerRevert);
   menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
-  menuPageSequencer.addMenuItem(menuItemSequencerTapPreview);
-  menuPageSequencer.addMenuItem(menuItemSequencerPlayType);
   menuPageSequencer.addMenuItem(menuItemSequencerDirection);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);
+  menuPageSequencer.addMenuItem(menuItemSequencerTapPreview);
+  menuPageSequencer.addMenuItem(menuItemSequencerPlayType);
   menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
 }
 
