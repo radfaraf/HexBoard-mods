@@ -1,0 +1,98 @@
+HEXBOARD SEQUENCER MODE
+QUICK MANUAL
+
+Overview
+
+Sequencer mode is a separate mode from Keyboard mode. It is a single-track,
+32-step sequencer. Each step can hold up to 4 notes, its own note length,
+and can play through MIDI or the onboard synth.
+
+Enter And Exit
+
+- From the main menu, choose Sequencer.
+- In the Sequencer menu, choose Keyboard to return to normal keyboard mode.
+
+Main Controls
+
+- Steps: the first 8 playable keys of the first 4 rows are steps 1-32.
+- Play/Stop: the top-right key starts and stops playback.
+- Overview: the 9th key on the second row pages through an 8-step note view.
+- Blue action key: the far-right key on the second row does undo on short
+  press and clears the selected step on a 1-second hold.
+- Encoder:
+  - Turn while holding a selected step to change that step's length.
+  - Press during file or folder naming to save the name.
+
+Step Editing
+
+- Press a step once to select it.
+- Press the same step again to deselect it.
+- With a step selected, play note keys on the lower part of the board to add
+  or remove notes from that step.
+- Step notes are kept sorted from lowest to highest.
+- Tap Preview can make a tapped step audition its stored notes when selected.
+
+Note Length
+
+- Hold the selected step and turn the encoder.
+- Available lengths are:
+  0%, 25%, 50%, 75%, 100%, 150%, 200%, 250%, 300%, 350%, 400%, 1000%
+
+Playback
+
+- Tempo is the step clock.
+- Each step is a 16th note at the current tempo.
+- Steps sets the active playback range from 1 to 32.
+- Direction choices are:
+  Forward, Backward, Ping-Pong, Random, Brownian, Drunk
+- Play Type chooses:
+  MIDI or OB Synth
+
+Menu Items
+
+- Save: saves to the current file.
+- Save New: saves as a new file in the selected folder.
+- Load: loads a saved sequence.
+- Revert: reloads the last saved version of the current sequence.
+- File Management:
+  Rename File, Rename Folder, Create Folder, Delete File, Delete Folder
+- Steps: active playback length
+- Direction: playback order
+- Tempo: BPM
+- Tap Preview: audition step contents when a step is tapped
+- Play Type: MIDI or onboard synth
+- Synth Options: opens the shared synth settings page
+- Update Firmware: reboots to the firmware update bootloader
+
+Saving And Files
+
+- Sequences are stored under /Sequences in onboard flash.
+- The menu title shows the current file name as:
+  Seq-FILENAME
+- If there are unsaved changes, it becomes:
+  Seq-*FILENAME
+- If no file is loaded, the title just says:
+  Sequencer
+
+Naming Mode
+
+When naming a file or folder, the board shows this entry layout:
+
+  A B C D E F G H
+  I J K L M N O P
+  Q R S T U V W X
+  Y Z SPC - 1 2 3
+  <- CANCEL
+
+- Press keys to enter characters.
+- SPC adds a space.
+- <- deletes the previous character.
+- CANCEL exits naming without saving.
+- Press the encoder to save the name.
+
+Status And Display
+
+- The selected step blinks.
+- The overview screen shows 8 steps at a time.
+- Empty steps are dark when idle.
+- The top title shows the loaded file name and unsaved state.

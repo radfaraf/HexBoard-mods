@@ -1,0 +1,417 @@
+HEXBOARD SEQUENCER MODE
+DETAILED MANUAL
+
+1. Purpose
+
+Sequencer mode turns the HexBoard into a separate pattern sequencer without
+replacing Keyboard mode. Keyboard mode and Sequencer mode are deliberately
+split, so you can return to the normal board behavior at any time.
+
+
+2. Current Sequencer Design
+
+- Track count: 1 track
+- Step count available: 32 steps
+- Active playback length: 1 to 32 steps
+- Notes per step: up to 4
+- Length per step: stored per step
+- Output type: MIDI or onboard synth
+- Storage: onboard flash files in /Sequences
+
+
+3. Entering And Leaving Sequencer Mode
+
+From the main menu, select Sequencer.
+
+To leave Sequencer mode, open the Sequencer menu and select Keyboard.
+
+
+4. Physical Layout In Sequencer Mode
+
+4.1 Step keys
+
+The step grid uses the first 8 playable keys from the first 4 rows:
+
+- Row 1: steps 1-8
+- Row 2: steps 9-16
+- Row 3: steps 17-24
+- Row 4: steps 25-32
+
+4.2 Dedicated sequencer keys
+
+- Top-right key: Play/Stop
+- Second-row 9th key: step overview page button
+- Second-row far-right key: blue action key
+
+4.3 Lower keyboard area
+
+The lower part of the board remains playable in Sequencer mode. These keys:
+
+- audition notes at any time
+- assign or remove notes from the selected step when a step is selected
+
+
+5. Selecting And Editing Steps
+
+5.1 Selecting a step
+
+- Press a step once to select it.
+- Press the same step again to deselect it.
+- The selected step blinks so it is easy to identify.
+
+5.2 What happens when a step is selected
+
+When a step is selected:
+
+- the Edit overlay appears
+- note keys add or remove notes from that step immediately
+- the step stores notes sorted from lowest to highest
+- the step can be length-edited by holding that step and turning the encoder
+
+5.3 Empty steps
+
+- Empty steps are dark when unselected.
+- A selected empty step still blinks so it is visible.
+
+
+6. Entering Notes
+
+6.1 Live note entry
+
+With no step selected:
+
+- pressing lower keyboard notes auditions them only
+
+With a step selected:
+
+- pressing a note key auditions that note
+- the note is also added to the step if it was not already there
+- pressing the same note again removes it from the step
+
+6.2 Chords
+
+- Each step can hold up to 4 notes.
+- Notes are displayed in ascending order.
+- Playback sends all notes in the step together.
+
+6.3 Tap Preview
+
+The Tap Preview menu item controls whether tapping a step previews its stored
+note or chord when you select it.
+
+- Off: tapping a step only selects it
+- On: tapping a step selects it and previews its contents
+
+
+7. Note Length
+
+7.1 How to change length
+
+- Select a step
+- Hold that step down
+- Turn the encoder
+
+The available length values are:
+
+- 0%
+- 25%
+- 50%
+- 75%
+- 100%
+- 150%
+- 200%
+- 250%
+- 300%
+- 350%
+- 400%
+- 1000%
+
+7.2 What the values mean
+
+Length is stored as a percentage of the step duration.
+
+- 100% means one full step
+- values below 100% shorten the note
+- values above 100% let the note continue across later steps
+- 0% means the step will not sound
+
+
+8. Transport And Playback
+
+8.1 Play/Stop key
+
+The top-right key toggles transport:
+
+- red when stopped
+- green when playing
+
+8.2 Tempo
+
+Tempo is set in the Sequencer menu. The sequencer treats each step as a
+16th-note step at the current BPM.
+
+8.3 Steps
+
+The Steps menu item decides how many steps are active in playback:
+
+- minimum 1
+- maximum 32
+
+All 32 steps still remain editable even if the active playback count is lower.
+
+8.4 Direction
+
+Available direction modes:
+
+- Forward: step 1 to end, then loop
+- Backward: end to step 1, then loop
+- Ping-Pong: runs forward to the end, then reverses back
+- Random: picks any step in the active range each tick
+- Brownian: moves only to neighboring steps
+- Drunk: may stay still or move one step left or right
+
+
+9. Output Mode
+
+Play Type controls where the sequencer sends notes:
+
+- MIDI: standard external MIDI behavior
+- OB Synth: sends the sequence into the onboard synth engine
+
+OB Synth uses the shared synth settings available from Synth Options.
+
+
+10. Undo And Clear
+
+The blue action key on the far right of the second row has two jobs:
+
+- short press: undo the currently selected step back to the state it had when
+  you selected it
+- hold for about 1 second: clear the selected step
+
+After a clear, the screen reminds you that the blue key can undo the erase.
+
+
+11. Overview Screen
+
+Press the second-row 9th key to open the note overview.
+
+- It shows 8 steps per page.
+- Press the same key again to move to the next page.
+- Pages cycle through the 32-step pattern.
+- Empty steps show as underscores.
+
+The overview is meant as a quick readout of what is in the pattern without
+entering edit mode for each step.
+
+
+12. Menu Structure
+
+Main Sequencer menu:
+
+- Keyboard
+- Synth Options
+- File Management
+- Save
+- Save New
+- Load
+- Revert
+- Play/Stop
+- Steps
+- Direction
+- Tempo
+- Tap Preview
+- Play Type
+- Update Firmware
+
+File Management submenu:
+
+- Rename File
+- Rename Folder
+- Create Folder
+- Delete File
+- Delete Folder
+
+
+13. Saving, Loading, And Reverting
+
+13.1 Save
+
+Save writes the current sequence back to the currently loaded file.
+
+If no current file exists yet, Save creates a new file in /Sequences.
+
+13.2 Save New
+
+Save New opens the sequence browser so you can choose a folder, then name a
+new sequence file in that location.
+
+13.3 Load
+
+Load opens the browser and loads a saved sequence file.
+
+13.4 Revert
+
+Revert discards unsaved edits and reloads the last saved version of the
+current file.
+
+If no current file exists:
+
+- it may fall back to the old legacy file if present
+- otherwise it resets to a blank/default sequence
+
+
+14. File And Folder Organization
+
+Sequences are stored in LittleFS under:
+
+  /Sequences
+
+The current file path is remembered, so the last loaded sequence can come
+back on startup.
+
+Files use the .hbseq extension internally.
+
+The visible sequence name is the file name without the extension.
+
+
+15. Renaming, Creating, And Deleting Files
+
+15.1 Rename File
+
+- browse to a file
+- select it
+- naming mode opens with the current file name filled in
+
+15.2 Rename Folder
+
+- browse folders
+- enter the folder you want
+- choose Rename This Folder
+
+15.3 Create Folder
+
+- browse to the parent folder
+- choose Create Here
+- naming mode opens
+
+15.4 Delete File
+
+- browse to a file
+- select it to delete it
+
+15.5 Delete Folder
+
+- browse to the folder
+- enter it
+- choose Delete This Folder
+
+Folder deletion is recursive, so deleting a folder removes its contents.
+
+
+16. Naming Mode
+
+Naming mode is used for:
+
+- Save New
+- Create Folder
+- Rename File
+- Rename Folder
+
+16.1 Character layout
+
+The on-screen keyboard layout is:
+
+  A B C D E F G H
+  I J K L M N O P
+  Q R S T U V W X
+  Y Z SPC - 1 2 3
+  <- CANCEL
+
+16.2 Naming controls
+
+- letter and symbol keys insert characters
+- SPC inserts a blank space
+- - inserts a hyphen
+- 1, 2, 3 insert those digits
+- <- deletes the previous character
+- CANCEL exits naming mode without saving
+- encoder press saves the name
+
+16.3 Naming visuals
+
+While naming is active:
+
+- valid input keys are lit blue
+- non-input keys are dark
+- the display shows a blinking cursor in the name line
+
+Maximum name length is 20 characters.
+
+
+17. Header Title And Unsaved Changes
+
+At the top of the Sequencer menu:
+
+- if no file is loaded, the title is:
+  Sequencer
+- if a file is loaded, the title is:
+  Seq-FILENAME
+- if there are unsaved edits, the title is:
+  Seq-*FILENAME
+
+The star marks the sequence as dirty, meaning the current state differs from
+the last saved version.
+
+
+18. What Is Stored In A Sequence File
+
+The current save file stores:
+
+- tempo
+- active step count
+- tap preview state
+- play type
+- direction
+- the notes in each step
+- the gate/length value for each step
+
+
+19. Current Limits
+
+- 1 track
+- 32 steps
+- 4 notes maximum per step
+- naming uses uppercase letters plus a small set of extra characters
+- no direct computer-drive mode for the sequence files yet
+
+
+20. Practical Workflow Example
+
+1. Enter Sequencer mode.
+2. Press a step to select it.
+3. Play notes on the lower keyboard area to build the step.
+4. Hold the selected step and turn the encoder to set note length.
+5. Repeat for other steps.
+6. Press the top-right key to start playback.
+7. Adjust Tempo, Steps, Direction, Tap Preview, or Play Type as needed.
+8. Choose Save or Save New to store the sequence.
+
+
+21. Quick Troubleshooting
+
+If a step does not sound:
+
+- make sure the step contains notes
+- check that length is not 0%
+- check whether Play Type is set to the output you expect
+
+If edits disappear:
+
+- use Save to write them to flash
+- otherwise Revert or power loss can discard unsaved changes
+
+If you cannot find a sequence:
+
+- use Load and browse the /Sequences folders
+- remember that the visible name comes from the file name
