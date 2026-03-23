@@ -91,7 +91,8 @@ enum class SequencerBrowserMode : uint8_t {
   DeleteFile = 3,
   DeleteFolder = 4,
   RenameFile = 5,
-  RenameFolder = 6
+  RenameFolder = 6,
+  CreateFolder = 7
 };
 
 enum class SequencerNamingTarget : uint8_t {
@@ -175,6 +176,7 @@ void openSequencerDeleteFileBrowser();
 void openSequencerDeleteFolderBrowser();
 void openSequencerRenameFileBrowser();
 void openSequencerRenameFolderBrowser();
+void openSequencerCreateFolderBrowser();
 void sequencerBrowserDeleteFolderCallback();
 void sequencerBrowserRenameFolderCallback();
 
@@ -1521,6 +1523,10 @@ void openSequencerRenameFileBrowser() {
 
 void openSequencerRenameFolderBrowser() {
   openSequencerBrowser(SequencerBrowserMode::RenameFolder);
+}
+
+void openSequencerCreateFolderBrowser() {
+  openSequencerBrowser(SequencerBrowserMode::CreateFolder);
 }
 
 void sequencerBrowserUpCallback() {
