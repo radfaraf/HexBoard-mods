@@ -152,6 +152,7 @@ In exact length mode:
 - <- removes the previous digit
 - CANCEL exits exact length entry without saving
 - pressing the encoder saves and exits
+- the physical CANCEL key is placed lower on the board to reduce accidental presses
 
 The exact length screen shows this keypad-style layout:
 
@@ -361,6 +362,7 @@ The on-screen keyboard layout is:
 - <- deletes the previous character
 - CANCEL exits naming mode without saving
 - encoder press saves the name
+- the physical CANCEL key is placed lower on the board to reduce accidental presses
 
 16.3 Naming visuals
 

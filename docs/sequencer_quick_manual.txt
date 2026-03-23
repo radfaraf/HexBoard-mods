@@ -48,6 +48,7 @@ Exact length screen:
 - <- deletes the previous digit
 - CANCEL exits without saving
 - press the encoder to save
+- the physical CANCEL key is placed lower on the board to reduce accidental exits
 
 Playback
 
@@ -100,6 +101,7 @@ When naming a file or folder, the board shows this entry layout:
 - <- deletes the previous character.
 - CANCEL exits naming without saving.
 - Press the encoder to save the name.
+- the physical CANCEL key is placed lower on the board to reduce accidental exits
 
 Status And Display
 

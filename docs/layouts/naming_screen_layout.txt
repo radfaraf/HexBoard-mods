@@ -26,6 +26,7 @@ Notes:
 - SPC inserts a blank space.
 - - inserts a hyphen.
 - 1 2 3 insert those digits.
+- The helper text stays compact, but the physical CANCEL key is placed lower on the board.
 
 LED behavior in naming mode:
 

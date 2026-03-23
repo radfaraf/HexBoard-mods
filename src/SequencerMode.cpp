@@ -237,7 +237,7 @@ const SequencerNamingKey sequencerNamingKeys[] = {
   { 35, SequencerNamingAction::InsertChar, '2' },
   { 36, SequencerNamingAction::InsertChar, '3' },
   { 41, SequencerNamingAction::Backspace, '\0' },
-  { 42, SequencerNamingAction::Cancel, '\0' }
+  { 82, SequencerNamingAction::Cancel, '\0' }
 };
 
 const SequencerNamingKey sequencerExactLengthKeys[] = {
@@ -252,7 +252,7 @@ const SequencerNamingKey sequencerExactLengthKeys[] = {
   { 13, SequencerNamingAction::InsertChar, '8' },
   { 14, SequencerNamingAction::InsertChar, '9' },
   { 41, SequencerNamingAction::Backspace, '\0' },
-  { 42, SequencerNamingAction::Cancel, '\0' }
+  { 82, SequencerNamingAction::Cancel, '\0' }
 };
 
 void copySequencerString(char* destination, size_t destinationSize, const char* source) {

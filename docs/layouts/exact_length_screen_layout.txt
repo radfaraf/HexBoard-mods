@@ -27,3 +27,4 @@ Notes:
 - <- removes the previous digit.
 - CANCEL exits without saving.
 - Pressing the encoder saves and returns to normal step editing.
+- The helper text stays compact, but the physical CANCEL key is placed lower on the board.
