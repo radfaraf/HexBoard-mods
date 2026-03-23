@@ -5243,7 +5243,7 @@ void setActiveProfile(uint8_t profileIndex) {
     of the menu display, as below.
   */
 #define MENU_ITEM_HEIGHT 10
-#define MENU_PAGE_SCREEN_TOP_OFFSET 10
+#define MENU_PAGE_SCREEN_TOP_OFFSET 14
 #define MENU_VALUES_LEFT_OFFSET 78
 #define CONTRAST_AWAKE 63
 #define CONTRAST_SCREENSAVER 1
@@ -7070,6 +7070,7 @@ void createProfileMenuItems() {
 void setupMenu() {
   menu.setSplashDelay(0);
   menu.init();
+  menu.setFontSmall(GEM_FONT_BIG, 6, 8);
   menu.invertKeysDuringEdit(true);  // Invert rotary direction when editing a value
   /*
       addMenuItem procedure adds that GEM object to the given page.
