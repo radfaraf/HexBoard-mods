@@ -815,8 +815,8 @@ int8_t buttonIndexToSequencerStep(byte buttonIndex) {
   if (buttonIndex >= 10 && buttonIndex < 18) {
     return static_cast<int8_t>(8 + (buttonIndex - 10));
   }
-  if (buttonIndex >= 20 && buttonIndex < 28) {
-    return static_cast<int8_t>(16 + (buttonIndex - 20));
+  if (buttonIndex >= 21 && buttonIndex < 29) {
+    return static_cast<int8_t>(16 + (buttonIndex - 21));
   }
   if (buttonIndex >= 30 && buttonIndex < 38) {
     return static_cast<int8_t>(24 + (buttonIndex - 30));
@@ -832,7 +832,7 @@ int8_t sequencerStepToButtonIndex(byte stepIndex) {
     return static_cast<int8_t>(10 + (stepIndex - 8));
   }
   if (stepIndex < 24) {
-    return static_cast<int8_t>(20 + (stepIndex - 16));
+    return static_cast<int8_t>(21 + (stepIndex - 16));
   }
   if (stepIndex < SEQUENCER_STEP_COUNT) {
     return static_cast<int8_t>(30 + (stepIndex - 24));
