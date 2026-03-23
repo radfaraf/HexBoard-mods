@@ -58,6 +58,7 @@ constexpr byte SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT = 6;
 constexpr byte SEQUENCER_BROWSER_MAX_ENTRIES = 24;
 constexpr size_t SEQUENCER_MAX_PATH_LENGTH = 255;
 constexpr size_t SEQUENCER_BROWSER_TITLE_LENGTH = 28;
+constexpr size_t SEQUENCER_MENU_TITLE_LENGTH = 48;
 constexpr size_t SEQUENCER_NAME_EDIT_MAX_LENGTH = 20;
 
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
@@ -156,6 +157,7 @@ bool sequencerStorageInitialized = false;
 uint16_t sequencerLengthPercentDisplay = 100;
 byte sequencerOverviewPage = 0;
 char sequencerCurrentSequencePath[SEQUENCER_MAX_PATH_LENGTH] = "";
+char sequencerMenuTitle[SEQUENCER_MENU_TITLE_LENGTH] = "Sequencer";
 char sequencerBrowserPath[SEQUENCER_MAX_PATH_LENGTH] = "";
 SequencerBrowserMode sequencerBrowserMode = SequencerBrowserMode::None;
 SequencerBrowserEntry sequencerBrowserEntries[SEQUENCER_BROWSER_MAX_ENTRIES] = {};
@@ -169,6 +171,9 @@ byte sequencerNamingLength = 0;
 char sequencerRenameSourcePath[SEQUENCER_MAX_PATH_LENGTH] = "";
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
+bool rememberSequencerCurrentPath();
+void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
+void refreshSequencerMenuTitle();
 void refreshSequencerBrowserMenu(bool resetSelection = true);
 void sequencerBrowserNewFolderCallback();
 bool isSequencerNamingActive();
@@ -233,6 +238,32 @@ void copySequencerString(char* destination, size_t destinationSize, const char* 
     return;
   }
   snprintf(destination, destinationSize, "%s", (source != nullptr) ? source : "");
+}
+
+void refreshSequencerMenuTitle() {
+  if (sequencerCurrentSequencePath[0] == '\0') {
+    copySequencerString(sequencerMenuTitle, sizeof(sequencerMenuTitle), "Sequencer");
+  } else {
+    char displayName[SEQUENCER_BROWSER_TITLE_LENGTH];
+    extractSequencerDisplayName(sequencerCurrentSequencePath, displayName, sizeof(displayName));
+    if (displayName[0] == '\0') {
+      copySequencerString(displayName, sizeof(displayName), "Sequence");
+    }
+    snprintf(sequencerMenuTitle, sizeof(sequencerMenuTitle), "Sequencer - %s%s",
+             sequencerDirty ? "*" : "", displayName);
+  }
+  menuPageSequencer.setTitle(sequencerMenuTitle);
+}
+
+void setSequencerDirtyState(bool dirty) {
+  sequencerDirty = dirty;
+  refreshSequencerMenuTitle();
+}
+
+void clearSequencerCurrentPath() {
+  sequencerCurrentSequencePath[0] = '\0';
+  rememberSequencerCurrentPath();
+  refreshSequencerMenuTitle();
 }
 
 bool sequencerPathIsRoot(const char* path) {
@@ -411,10 +442,11 @@ bool rememberSequencerCurrentPath() {
 void setSequencerCurrentPath(const char* path) {
   copySequencerString(sequencerCurrentSequencePath, sizeof(sequencerCurrentSequencePath), path);
   rememberSequencerCurrentPath();
+  refreshSequencerMenuTitle();
 }
 
 bool loadRememberedSequencerCurrentPath() {
-  sequencerCurrentSequencePath[0] = '\0';
+  clearSequencerCurrentPath();
   if (!fileSystemExists || !LittleFS.exists(SEQUENCER_CURRENT_PATH_FILE)) {
     return false;
   }
@@ -432,6 +464,7 @@ bool loadRememberedSequencerCurrentPath() {
   }
 
   copySequencerString(sequencerCurrentSequencePath, sizeof(sequencerCurrentSequencePath), path.c_str());
+  refreshSequencerMenuTitle();
   return true;
 }
 
@@ -565,8 +598,7 @@ void clearSequencerCurrentPathIfDeleted(const char* path, bool isDirectory) {
   }
 
   if (shouldClear) {
-    sequencerCurrentSequencePath[0] = '\0';
-    rememberSequencerCurrentPath();
+    clearSequencerCurrentPath();
   }
 }
 
@@ -725,7 +757,7 @@ bool handleSequencerRotaryTurnInternal(int8_t direction) {
 
   sequencerStepGatePercent[sequencerSelectedStep] = newGate;
   sequencerLengthPercentDisplay = newGate;
-  sequencerDirty = true;
+  setSequencerDirtyState(true);
   sequencerOverlayMode = SequencerOverlayMode::LengthEdit;
   sequencerOverlayUntil = runTime + SEQUENCER_NOTE_CONFIRM_MICROS;
   sequencerOverlayDirty = true;
@@ -1138,7 +1170,7 @@ void clearSelectedSequencerStep() {
   }
   clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
   saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
-  sequencerDirty = true;
+  setSequencerDirtyState(true);
   sequencerOverlayMode = SequencerOverlayMode::StepCleared;
   sequencerOverlayDirty = true;
   sequencerConfirmHeld = false;
@@ -1202,13 +1234,13 @@ void parseSequencerStepNotes(byte stepIndex, const String& value) {
 bool loadSequencerFromFlash() {
   resetSequencerState();
   if (!fileSystemExists) {
-    sequencerDirty = false;
+    setSequencerDirtyState(false);
     return false;
   }
 
   File f = LittleFS.open(SEQUENCER_LEGACY_STORAGE_PATH, "r");
   if (!f) {
-    sequencerDirty = false;
+    setSequencerDirtyState(false);
     return false;
   }
 
@@ -1268,20 +1300,20 @@ bool loadSequencerFromFlash() {
   }
 
   f.close();
-  sequencerDirty = false;
+  setSequencerDirtyState(false);
   return sawFormat;
 }
 
 bool loadSequencerFromPath(const char* path) {
   resetSequencerState();
   if (!fileSystemExists || path == nullptr || path[0] == '\0') {
-    sequencerDirty = false;
+    setSequencerDirtyState(false);
     return false;
   }
 
   File f = LittleFS.open(path, "r");
   if (!f) {
-    sequencerDirty = false;
+    setSequencerDirtyState(false);
     return false;
   }
 
@@ -1341,7 +1373,7 @@ bool loadSequencerFromPath(const char* path) {
   }
 
   f.close();
-  sequencerDirty = false;
+  setSequencerDirtyState(false);
   return sawFormat;
 }
 
@@ -1399,7 +1431,7 @@ bool saveSequencerToPath(const char* path) {
     LittleFS.remove(tempPath);
     return false;
   }
-  sequencerDirty = false;
+  setSequencerDirtyState(false);
   return true;
 }
 
@@ -1446,7 +1478,7 @@ bool saveSequencerAsNewInDirectory(const char* directoryPath, char* savedPath, s
 bool loadSequencerAtStartup() {
   resetSequencerState();
   if (!fileSystemExists || !ensureSequencerStorageRoot()) {
-    sequencerDirty = false;
+    setSequencerDirtyState(false);
     return false;
   }
 
@@ -1454,8 +1486,7 @@ bool loadSequencerAtStartup() {
     if (loadSequencerFromPath(sequencerCurrentSequencePath)) {
       return true;
     }
-    sequencerCurrentSequencePath[0] = '\0';
-    rememberSequencerCurrentPath();
+    clearSequencerCurrentPath();
   }
 
   return loadSequencerFromFlash();
@@ -1485,7 +1516,7 @@ void revertSequencerMenuCallback() {
     showSequencerStatusMessage("Reverted", "Legacy sequence");
   } else {
     resetSequencerState();
-    sequencerDirty = false;
+    setSequencerDirtyState(false);
     showSequencerStatusMessage("Reverted", "Blank sequence");
   }
 }
@@ -1718,7 +1749,7 @@ bool commitSequencerNaming() {
       return true;
     } else if (saveSequencerToPath(targetPath)) {
       setSequencerCurrentPath(targetPath);
-      sequencerDirty = false;
+      setSequencerDirtyState(false);
       sequencerNamingTarget = SequencerNamingTarget::None;
       menu.setMenuPageCurrent(menuPageSequencer);
       menu.drawMenu();
@@ -1823,7 +1854,7 @@ void sequencerTransportMenuCallback(GEMCallbackData callbackData) {
 
 void sequencerTempoMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
-  sequencerDirty = true;
+  setSequencerDirtyState(true);
 }
 
 void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
@@ -1833,23 +1864,23 @@ void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
   } else if (sequencerStepPlayCount > SEQUENCER_STEP_COUNT) {
     sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
   }
-  sequencerDirty = true;
+  setSequencerDirtyState(true);
 }
 
 void sequencerTapPreviewMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
-  sequencerDirty = true;
+  setSequencerDirtyState(true);
 }
 
 void sequencerPlayTypeMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
-  sequencerDirty = true;
+  setSequencerDirtyState(true);
 }
 
 void sequencerDirectionMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   sequencerPingPongDelta = 1;
-  sequencerDirty = true;
+  setSequencerDirtyState(true);
 }
 
 const GEMSpinnerBoundariesByte spinnerBoundariesSequencerStepPlayCount = { 1, 1, SEQUENCER_STEP_COUNT };
@@ -2038,7 +2069,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
         }
         sequencerEditNoteCount = sequencerUndoNoteCount;
         saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
-        sequencerDirty = true;
+        setSequencerDirtyState(true);
         sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
         sequencerOverlayDirty = true;
       }
@@ -2109,7 +2140,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     if (sequencerSelectedStep >= 0) {
       toggleEditBufferNote(midiNote);
       saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
-      sequencerDirty = true;
+      setSequencerDirtyState(true);
       sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
       sequencerOverlayDirty = true;
     }

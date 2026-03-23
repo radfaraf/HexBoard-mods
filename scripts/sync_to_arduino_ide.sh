@@ -11,6 +11,7 @@ mkdir -p "$TARGET_DIR"
 cp "$REPO_ROOT/src/HexBoard.ino" "$TARGET_DIR/HexBoard.ino"
 cp "$REPO_ROOT/src/SequencerMode.cpp" "$TARGET_DIR/SequencerMode.cpp"
 cp "$REPO_ROOT/src/SequencerMode.h" "$TARGET_DIR/SequencerMode.h"
+sleep 1
 
 echo "Synced sketch files to: $TARGET_DIR"
 open "$TARGET_DIR/HexBoard.ino"
