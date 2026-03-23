@@ -36,7 +36,7 @@ Note Length
 
 - Hold the selected step and turn the encoder.
 - Available lengths are:
-  0%, 25%, 50%, 75%, 100%, 150%, 200%, 250%, 300%, 350%, 400%, 1000%
+  0%, 25%, 50%, 75%, 100%, 150%, 200%, 250%, 300%, 350%, 400%, 500%, 600%, 700%, 800%, 900%, 1000%
 
 Playback
 

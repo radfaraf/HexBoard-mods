@@ -52,7 +52,7 @@ constexpr const char* SEQUENCER_STORAGE_ROOT = "/Sequences";
 constexpr const char* SEQUENCER_CURRENT_PATH_FILE = "/Sequences/.current";
 constexpr const char* SEQUENCER_LEGACY_STORAGE_PATH = "/sequence.hbseq";
 constexpr const char* SEQUENCER_FILE_EXTENSION = ".hbseq";
-constexpr byte SEQUENCER_GATE_CHOICE_COUNT = 12;
+constexpr byte SEQUENCER_GATE_CHOICE_COUNT = 17;
 constexpr byte SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS = 16;
 constexpr byte SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT = 6;
 constexpr byte SEQUENCER_BROWSER_MAX_ENTRIES = 24;
@@ -190,7 +190,7 @@ const char* sequencerChromaticNames[12] = {
   "F#", "G", "G#", "A", "Bb", "B"
 };
 const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
-  0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 1000
+  0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000
 };
 
 byte sequencerGateChoiceIndex(uint16_t gatePercent);
