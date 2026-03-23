@@ -1688,7 +1688,8 @@ bool commitSequencerNaming() {
         if (strcmp(sequencerCurrentSequencePath, sequencerRenameSourcePath) == 0) {
           setSequencerCurrentPath(targetPath);
         }
-        exitSequencerNaming(true);
+        exitSequencerNaming(false);
+        refreshSequencerBrowserMenu(false);
         showSequencerPathStatusMessage("Renamed", targetPath);
         return true;
       }
@@ -1866,6 +1867,7 @@ GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
 GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
 GEMItem menuItemSequencerSaveNew("Save New", openSequencerSaveNewBrowser);
 GEMItem menuItemSequencerLoad("Load", openSequencerLoadBrowser);
+GEMItem menuItemSequencerCreateFolder("Create Folder", openSequencerSaveNewBrowser);
 GEMItem menuItemSequencerRenameFile("Rename File", openSequencerRenameFileBrowser);
 GEMItem menuItemSequencerRenameFolder("Rename Folder", openSequencerRenameFolderBrowser);
 GEMItem menuItemSequencerDeleteFile("Delete File", openSequencerDeleteFileBrowser);
@@ -2117,6 +2119,7 @@ void setupSequencerMenu() {
 
   menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFile);
   menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFolder);
+  menuPageSequencerFiles.addMenuItem(menuItemSequencerCreateFolder);
   menuPageSequencerFiles.addMenuItem(menuItemSequencerDeleteFile);
   menuPageSequencerFiles.addMenuItem(menuItemSequencerDeleteFolder);
 
