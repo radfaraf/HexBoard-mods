@@ -39,7 +39,7 @@ tell application "System Events"
     if not (exists menu bar item "Sketch" of menu bar 1) then
       error "Arduino IDE Sketch menu did not become available."
     end if
-
+    delay 2
     if chosenAction is "Verify/Compile" then
       click menu item "Verify/Compile" of menu "Sketch" of menu bar item "Sketch" of menu bar 1
     else if chosenAction is "Export Compiled Binary" then
