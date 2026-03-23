@@ -1597,6 +1597,18 @@ void sequencerBrowserEntryCallback(GEMCallbackData callbackData) {
 }
 
 void sequencerBrowserSaveHereCallback() {
+  if (sequencerBrowserMode == SequencerBrowserMode::CreateFolder) {
+    char suggestedPath[SEQUENCER_MAX_PATH_LENGTH];
+    char suggestedName[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1];
+    if (generateSequencerAutoFolderPath(sequencerBrowserPath, suggestedPath, sizeof(suggestedPath))) {
+      extractSequencerDisplayName(suggestedPath, suggestedName, sizeof(suggestedName));
+    } else {
+      copySequencerString(suggestedName, sizeof(suggestedName), "FOLDER");
+    }
+    startSequencerNaming(SequencerNamingTarget::Folder, suggestedName);
+    return;
+  }
+
   char suggestedPath[SEQUENCER_MAX_PATH_LENGTH];
   char suggestedName[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1];
   if (generateSequencerAutoPath(sequencerBrowserPath, suggestedPath, sizeof(suggestedPath))) {
@@ -1873,7 +1885,7 @@ GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
 GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
 GEMItem menuItemSequencerSaveNew("Save New", openSequencerSaveNewBrowser);
 GEMItem menuItemSequencerLoad("Load", openSequencerLoadBrowser);
-GEMItem menuItemSequencerCreateFolder("Create Folder", openSequencerSaveNewBrowser);
+GEMItem menuItemSequencerCreateFolder("Create Folder", openSequencerCreateFolderBrowser);
 GEMItem menuItemSequencerRenameFile("Rename File", openSequencerRenameFileBrowser);
 GEMItem menuItemSequencerRenameFolder("Rename Folder", openSequencerRenameFolderBrowser);
 GEMItem menuItemSequencerDeleteFile("Delete File", openSequencerDeleteFileBrowser);
@@ -1920,6 +1932,8 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 
   if (sequencerBrowserMode == SequencerBrowserMode::SaveNew) {
     snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Save:%s", folderName);
+  } else if (sequencerBrowserMode == SequencerBrowserMode::CreateFolder) {
+    snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Folder:%s", folderName);
   } else if (sequencerBrowserMode == SequencerBrowserMode::DeleteFile) {
     snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "DelFile:%s", folderName);
   } else if (sequencerBrowserMode == SequencerBrowserMode::DeleteFolder) {
@@ -1935,7 +1949,9 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
   menuPageSequencerBrowser.setTitle(sequencerBrowserPageTitle);
 
   bool showSaveHere = (sequencerBrowserMode == SequencerBrowserMode::SaveNew);
-  menuItemSequencerBrowserSaveHere.hide(!showSaveHere);
+  bool showCreateHere = (sequencerBrowserMode == SequencerBrowserMode::CreateFolder);
+  menuItemSequencerBrowserSaveHere.setTitle(showCreateHere ? "Create Here" : "Save Here");
+  menuItemSequencerBrowserSaveHere.hide(!(showSaveHere || showCreateHere));
   menuItemSequencerBrowserNewFolder.hide(!showSaveHere);
   menuItemSequencerBrowserRenameFolder.hide(!(sequencerBrowserMode == SequencerBrowserMode::RenameFolder) ||
                                             sequencerPathIsRoot(sequencerBrowserPath));
