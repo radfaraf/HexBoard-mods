@@ -1,0 +1,30 @@
+SEQUENCER MENU LAYOUT
+
+Title examples:
+
+- Sequencer
+- Seq-BLUE MONDAY
+- Seq-*BLUE MONDAY
+
+Menu order:
+
+  Keyboard
+  Synth Options
+  File Management
+  Save
+  Save New
+  Load
+  Revert
+  Play/Stop
+  Steps
+  Direction
+  Tempo
+  Tap Preview
+  Play Type
+  Update Firmware
+
+Notes:
+
+- The title includes the loaded file name when one is active.
+- A leading * in the file part of the title means unsaved changes.
+- Keyboard exits Sequencer mode and returns to normal board behavior.

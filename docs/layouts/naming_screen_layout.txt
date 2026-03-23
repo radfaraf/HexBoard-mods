@@ -1,0 +1,33 @@
+SEQUENCER NAMING SCREEN LAYOUT
+
+Used for:
+
+- Save New
+- Create Folder
+- Rename File
+- Rename Folder
+
+Screen layout:
+
+  CURRENT NAME_
+
+  A B C D E F G H
+  I J K L M N O P
+  Q R S T U V W X
+  Y Z SPC - 1 2 3
+  <-  CANCEL
+
+Notes:
+
+- The underscore is a blinking cursor.
+- Encoder press saves the name.
+- CANCEL exits naming without saving.
+- <- removes the previous character.
+- SPC inserts a blank space.
+- - inserts a hyphen.
+- 1 2 3 insert those digits.
+
+LED behavior in naming mode:
+
+- active naming keys are blue
+- all other keys are dark

@@ -1,0 +1,75 @@
+SEQUENCER FILE BROWSER LAYOUT
+
+The browser title changes with the current browser mode and folder.
+
+Examples:
+
+  Load:Sequences
+  Save:Basslines
+  Folder:Ideas
+  RenFile:Sequences
+  RenFold:Folder 001
+  DelFile:Sequences
+  DelFold:Folder 002
+
+Common structure:
+
+  [top action, if used by this mode]
+  [secondary top action, if used by this mode]
+  ..
+  entry 1
+  entry 2
+  entry 3
+  entry 4
+  entry 5
+  entry 6
+  Prev
+  Next
+
+Mode-specific top actions:
+
+Save New mode:
+
+  Save Here
+  New Folder
+  ..
+  [folders and files]
+
+Create Folder mode:
+
+  Create Here
+  ..
+  [folders only]
+
+Rename Folder mode:
+
+  Rename This Folder
+  ..
+  [folders only]
+
+Delete Folder mode:
+
+  Delete This Folder
+  ..
+  [folders only]
+
+Load mode:
+
+  ..
+  [folders and files]
+
+Rename File mode:
+
+  ..
+  [folders and files]
+
+Delete File mode:
+
+  ..
+  [folders and files]
+
+Notes:
+
+- Folders can be entered by selecting them.
+- Files can be loaded, renamed, or deleted depending on the current mode.
+- The root folder is /Sequences.

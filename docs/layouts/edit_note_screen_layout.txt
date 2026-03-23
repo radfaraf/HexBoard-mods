@@ -1,0 +1,31 @@
+SEQUENCER EDIT SCREEN LAYOUT
+
+Main edit screen while a step is selected:
+
+  Edit #13
+
+  Length 150%
+
+  C3 E3 G3
+
+Notes:
+
+- The top line shows the selected step number.
+- The next line shows the current stored step length percentage.
+- The notes are shown on one row, sorted lowest to highest.
+- This screen is used while editing notes in the selected step.
+
+Length edit overlay while holding a selected step and turning the encoder:
+
+  Step Length
+
+  Length 200%
+
+  C3 E3 G3
+
+Clear feedback:
+
+  Erased #13
+
+  Press blue key
+  to undo

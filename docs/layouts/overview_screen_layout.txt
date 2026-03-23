@@ -1,0 +1,21 @@
+SEQUENCER OVERVIEW SCREEN LAYOUT
+
+The overview is paged by the second-row 9th button.
+
+It shows 8 steps per page with no title bar, using compact rows:
+
+  01 C4
+  02 _
+  03 A2 C3 E3
+  04 D4
+  05 G2
+  06 _
+  07 C3 E3 G3
+  08 A2
+
+Notes:
+
+- Each press advances to the next page of 8 steps.
+- Pages cycle through the full 32-step pattern.
+- _ means the step is empty.
+- Chord notes are displayed left to right in ascending order.

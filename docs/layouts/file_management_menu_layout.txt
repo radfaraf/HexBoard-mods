@@ -1,0 +1,19 @@
+FILE MANAGEMENT MENU LAYOUT
+
+Title:
+
+  File Management
+
+Menu order:
+
+  Rename File
+  Rename Folder
+  Create Folder
+  Delete File
+  Delete Folder
+
+Notes:
+
+- This submenu exists to keep the main Sequencer menu less cluttered.
+- Rename and delete actions open browser-based workflows.
+- Create Folder opens a folder-only browser flow.
