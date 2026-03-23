@@ -7406,9 +7406,13 @@ void dealWithRotary() {
   if (menu.readyForKey()) {
     if (justReleased) {
       if (!suppressClick) {
-      menu.registerKeyPress(GEM_KEY_OK);
-      screenTime = 0;
-    }
+        if (!isKeyboardMode() && handleSequencerEncoderClick()) {
+          screenTime = 0;
+        } else {
+          menu.registerKeyPress(GEM_KEY_OK);
+          screenTime = 0;
+        }
+      }
     }
     if (storeRotaryTurn != 0) {
       if (rotaryInvert == true) {

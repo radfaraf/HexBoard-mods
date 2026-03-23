@@ -12,6 +12,7 @@ extern GEM_u8g2 menu;
 extern GEMPage menuPageSynthSequencer;
 extern GEMPage menuPageSequencer;
 extern GEMPage menuPageSequencerBrowser;
+extern GEMPage menuPageSequencerFiles;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
 extern uint64_t screenTime;
@@ -57,6 +58,7 @@ constexpr byte SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT = 6;
 constexpr byte SEQUENCER_BROWSER_MAX_ENTRIES = 24;
 constexpr size_t SEQUENCER_MAX_PATH_LENGTH = 255;
 constexpr size_t SEQUENCER_BROWSER_TITLE_LENGTH = 28;
+constexpr size_t SEQUENCER_NAME_EDIT_MAX_LENGTH = 20;
 
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
@@ -69,7 +71,8 @@ enum class SequencerOverlayMode : uint8_t {
   StepCleared = 3,
   StatusMessage = 4,
   LengthEdit = 5,
-  Overview = 6
+  Overview = 6,
+  Naming = 7
 };
 
 struct SequencerPlaybackGroup {
@@ -84,13 +87,37 @@ struct SequencerPlaybackGroup {
 enum class SequencerBrowserMode : uint8_t {
   None = 0,
   Load = 1,
-  SaveNew = 2
+  SaveNew = 2,
+  DeleteFile = 3,
+  DeleteFolder = 4,
+  RenameFile = 5,
+  RenameFolder = 6
+};
+
+enum class SequencerNamingTarget : uint8_t {
+  None = 0,
+  Sequence = 1,
+  Folder = 2,
+  RenameSequence = 3,
+  RenameFolder = 4
+};
+
+enum class SequencerNamingAction : uint8_t {
+  InsertChar = 0,
+  Backspace = 1,
+  Cancel = 2
 };
 
 struct SequencerBrowserEntry {
   bool isDirectory = false;
   char title[SEQUENCER_BROWSER_TITLE_LENGTH] = "";
   char path[SEQUENCER_MAX_PATH_LENGTH] = "";
+};
+
+struct SequencerNamingKey {
+  byte buttonIndex = 0;
+  SequencerNamingAction action = SequencerNamingAction::InsertChar;
+  char character = '\0';
 };
 
 int8_t sequencerSelectedStep = -1;
@@ -135,10 +162,21 @@ byte sequencerBrowserEntryCount = 0;
 byte sequencerBrowserOffset = 0;
 char sequencerBrowserPageTitle[20] = "Sequences";
 char sequencerBrowserEntryTitles[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT][SEQUENCER_BROWSER_TITLE_LENGTH] = {};
+SequencerNamingTarget sequencerNamingTarget = SequencerNamingTarget::None;
+char sequencerNamingBuffer[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1] = "";
+byte sequencerNamingLength = 0;
+char sequencerRenameSourcePath[SEQUENCER_MAX_PATH_LENGTH] = "";
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 void refreshSequencerBrowserMenu(bool resetSelection = true);
 void sequencerBrowserNewFolderCallback();
+bool isSequencerNamingActive();
+void openSequencerDeleteFileBrowser();
+void openSequencerDeleteFolderBrowser();
+void openSequencerRenameFileBrowser();
+void openSequencerRenameFolderBrowser();
+void sequencerBrowserDeleteFolderCallback();
+void sequencerBrowserRenameFolderCallback();
 
 const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
@@ -150,6 +188,43 @@ const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
 
 byte sequencerGateChoiceIndex(uint16_t gatePercent);
 void sortSequencerBrowserEntriesRange(byte startIndex, byte endExclusive);
+void startSequencerNaming(SequencerNamingTarget target, const char* initialText);
+
+const SequencerNamingKey sequencerNamingKeys[] = {
+  { 1, SequencerNamingAction::InsertChar, 'A' },
+  { 2, SequencerNamingAction::InsertChar, 'B' },
+  { 3, SequencerNamingAction::InsertChar, 'C' },
+  { 4, SequencerNamingAction::InsertChar, 'D' },
+  { 5, SequencerNamingAction::InsertChar, 'E' },
+  { 6, SequencerNamingAction::InsertChar, 'F' },
+  { 7, SequencerNamingAction::InsertChar, 'G' },
+  { 8, SequencerNamingAction::InsertChar, 'H' },
+  { 10, SequencerNamingAction::InsertChar, 'I' },
+  { 11, SequencerNamingAction::InsertChar, 'J' },
+  { 12, SequencerNamingAction::InsertChar, 'K' },
+  { 13, SequencerNamingAction::InsertChar, 'L' },
+  { 14, SequencerNamingAction::InsertChar, 'M' },
+  { 15, SequencerNamingAction::InsertChar, 'N' },
+  { 16, SequencerNamingAction::InsertChar, 'O' },
+  { 17, SequencerNamingAction::InsertChar, 'P' },
+  { 21, SequencerNamingAction::InsertChar, 'Q' },
+  { 22, SequencerNamingAction::InsertChar, 'R' },
+  { 23, SequencerNamingAction::InsertChar, 'S' },
+  { 24, SequencerNamingAction::InsertChar, 'T' },
+  { 25, SequencerNamingAction::InsertChar, 'U' },
+  { 26, SequencerNamingAction::InsertChar, 'V' },
+  { 27, SequencerNamingAction::InsertChar, 'W' },
+  { 28, SequencerNamingAction::InsertChar, 'X' },
+  { 30, SequencerNamingAction::InsertChar, 'Y' },
+  { 31, SequencerNamingAction::InsertChar, 'Z' },
+  { 32, SequencerNamingAction::InsertChar, ' ' },
+  { 33, SequencerNamingAction::InsertChar, '-' },
+  { 34, SequencerNamingAction::InsertChar, '1' },
+  { 35, SequencerNamingAction::InsertChar, '2' },
+  { 36, SequencerNamingAction::InsertChar, '3' },
+  { 41, SequencerNamingAction::Backspace, '\0' },
+  { 42, SequencerNamingAction::Cancel, '\0' }
+};
 
 void copySequencerString(char* destination, size_t destinationSize, const char* source) {
   if (destinationSize == 0) {
@@ -173,6 +248,22 @@ bool sequencerPathHasExtension(const char* path, const char* extension) {
 
 bool isSequencerFilePath(const char* path) {
   return sequencerPathHasExtension(path, SEQUENCER_FILE_EXTENSION);
+}
+
+bool sequencerPathStartsWith(const char* path, const char* prefix) {
+  if (path == nullptr || prefix == nullptr) {
+    return false;
+  }
+  size_t prefixLength = strlen(prefix);
+  return strncmp(path, prefix, prefixLength) == 0;
+}
+
+bool sequencerPathIsWithinFolder(const char* path, const char* folderPath) {
+  if (!sequencerPathStartsWith(path, folderPath)) {
+    return false;
+  }
+  size_t folderLength = strlen(folderPath);
+  return path[folderLength] == '/' || path[folderLength] == '\0';
 }
 
 void joinSequencerPath(const char* directoryPath, const char* leafName, char* out, size_t outSize) {
@@ -410,7 +501,9 @@ void rebuildSequencerBrowserEntries() {
 
   scanSequencerBrowserEntries(true, false);
   sortSequencerBrowserEntriesRange(0, sequencerBrowserEntryCount);
-  if (sequencerBrowserMode == SequencerBrowserMode::Load) {
+  if (sequencerBrowserMode == SequencerBrowserMode::Load ||
+      sequencerBrowserMode == SequencerBrowserMode::DeleteFile ||
+      sequencerBrowserMode == SequencerBrowserMode::RenameFile) {
     byte directoryCount = sequencerBrowserEntryCount;
     scanSequencerBrowserEntries(false, true);
     sortSequencerBrowserEntriesRange(directoryCount, sequencerBrowserEntryCount);
@@ -455,6 +548,121 @@ bool generateSequencerAutoFolderPath(const char* directoryPath, char* out, size_
     }
   }
   return false;
+}
+
+void clearSequencerCurrentPathIfDeleted(const char* path, bool isDirectory) {
+  if (sequencerCurrentSequencePath[0] == '\0' || path == nullptr || path[0] == '\0') {
+    return;
+  }
+
+  bool shouldClear = false;
+  if (isDirectory) {
+    shouldClear = sequencerPathIsWithinFolder(sequencerCurrentSequencePath, path);
+  } else {
+    shouldClear = strcmp(sequencerCurrentSequencePath, path) == 0;
+  }
+
+  if (shouldClear) {
+    sequencerCurrentSequencePath[0] = '\0';
+    rememberSequencerCurrentPath();
+  }
+}
+
+bool deleteSequencerFolderRecursive(const char* folderPath) {
+  if (!fileSystemExists || folderPath == nullptr || folderPath[0] == '\0' || sequencerPathIsRoot(folderPath)) {
+    return false;
+  }
+
+  Dir dir = LittleFS.openDir(folderPath);
+  while (dir.next()) {
+    String entryName = dir.fileName();
+    if (entryName.length() == 0 || entryName.startsWith(".")) {
+      continue;
+    }
+
+    char childPath[SEQUENCER_MAX_PATH_LENGTH];
+    joinSequencerPath(folderPath, entryName.c_str(), childPath, sizeof(childPath));
+    if (dir.isDirectory()) {
+      if (!deleteSequencerFolderRecursive(childPath)) {
+        return false;
+      }
+    } else {
+      if (!LittleFS.remove(childPath)) {
+        return false;
+      }
+    }
+  }
+
+  return LittleFS.rmdir(folderPath);
+}
+
+void startSequencerRename(SequencerNamingTarget target, const char* sourcePath) {
+  char initialName[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1];
+  extractSequencerDisplayName(sourcePath, initialName, sizeof(initialName));
+  copySequencerString(sequencerRenameSourcePath, sizeof(sequencerRenameSourcePath), sourcePath);
+  startSequencerNaming(target, initialName);
+}
+
+bool isSequencerNamingActive() {
+  return sequencerOverlayMode == SequencerOverlayMode::Naming && sequencerNamingTarget != SequencerNamingTarget::None;
+}
+
+const SequencerNamingKey* getSequencerNamingKey(byte buttonIndex) {
+  for (const SequencerNamingKey& key : sequencerNamingKeys) {
+    if (key.buttonIndex == buttonIndex) {
+      return &key;
+    }
+  }
+  return nullptr;
+}
+
+void setSequencerNamingBuffer(const char* text) {
+  copySequencerString(sequencerNamingBuffer, sizeof(sequencerNamingBuffer), text);
+  sequencerNamingLength = static_cast<byte>(strlen(sequencerNamingBuffer));
+  if (sequencerNamingLength > SEQUENCER_NAME_EDIT_MAX_LENGTH) {
+    sequencerNamingLength = SEQUENCER_NAME_EDIT_MAX_LENGTH;
+    sequencerNamingBuffer[sequencerNamingLength] = '\0';
+  }
+}
+
+void startSequencerNaming(SequencerNamingTarget target, const char* initialText) {
+  sequencerNamingTarget = target;
+  setSequencerNamingBuffer(initialText);
+  sequencerOverlayMode = SequencerOverlayMode::Naming;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+void exitSequencerNaming(bool redrawBrowser = true) {
+  sequencerNamingTarget = SequencerNamingTarget::None;
+  sequencerNamingBuffer[0] = '\0';
+  sequencerNamingLength = 0;
+  sequencerRenameSourcePath[0] = '\0';
+  sequencerOverlayMode = SequencerOverlayMode::Hidden;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = false;
+  if (redrawBrowser) {
+    menu.setMenuPageCurrent(menuPageSequencerBrowser);
+    menu.drawMenu();
+  }
+}
+
+void insertSequencerNamingChar(char character) {
+  if (sequencerNamingLength >= SEQUENCER_NAME_EDIT_MAX_LENGTH) {
+    return;
+  }
+  sequencerNamingBuffer[sequencerNamingLength++] = character;
+  sequencerNamingBuffer[sequencerNamingLength] = '\0';
+}
+
+void backspaceSequencerNamingChar() {
+  if (sequencerNamingLength == 0) {
+    return;
+  }
+  sequencerNamingLength--;
+  sequencerNamingBuffer[sequencerNamingLength] = '\0';
 }
 
 int8_t buttonIndexToSequencerStep(byte buttonIndex) {
@@ -1299,6 +1507,22 @@ void openSequencerSaveNewBrowser() {
   openSequencerBrowser(SequencerBrowserMode::SaveNew);
 }
 
+void openSequencerDeleteFileBrowser() {
+  openSequencerBrowser(SequencerBrowserMode::DeleteFile);
+}
+
+void openSequencerDeleteFolderBrowser() {
+  openSequencerBrowser(SequencerBrowserMode::DeleteFolder);
+}
+
+void openSequencerRenameFileBrowser() {
+  openSequencerBrowser(SequencerBrowserMode::RenameFile);
+}
+
+void openSequencerRenameFolderBrowser() {
+  openSequencerBrowser(SequencerBrowserMode::RenameFolder);
+}
+
 void sequencerBrowserUpCallback() {
   extractSequencerParentPath(sequencerBrowserPath, sequencerBrowserPath, sizeof(sequencerBrowserPath));
   sequencerBrowserOffset = 0;
@@ -1345,6 +1569,20 @@ void sequencerBrowserEntryCallback(GEMCallbackData callbackData) {
     menu.setMenuPageCurrent(menuPageSequencer);
     menu.drawMenu();
     showSequencerPathStatusMessage("Loaded", entry.path);
+  } else if (sequencerBrowserMode == SequencerBrowserMode::DeleteFile) {
+    char deletedPath[SEQUENCER_MAX_PATH_LENGTH];
+    copySequencerString(deletedPath, sizeof(deletedPath), entry.path);
+    clearSequencerCurrentPathIfDeleted(deletedPath, false);
+    if (LittleFS.remove(deletedPath)) {
+      refreshSequencerBrowserMenu(false);
+      showSequencerPathStatusMessage("Deleted", deletedPath);
+    } else {
+      menu.setMenuPageCurrent(menuPageSequencerBrowser);
+      menu.drawMenu();
+      showSequencerStatusMessage("Error Delete", "File failed");
+    }
+  } else if (sequencerBrowserMode == SequencerBrowserMode::RenameFile) {
+    startSequencerRename(SequencerNamingTarget::RenameSequence, entry.path);
   } else {
     menu.setMenuPageCurrent(menuPageSequencer);
     menu.drawMenu();
@@ -1353,34 +1591,185 @@ void sequencerBrowserEntryCallback(GEMCallbackData callbackData) {
 }
 
 void sequencerBrowserSaveHereCallback() {
-  char savedPath[SEQUENCER_MAX_PATH_LENGTH];
-  if (saveSequencerAsNewInDirectory(sequencerBrowserPath, savedPath, sizeof(savedPath))) {
-    menu.setMenuPageCurrent(menuPageSequencer);
-    menu.drawMenu();
-    showSequencerPathStatusMessage("Saved New", savedPath);
+  char suggestedPath[SEQUENCER_MAX_PATH_LENGTH];
+  char suggestedName[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1];
+  if (generateSequencerAutoPath(sequencerBrowserPath, suggestedPath, sizeof(suggestedPath))) {
+    extractSequencerDisplayName(suggestedPath, suggestedName, sizeof(suggestedName));
   } else {
-    menu.setMenuPageCurrent(menuPageSequencer);
-    menu.drawMenu();
-    showSequencerStatusMessage("Error Saving", "Save New failed");
+    copySequencerString(suggestedName, sizeof(suggestedName), "SEQUENCE");
   }
+  startSequencerNaming(SequencerNamingTarget::Sequence, suggestedName);
 }
 
 void sequencerBrowserNewFolderCallback() {
+  char suggestedPath[SEQUENCER_MAX_PATH_LENGTH];
+  char suggestedName[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1];
+  if (generateSequencerAutoFolderPath(sequencerBrowserPath, suggestedPath, sizeof(suggestedPath))) {
+    extractSequencerDisplayName(suggestedPath, suggestedName, sizeof(suggestedName));
+  } else {
+    copySequencerString(suggestedName, sizeof(suggestedName), "FOLDER");
+  }
+  startSequencerNaming(SequencerNamingTarget::Folder, suggestedName);
+}
+
+void sequencerBrowserDeleteFolderCallback() {
+  if (sequencerBrowserMode != SequencerBrowserMode::DeleteFolder || sequencerPathIsRoot(sequencerBrowserPath)) {
+    return;
+  }
+
   char folderPath[SEQUENCER_MAX_PATH_LENGTH];
-  if (!generateSequencerAutoFolderPath(sequencerBrowserPath, folderPath, sizeof(folderPath))) {
-    showSequencerStatusMessage("Error Folder", "No folder name");
+  char parentPath[SEQUENCER_MAX_PATH_LENGTH];
+  copySequencerString(folderPath, sizeof(folderPath), sequencerBrowserPath);
+  extractSequencerParentPath(folderPath, parentPath, sizeof(parentPath));
+
+  clearSequencerCurrentPathIfDeleted(folderPath, true);
+  if (deleteSequencerFolderRecursive(folderPath)) {
+    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), parentPath);
+    sequencerBrowserOffset = 0;
+    refreshSequencerBrowserMenu();
+    showSequencerPathStatusMessage("Deleted", folderPath);
+  } else {
+    menu.setMenuPageCurrent(menuPageSequencerBrowser);
+    menu.drawMenu();
+    showSequencerStatusMessage("Error Delete", "Folder failed");
+  }
+}
+
+void sequencerBrowserRenameFolderCallback() {
+  if (sequencerBrowserMode != SequencerBrowserMode::RenameFolder || sequencerPathIsRoot(sequencerBrowserPath)) {
     return;
   }
+  startSequencerRename(SequencerNamingTarget::RenameFolder, sequencerBrowserPath);
+}
 
-  if (!LittleFS.mkdir(folderPath)) {
+bool commitSequencerNaming() {
+  if (!isSequencerNamingActive()) {
+    return false;
+  }
+  if (sequencerNamingLength == 0) {
+    showSequencerStatusMessage("Name Empty", "Enter a name");
+    sequencerOverlayMode = SequencerOverlayMode::Naming;
+    sequencerOverlayUntil = 0;
+    sequencerOverlayVisible = false;
+    sequencerOverlayDirty = true;
+    return true;
+  }
+
+  char targetPath[SEQUENCER_MAX_PATH_LENGTH];
+  if (sequencerNamingTarget == SequencerNamingTarget::Sequence ||
+      sequencerNamingTarget == SequencerNamingTarget::RenameSequence) {
+    char fileLeaf[SEQUENCER_MAX_PATH_LENGTH];
+    snprintf(fileLeaf, sizeof(fileLeaf), "%s%s", sequencerNamingBuffer, SEQUENCER_FILE_EXTENSION);
+    char parentPath[SEQUENCER_MAX_PATH_LENGTH];
+    if (sequencerNamingTarget == SequencerNamingTarget::RenameSequence) {
+      extractSequencerParentPath(sequencerRenameSourcePath, parentPath, sizeof(parentPath));
+      joinSequencerPath(parentPath, fileLeaf, targetPath, sizeof(targetPath));
+    } else {
+      joinSequencerPath(sequencerBrowserPath, fileLeaf, targetPath, sizeof(targetPath));
+    }
+
+    if (sequencerNamingTarget == SequencerNamingTarget::RenameSequence &&
+        strcmp(targetPath, sequencerRenameSourcePath) == 0) {
+      exitSequencerNaming(true);
+      return true;
+    }
+
+    if (LittleFS.exists(targetPath)) {
+      showSequencerStatusMessage("Name Exists", "Pick another");
+      sequencerOverlayMode = SequencerOverlayMode::Naming;
+      sequencerOverlayUntil = 0;
+      sequencerOverlayVisible = false;
+      sequencerOverlayDirty = true;
+      return true;
+    }
+
+    if (sequencerNamingTarget == SequencerNamingTarget::RenameSequence) {
+      if (LittleFS.rename(sequencerRenameSourcePath, targetPath)) {
+        if (strcmp(sequencerCurrentSequencePath, sequencerRenameSourcePath) == 0) {
+          setSequencerCurrentPath(targetPath);
+        }
+        exitSequencerNaming(true);
+        showSequencerPathStatusMessage("Renamed", targetPath);
+        return true;
+      }
+      showSequencerStatusMessage("Error Rename", "File failed");
+      sequencerOverlayMode = SequencerOverlayMode::Naming;
+      sequencerOverlayVisible = false;
+      sequencerOverlayDirty = true;
+      return true;
+    } else if (saveSequencerToPath(targetPath)) {
+      setSequencerCurrentPath(targetPath);
+      sequencerDirty = false;
+      sequencerNamingTarget = SequencerNamingTarget::None;
+      menu.setMenuPageCurrent(menuPageSequencer);
+      menu.drawMenu();
+      showSequencerPathStatusMessage("Saved New", targetPath);
+      return true;
+    }
+
+    showSequencerStatusMessage("Error Saving", "Save New failed");
+    sequencerOverlayMode = SequencerOverlayMode::Naming;
+    sequencerOverlayVisible = false;
+    sequencerOverlayDirty = true;
+    return true;
+  }
+
+  char parentPath[SEQUENCER_MAX_PATH_LENGTH];
+  if (sequencerNamingTarget == SequencerNamingTarget::RenameFolder) {
+    extractSequencerParentPath(sequencerRenameSourcePath, parentPath, sizeof(parentPath));
+    joinSequencerPath(parentPath, sequencerNamingBuffer, targetPath, sizeof(targetPath));
+    if (strcmp(targetPath, sequencerRenameSourcePath) == 0) {
+      exitSequencerNaming(true);
+      return true;
+    }
+  } else {
+    joinSequencerPath(sequencerBrowserPath, sequencerNamingBuffer, targetPath, sizeof(targetPath));
+  }
+  if (LittleFS.exists(targetPath)) {
+    showSequencerStatusMessage("Name Exists", "Pick another");
+    sequencerOverlayMode = SequencerOverlayMode::Naming;
+    sequencerOverlayUntil = 0;
+    sequencerOverlayVisible = false;
+    sequencerOverlayDirty = true;
+    return true;
+  }
+  if (sequencerNamingTarget == SequencerNamingTarget::RenameFolder) {
+    if (!LittleFS.rename(sequencerRenameSourcePath, targetPath)) {
+      showSequencerStatusMessage("Error Rename", "Folder failed");
+      sequencerOverlayMode = SequencerOverlayMode::Naming;
+      sequencerOverlayVisible = false;
+      sequencerOverlayDirty = true;
+      return true;
+    }
+
+    if (sequencerPathIsWithinFolder(sequencerCurrentSequencePath, sequencerRenameSourcePath)) {
+      char suffix[SEQUENCER_MAX_PATH_LENGTH];
+      snprintf(suffix, sizeof(suffix), "%s", sequencerCurrentSequencePath + strlen(sequencerRenameSourcePath));
+      snprintf(sequencerCurrentSequencePath, sizeof(sequencerCurrentSequencePath), "%s%s", targetPath, suffix);
+      rememberSequencerCurrentPath();
+    }
+    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), targetPath);
+    sequencerBrowserOffset = 0;
+    exitSequencerNaming(false);
+    refreshSequencerBrowserMenu();
+    showSequencerPathStatusMessage("Renamed", targetPath);
+    return true;
+  }
+
+  if (!LittleFS.mkdir(targetPath)) {
     showSequencerStatusMessage("Error Folder", "Create failed");
-    return;
+    sequencerOverlayMode = SequencerOverlayMode::Naming;
+    sequencerOverlayVisible = false;
+    sequencerOverlayDirty = true;
+    return true;
   }
 
-  copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), folderPath);
+  copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), targetPath);
   sequencerBrowserOffset = 0;
+  sequencerNamingTarget = SequencerNamingTarget::None;
   refreshSequencerBrowserMenu();
-  showSequencerPathStatusMessage("Folder Created", folderPath);
+  showSequencerPathStatusMessage("Folder Created", targetPath);
+  return true;
 }
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo) {
@@ -1473,9 +1862,14 @@ GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
+GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
 GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
 GEMItem menuItemSequencerSaveNew("Save New", openSequencerSaveNewBrowser);
 GEMItem menuItemSequencerLoad("Load", openSequencerLoadBrowser);
+GEMItem menuItemSequencerRenameFile("Rename File", openSequencerRenameFileBrowser);
+GEMItem menuItemSequencerRenameFolder("Rename Folder", openSequencerRenameFolderBrowser);
+GEMItem menuItemSequencerDeleteFile("Delete File", openSequencerDeleteFileBrowser);
+GEMItem menuItemSequencerDeleteFolder("Delete Folder", openSequencerDeleteFolderBrowser);
 GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
@@ -1486,6 +1880,8 @@ GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, s
 GEMItem menuItemSequencerFirmwareUpdate("Update Firmware", rebootToBootloader);
 GEMItem menuItemSequencerBrowserSaveHere("Save Here", sequencerBrowserSaveHereCallback);
 GEMItem menuItemSequencerBrowserNewFolder("New Folder", sequencerBrowserNewFolderCallback);
+GEMItem menuItemSequencerBrowserRenameFolder("Rename This Folder", sequencerBrowserRenameFolderCallback);
+GEMItem menuItemSequencerBrowserDeleteFolder("Delete This Folder", sequencerBrowserDeleteFolderCallback);
 GEMItem menuItemSequencerBrowserUp("..", sequencerBrowserUpCallback);
 GEMItem menuItemSequencerBrowserEntry0("", sequencerBrowserEntryCallback, 0);
 GEMItem menuItemSequencerBrowserEntry1("", sequencerBrowserEntryCallback, 1);
@@ -1507,10 +1903,25 @@ GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
 void refreshSequencerBrowserMenu(bool resetSelection) {
   rebuildSequencerBrowserEntries();
 
-  if (sequencerBrowserMode == SequencerBrowserMode::SaveNew) {
-    copySequencerString(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Save New");
+  char folderName[SEQUENCER_BROWSER_TITLE_LENGTH];
+  if (sequencerPathIsRoot(sequencerBrowserPath)) {
+    copySequencerString(folderName, sizeof(folderName), "Sequences");
   } else {
-    copySequencerString(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Load");
+    extractSequencerDisplayName(sequencerBrowserPath, folderName, sizeof(folderName));
+  }
+
+  if (sequencerBrowserMode == SequencerBrowserMode::SaveNew) {
+    snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Save:%s", folderName);
+  } else if (sequencerBrowserMode == SequencerBrowserMode::DeleteFile) {
+    snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "DelFile:%s", folderName);
+  } else if (sequencerBrowserMode == SequencerBrowserMode::DeleteFolder) {
+    snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "DelFold:%s", folderName);
+  } else if (sequencerBrowserMode == SequencerBrowserMode::RenameFile) {
+    snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "RenFile:%s", folderName);
+  } else if (sequencerBrowserMode == SequencerBrowserMode::RenameFolder) {
+    snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "RenFold:%s", folderName);
+  } else {
+    snprintf(sequencerBrowserPageTitle, sizeof(sequencerBrowserPageTitle), "Load:%s", folderName);
   }
 
   menuPageSequencerBrowser.setTitle(sequencerBrowserPageTitle);
@@ -1518,6 +1929,10 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
   bool showSaveHere = (sequencerBrowserMode == SequencerBrowserMode::SaveNew);
   menuItemSequencerBrowserSaveHere.hide(!showSaveHere);
   menuItemSequencerBrowserNewFolder.hide(!showSaveHere);
+  menuItemSequencerBrowserRenameFolder.hide(!(sequencerBrowserMode == SequencerBrowserMode::RenameFolder) ||
+                                            sequencerPathIsRoot(sequencerBrowserPath));
+  menuItemSequencerBrowserDeleteFolder.hide(!(sequencerBrowserMode == SequencerBrowserMode::DeleteFolder) ||
+                                            sequencerPathIsRoot(sequencerBrowserPath));
   menuItemSequencerBrowserUp.hide(sequencerPathIsRoot(sequencerBrowserPath));
 
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
@@ -1544,13 +1959,49 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 }  // namespace
 
 bool handleSequencerRotaryTurn(int8_t direction) {
+  if (isSequencerNamingActive()) {
+    (void)direction;
+    return true;
+  }
   return handleSequencerRotaryTurnInternal(direction);
 }
 
+bool handleSequencerEncoderClick() {
+  if (!isSequencerNamingActive()) {
+    return false;
+  }
+  return commitSequencerNaming();
+}
+
 GEMPage menuPageSequencer("Sequencer");
+GEMPage menuPageSequencerFiles("File Management", menuPageSequencer);
 GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
+  if (isSequencerNamingActive()) {
+    if (!pressed) {
+      return;
+    }
+
+    const SequencerNamingKey* namingKey = getSequencerNamingKey(buttonIndex);
+    if (namingKey == nullptr) {
+      return;
+    }
+
+    if (namingKey->action == SequencerNamingAction::InsertChar) {
+      insertSequencerNamingChar(namingKey->character);
+    } else if (namingKey->action == SequencerNamingAction::Backspace) {
+      backspaceSequencerNamingChar();
+    } else if (namingKey->action == SequencerNamingAction::Cancel) {
+      exitSequencerNaming(true);
+      return;
+    }
+
+    sequencerOverlayVisible = false;
+    sequencerOverlayDirty = true;
+    return;
+  }
+
   if (!pressed) {
     if (buttonIndex == SEQUENCER_OVERVIEW_BUTTON_INDEX) {
       return;
@@ -1651,6 +2102,7 @@ void setupSequencerMenu() {
 
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
   menuPageSequencer.addMenuItem(menuGotoSynthFromSequencer);
+  menuPageSequencer.addMenuItem(menuGotoSequencerFiles);
   menuPageSequencer.addMenuItem(menuItemSequencerSave);
   menuPageSequencer.addMenuItem(menuItemSequencerSaveNew);
   menuPageSequencer.addMenuItem(menuItemSequencerLoad);
@@ -1663,8 +2115,15 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerPlayType);
   menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
 
+  menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFile);
+  menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFolder);
+  menuPageSequencerFiles.addMenuItem(menuItemSequencerDeleteFile);
+  menuPageSequencerFiles.addMenuItem(menuItemSequencerDeleteFolder);
+
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserSaveHere);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserNewFolder);
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserRenameFolder);
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserDeleteFolder);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserUp);
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
     menuPageSequencerBrowser.addMenuItem(*sequencerBrowserEntryItems[i]);
@@ -1674,6 +2133,8 @@ void setupSequencerMenu() {
 
   menuItemSequencerBrowserSaveHere.hide();
   menuItemSequencerBrowserNewFolder.hide();
+  menuItemSequencerBrowserRenameFolder.hide();
+  menuItemSequencerBrowserDeleteFolder.hide();
   menuItemSequencerBrowserUp.hide();
   menuItemSequencerBrowserPrev.hide();
   menuItemSequencerBrowserNext.hide();
@@ -1683,6 +2144,32 @@ void setupSequencerMenu() {
 }
 
 void drawSequencerOverlay() {
+  if (sequencerOverlayMode == SequencerOverlayMode::Naming && isSequencerNamingActive()) {
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    char nameLine[SEQUENCER_NAME_EDIT_MAX_LENGTH + 2];
+    copySequencerString(nameLine, sizeof(nameLine), sequencerNamingBuffer);
+    bool showCursor = ((runTime / 400000ULL) % 2ULL) == 0ULL;
+    if (showCursor && sequencerNamingLength < SEQUENCER_NAME_EDIT_MAX_LENGTH) {
+      nameLine[sequencerNamingLength] = '_';
+      nameLine[sequencerNamingLength + 1] = '\0';
+    }
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(4, 16, nameLine);
+
+    u8g2.setFont(u8g2_font_5x8_tf);
+    u8g2.drawStr(4, 36, "A B C D E F G H");
+    u8g2.drawStr(4, 50, "I J K L M N O P");
+    u8g2.drawStr(4, 64, "Q R S T U V W X");
+    u8g2.drawStr(4, 78, "Y Z SPC - 1 2 3");
+    u8g2.drawStr(4, 96, "<-  CANCEL");
+    u8g2.sendBuffer();
+    return;
+  }
+
   bool hasSelectedStepOverlay = (sequencerOverlayMode != SequencerOverlayMode::Hidden &&
                                  sequencerOverlayMode != SequencerOverlayMode::StatusMessage &&
                                  sequencerOverlayMode != SequencerOverlayMode::Overview &&
@@ -1826,6 +2313,20 @@ void drawSequencerOverlay() {
 }
 
 void applySequencerLedOverrides() {
+  if (isSequencerNamingActive()) {
+    uint32_t activeColor = getSequencerConfirmLedColor();
+    uint16_t ledCount = strip.numPixels();
+    for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
+      strip.setPixelColor(buttonIndex, 0);
+    }
+    for (const SequencerNamingKey& key : sequencerNamingKeys) {
+      if (key.buttonIndex < ledCount) {
+        strip.setPixelColor(key.buttonIndex, activeColor);
+      }
+    }
+    return;
+  }
+
   strip.setPixelColor(
     SEQUENCER_TRANSPORT_BUTTON_INDEX,
     getSequencerTransportLedColor(sequencerTransportState == SEQUENCER_TRANSPORT_PLAY));

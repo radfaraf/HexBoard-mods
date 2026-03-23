@@ -24,4 +24,5 @@ void setupSequencerMenu();
 void drawSequencerOverlay();
 void applySequencerLedOverrides();
 bool handleSequencerRotaryTurn(int8_t direction);
+bool handleSequencerEncoderClick();
 void updateSequencerTransport();
