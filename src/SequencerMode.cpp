@@ -249,7 +249,7 @@ void refreshSequencerMenuTitle() {
     if (displayName[0] == '\0') {
       copySequencerString(displayName, sizeof(displayName), "Sequence");
     }
-    snprintf(sequencerMenuTitle, sizeof(sequencerMenuTitle), "Sequencer-%s%s",
+    snprintf(sequencerMenuTitle, sizeof(sequencerMenuTitle), "Seq-%s%s",
              sequencerDirty ? "*" : "", displayName);
   }
   menuPageSequencer.setTitle(sequencerMenuTitle);
