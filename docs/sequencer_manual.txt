@@ -66,7 +66,7 @@ When a step is selected:
 - the Edit overlay appears
 - note keys add or remove notes from that step immediately
 - the step stores notes sorted from lowest to highest
-- the step can be length-edited by holding that step and turning the encoder
+- the step can be length-edited immediately with the encoder
 
 5.3 Empty steps
 
@@ -108,8 +108,8 @@ note or chord when you select it.
 7.1 How to change length
 
 - Select a step
-- Hold that step down
-- Turn the encoder
+- Turn the encoder for quick length changes
+- Press the encoder to open exact length entry
 
 The available length values are:
 
@@ -139,6 +139,25 @@ Length is stored as a percentage of the step duration.
 - values below 100% shorten the note
 - values above 100% let the note continue across later steps
 - 0% means the step will not sound
+
+7.3 Exact length entry
+
+Pressing the encoder while a step is selected opens the exact length screen.
+
+In exact length mode:
+
+- number keys are used to enter the value directly
+- the first digit typed replaces the currently shown value
+- up to 4 digits are allowed
+- <- removes the previous digit
+- CANCEL exits exact length entry without saving
+- pressing the encoder saves and exits
+
+The exact length screen shows this keypad-style layout:
+
+- 0 1 2 3 4
+- 5 6 7 8 9
+- <- CANCEL
 
 
 8. Transport And Playback

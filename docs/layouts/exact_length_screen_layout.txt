@@ -1,0 +1,29 @@
+SEQUENCER EXACT LENGTH SCREEN LAYOUT
+
+Used when:
+
+- a step is selected
+- the encoder is pressed
+
+Screen layout:
+
+  Exact #13
+
+  250_
+
+  0 1 2 3 4
+  5 6 7 8 9
+  <- CANCEL
+
+  Press encoder
+  to save
+
+Notes:
+
+- A blinking underscore shows the current input position.
+- Number keys insert digits directly.
+- The first digit typed replaces the current value.
+- Up to 4 digits are allowed.
+- <- removes the previous digit.
+- CANCEL exits without saving.
+- Pressing the encoder saves and returns to normal step editing.

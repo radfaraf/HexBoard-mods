@@ -73,7 +73,8 @@ enum class SequencerOverlayMode : uint8_t {
   StatusMessage = 4,
   LengthEdit = 5,
   Overview = 6,
-  Naming = 7
+  Naming = 7,
+  ExactLengthEdit = 8
 };
 
 struct SequencerPlaybackGroup {
@@ -155,6 +156,10 @@ byte sequencerTransportState = 0;
 bool sequencerDirty = false;
 bool sequencerStorageInitialized = false;
 uint16_t sequencerLengthPercentDisplay = 100;
+uint16_t sequencerExactLengthOriginal = 100;
+char sequencerExactLengthBuffer[5] = "100";
+byte sequencerExactLengthLength = 3;
+bool sequencerExactLengthReplaceOnNextDigit = true;
 byte sequencerOverviewPage = 0;
 char sequencerCurrentSequencePath[SEQUENCER_MAX_PATH_LENGTH] = "";
 char sequencerMenuTitle[SEQUENCER_MENU_TITLE_LENGTH] = "Sequencer";
@@ -174,6 +179,8 @@ void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 bool rememberSequencerCurrentPath();
 void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
 void refreshSequencerMenuTitle();
+void enterSequencerExactLengthEdit();
+void exitSequencerExactLengthEdit(bool saveChanges);
 void refreshSequencerBrowserMenu(bool resetSelection = true);
 void sequencerBrowserNewFolderCallback();
 bool isSequencerNamingActive();
@@ -229,6 +236,21 @@ const SequencerNamingKey sequencerNamingKeys[] = {
   { 34, SequencerNamingAction::InsertChar, '1' },
   { 35, SequencerNamingAction::InsertChar, '2' },
   { 36, SequencerNamingAction::InsertChar, '3' },
+  { 41, SequencerNamingAction::Backspace, '\0' },
+  { 42, SequencerNamingAction::Cancel, '\0' }
+};
+
+const SequencerNamingKey sequencerExactLengthKeys[] = {
+  { 1, SequencerNamingAction::InsertChar, '0' },
+  { 2, SequencerNamingAction::InsertChar, '1' },
+  { 3, SequencerNamingAction::InsertChar, '2' },
+  { 4, SequencerNamingAction::InsertChar, '3' },
+  { 5, SequencerNamingAction::InsertChar, '4' },
+  { 10, SequencerNamingAction::InsertChar, '5' },
+  { 11, SequencerNamingAction::InsertChar, '6' },
+  { 12, SequencerNamingAction::InsertChar, '7' },
+  { 13, SequencerNamingAction::InsertChar, '8' },
+  { 14, SequencerNamingAction::InsertChar, '9' },
   { 41, SequencerNamingAction::Backspace, '\0' },
   { 42, SequencerNamingAction::Cancel, '\0' }
 };
@@ -699,6 +721,93 @@ void backspaceSequencerNamingChar() {
   sequencerNamingBuffer[sequencerNamingLength] = '\0';
 }
 
+void enterSequencerExactLengthEdit() {
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+  sequencerExactLengthOriginal = sequencerStepGatePercent[sequencerSelectedStep];
+  snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "%u",
+           static_cast<unsigned>(sequencerExactLengthOriginal));
+  sequencerExactLengthLength = static_cast<byte>(strlen(sequencerExactLengthBuffer));
+  sequencerExactLengthReplaceOnNextDigit = true;
+  sequencerOverlayMode = SequencerOverlayMode::ExactLengthEdit;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+void exitSequencerExactLengthEdit(bool saveChanges) {
+  if (sequencerSelectedStep >= 0) {
+    uint16_t finalValue = sequencerExactLengthOriginal;
+    if (saveChanges) {
+      finalValue = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
+    }
+    if (finalValue > 1000) {
+      finalValue = 1000;
+    }
+    if (sequencerStepGatePercent[sequencerSelectedStep] != finalValue) {
+      sequencerStepGatePercent[sequencerSelectedStep] = finalValue;
+      setSequencerDirtyState(true);
+    }
+    sequencerLengthPercentDisplay = finalValue;
+  }
+  sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+const SequencerNamingKey* getSequencerExactLengthKey(byte buttonIndex) {
+  for (const SequencerNamingKey& key : sequencerExactLengthKeys) {
+    if (key.buttonIndex == buttonIndex) {
+      return &key;
+    }
+  }
+  return nullptr;
+}
+
+void insertSequencerExactLengthChar(char character) {
+  if (character < '0' || character > '9') {
+    return;
+  }
+  if (sequencerExactLengthReplaceOnNextDigit) {
+    sequencerExactLengthBuffer[0] = character;
+    sequencerExactLengthBuffer[1] = '\0';
+    sequencerExactLengthLength = 1;
+    sequencerExactLengthReplaceOnNextDigit = false;
+  } else if (sequencerExactLengthLength >= 4) {
+    return;
+  } else if (sequencerExactLengthLength == 1 && sequencerExactLengthBuffer[0] == '0') {
+    sequencerExactLengthBuffer[0] = character;
+  } else {
+    sequencerExactLengthBuffer[sequencerExactLengthLength++] = character;
+    sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
+  }
+  uint16_t value = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
+  if (value > 1000) {
+    snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "1000");
+    sequencerExactLengthLength = 4;
+    value = 1000;
+  }
+  sequencerLengthPercentDisplay = value;
+  sequencerOverlayDirty = true;
+}
+
+void backspaceSequencerExactLengthChar() {
+  sequencerExactLengthReplaceOnNextDigit = false;
+  if (sequencerExactLengthLength <= 1) {
+    snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "0");
+    sequencerExactLengthLength = 1;
+    sequencerLengthPercentDisplay = 0;
+    sequencerOverlayDirty = true;
+    return;
+  }
+  sequencerExactLengthLength--;
+  sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
+  sequencerLengthPercentDisplay = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
+  sequencerOverlayDirty = true;
+}
+
 int8_t buttonIndexToSequencerStep(byte buttonIndex) {
   if (buttonIndex >= 1 && buttonIndex <= 8) {
     return static_cast<int8_t>(buttonIndex - 1);
@@ -732,12 +841,15 @@ int8_t sequencerStepToButtonIndex(byte stepIndex) {
 }
 
 bool handleSequencerRotaryTurnInternal(int8_t direction) {
-  if (sequencerSelectedStep < 0 || direction == 0) {
+  if (direction == 0) {
     return false;
   }
 
-  int8_t buttonIndex = sequencerStepToButtonIndex(static_cast<byte>(sequencerSelectedStep));
-  if (buttonIndex < 0 || !isBoardButtonPressed(static_cast<byte>(buttonIndex))) {
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
+    return true;
+  }
+
+  if (sequencerSelectedStep < 0) {
     return false;
   }
 
@@ -2022,10 +2134,18 @@ bool handleSequencerRotaryTurn(int8_t direction) {
 }
 
 bool handleSequencerEncoderClick() {
-  if (!isSequencerNamingActive()) {
-    return false;
+  if (isSequencerNamingActive()) {
+    return commitSequencerNaming();
   }
-  return commitSequencerNaming();
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
+    exitSequencerExactLengthEdit(true);
+    return true;
+  }
+  if (sequencerSelectedStep >= 0) {
+    enterSequencerExactLengthEdit();
+    return true;
+  }
+  return false;
 }
 
 GEMPage menuPageSequencer("Sequencer");
@@ -2054,6 +2174,28 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
     sequencerOverlayVisible = false;
     sequencerOverlayDirty = true;
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
+    if (!pressed) {
+      return;
+    }
+
+    const SequencerNamingKey* exactKey = getSequencerExactLengthKey(buttonIndex);
+    if (exactKey == nullptr) {
+      return;
+    }
+
+    if (exactKey->action == SequencerNamingAction::InsertChar) {
+      insertSequencerExactLengthChar(exactKey->character);
+    } else if (exactKey->action == SequencerNamingAction::Backspace) {
+      backspaceSequencerExactLengthChar();
+    } else if (exactKey->action == SequencerNamingAction::Cancel) {
+      exitSequencerExactLengthEdit(false);
+      return;
+    }
+
     return;
   }
 
@@ -2247,6 +2389,36 @@ void drawSequencerOverlay() {
     return;
   }
 
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    char headerLabel[20];
+    char valueLabel[8];
+    snprintf(headerLabel, sizeof(headerLabel), "Exact #%02d", sequencerSelectedStep + 1);
+    snprintf(valueLabel, sizeof(valueLabel), "%s", sequencerExactLengthBuffer);
+    bool showCursor = ((runTime / 400000ULL) % 2ULL) == 0ULL;
+    size_t valueLength = strlen(valueLabel);
+    if (showCursor && valueLength < 4) {
+      valueLabel[valueLength] = '_';
+      valueLabel[valueLength + 1] = '\0';
+    }
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(20, 18, headerLabel);
+    u8g2.drawStr(40, 40, valueLabel);
+
+    u8g2.setFont(u8g2_font_5x8_tf);
+    u8g2.drawStr(8, 60, "0 1 2 3 4");
+    u8g2.drawStr(8, 74, "5 6 7 8 9");
+    u8g2.drawStr(8, 88, "<- CANCEL");
+    u8g2.drawStr(8, 106, "Press encoder");
+    u8g2.drawStr(8, 118, "to save");
+    u8g2.sendBuffer();
+    return;
+  }
+
   if ((sequencerOverlayMode == SequencerOverlayMode::NoteAssigned ||
        sequencerOverlayMode == SequencerOverlayMode::LengthEdit ||
        sequencerOverlayMode == SequencerOverlayMode::StatusMessage) &&
@@ -2376,6 +2548,20 @@ void applySequencerLedOverrides() {
       strip.setPixelColor(buttonIndex, 0);
     }
     for (const SequencerNamingKey& key : sequencerNamingKeys) {
+      if (key.buttonIndex < ledCount) {
+        strip.setPixelColor(key.buttonIndex, activeColor);
+      }
+    }
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
+    uint32_t activeColor = getSequencerConfirmLedColor();
+    uint16_t ledCount = strip.numPixels();
+    for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
+      strip.setPixelColor(buttonIndex, 0);
+    }
+    for (const SequencerNamingKey& key : sequencerExactLengthKeys) {
       if (key.buttonIndex < ledCount) {
         strip.setPixelColor(key.buttonIndex, activeColor);
       }

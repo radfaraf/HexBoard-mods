@@ -16,3 +16,4 @@ Current files:
 - naming_screen_layout.txt
 - edit_note_screen_layout.txt
 - overview_screen_layout.txt
+- exact_length_screen_layout.txt

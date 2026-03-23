@@ -14,8 +14,9 @@ Notes:
 - The next line shows the current stored step length percentage.
 - The notes are shown on one row, sorted lowest to highest.
 - This screen is used while editing notes in the selected step.
+- With a step selected, turning the encoder changes the step length directly.
 
-Length edit overlay while holding a selected step and turning the encoder:
+Quick length overlay while turning the encoder with a selected step:
 
   Step Length
 
