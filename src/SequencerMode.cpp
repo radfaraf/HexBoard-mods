@@ -18,6 +18,11 @@ extern bool screenSaverOn;
 extern uint64_t screenTime;
 extern uint64_t runTime;
 extern Adafruit_NeoPixel strip;
+extern RP2040 rp2040;
+extern volatile bool isrProfilingEnabled;
+extern volatile uint32_t isrProfileAvgUs;
+extern volatile uint32_t isrProfileCount;
+extern void readAndResetISRProfile();
 
 int sequencerConfirmHue = 250;
 byte sequencerConfirmSaturation = 255;
@@ -34,8 +39,11 @@ constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
 constexpr uint64_t SEQUENCER_CLEAR_HOLD_MICROS = 1000000ULL;
+constexpr uint64_t SEQUENCER_PERFORMANCE_HOLD_MICROS = 2000000ULL;
+constexpr uint64_t SEQUENCER_PERFORMANCE_REFRESH_MICROS = 250000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_ON_MICROS = 1000000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_OFF_MICROS = 200000ULL;
+constexpr uint32_t SEQUENCER_AUDIO_ISR_PERIOD_MICROS = 24;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
 constexpr byte SEQUENCER_TAP_PREVIEW_OFF = 0;
@@ -74,7 +82,8 @@ enum class SequencerOverlayMode : uint8_t {
   LengthEdit = 5,
   Overview = 6,
   Naming = 7,
-  ExactLengthEdit = 8
+  ExactLengthEdit = 8,
+  PerformanceMonitor = 9
 };
 
 struct SequencerPlaybackGroup {
@@ -146,6 +155,9 @@ uint64_t sequencerNextStepAt = 0;
 uint64_t sequencerCurrentStepStartedAt = 0;
 uint64_t sequencerConfirmPressedAt = 0;
 bool sequencerConfirmHeld = false;
+uint64_t sequencerTransportPressedAt = 0;
+bool sequencerTransportHeld = false;
+SequencerOverlayMode sequencerOverlayBeforePerformance = SequencerOverlayMode::Hidden;
 byte sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
 byte sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
 byte sequencerPlayType = SEQUENCER_PLAY_TYPE_MIDI;
@@ -174,6 +186,14 @@ SequencerNamingTarget sequencerNamingTarget = SequencerNamingTarget::None;
 char sequencerNamingBuffer[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1] = "";
 byte sequencerNamingLength = 0;
 char sequencerRenameSourcePath[SEQUENCER_MAX_PATH_LENGTH] = "";
+uint64_t sequencerPerformanceLastSampleAt = 0;
+uint16_t sequencerPerformanceCpuPercent = 0;
+uint32_t sequencerPerformanceCpuAvgUs = 0;
+uint32_t sequencerPerformanceHeapUsedBytes = 0;
+uint32_t sequencerPerformanceHeapTotalBytes = 0;
+uint64_t sequencerPerformanceStorageUsedBytes = 0;
+uint64_t sequencerPerformanceStorageTotalBytes = 0;
+bool sequencerPerformanceStorageValid = false;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 bool rememberSequencerCurrentPath();
@@ -181,6 +201,9 @@ void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
 void refreshSequencerMenuTitle();
 void enterSequencerExactLengthEdit();
 void exitSequencerExactLengthEdit(bool saveChanges);
+void showSequencerPerformanceMonitor();
+void hideSequencerPerformanceMonitor();
+void refreshSequencerPerformanceStats(bool forceRefresh);
 void refreshSequencerBrowserMenu(bool resetSelection = true);
 void sequencerBrowserNewFolderCallback();
 bool isSequencerNamingActive();
@@ -1055,6 +1078,91 @@ void hideSequencerOverlay() {
   sequencerOverlayUntil = 0;
   sequencerOverlayVisible = false;
   sequencerOverlayDirty = false;
+}
+
+void formatSequencerUsageLabel(uint64_t bytes, char* out, size_t outSize) {
+  if (outSize == 0) {
+    return;
+  }
+  if (bytes >= (1024ULL * 1024ULL)) {
+    snprintf(out, outSize, "%lluM", (bytes + (512ULL * 1024ULL)) / (1024ULL * 1024ULL));
+  } else if (bytes >= 1024ULL) {
+    snprintf(out, outSize, "%lluK", (bytes + 512ULL) / 1024ULL);
+  } else {
+    snprintf(out, outSize, "%lluB", bytes);
+  }
+}
+
+void refreshSequencerPerformanceStats(bool forceRefresh) {
+  if (sequencerOverlayMode != SequencerOverlayMode::PerformanceMonitor) {
+    return;
+  }
+
+  if (!forceRefresh &&
+      sequencerPerformanceLastSampleAt != 0 &&
+      (runTime - sequencerPerformanceLastSampleAt) < SEQUENCER_PERFORMANCE_REFRESH_MICROS) {
+    return;
+  }
+
+  sequencerPerformanceHeapUsedBytes = static_cast<uint32_t>(rp2040.getUsedHeap());
+  sequencerPerformanceHeapTotalBytes = static_cast<uint32_t>(rp2040.getTotalHeap());
+
+  FSInfo storageInfo;
+  if (fileSystemExists && LittleFS.info(storageInfo)) {
+    sequencerPerformanceStorageUsedBytes = storageInfo.usedBytes;
+    sequencerPerformanceStorageTotalBytes = storageInfo.totalBytes;
+    sequencerPerformanceStorageValid = true;
+  } else {
+    sequencerPerformanceStorageUsedBytes = 0;
+    sequencerPerformanceStorageTotalBytes = 0;
+    sequencerPerformanceStorageValid = false;
+  }
+
+  readAndResetISRProfile();
+  if (isrProfileCount > 0) {
+    sequencerPerformanceCpuAvgUs = isrProfileAvgUs;
+    uint32_t percent = static_cast<uint32_t>(
+      (static_cast<uint64_t>(sequencerPerformanceCpuAvgUs) * 100ULL + (SEQUENCER_AUDIO_ISR_PERIOD_MICROS / 2ULL)) /
+      SEQUENCER_AUDIO_ISR_PERIOD_MICROS);
+    sequencerPerformanceCpuPercent = static_cast<uint16_t>((percent > 999U) ? 999U : percent);
+  } else {
+    sequencerPerformanceCpuAvgUs = 0;
+    sequencerPerformanceCpuPercent = 0;
+  }
+
+  sequencerPerformanceLastSampleAt = runTime;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+void showSequencerPerformanceMonitor() {
+  if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    refreshSequencerPerformanceStats(false);
+    return;
+  }
+
+  sequencerOverlayBeforePerformance = sequencerOverlayMode;
+  sequencerOverlayMode = SequencerOverlayMode::PerformanceMonitor;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+  sequencerPerformanceLastSampleAt = 0;
+  isrProfilingEnabled = true;
+  readAndResetISRProfile();
+  refreshSequencerPerformanceStats(true);
+}
+
+void hideSequencerPerformanceMonitor() {
+  if (sequencerOverlayMode != SequencerOverlayMode::PerformanceMonitor) {
+    return;
+  }
+
+  isrProfilingEnabled = false;
+  sequencerOverlayMode = sequencerOverlayBeforePerformance;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+  menu.drawMenu();
 }
 
 void showSequencerOverviewPage(bool advancePage) {
@@ -2126,6 +2234,10 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 }  // namespace
 
 bool handleSequencerRotaryTurn(int8_t direction) {
+  if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    (void)direction;
+    return true;
+  }
   if (isSequencerNamingActive()) {
     (void)direction;
     return true;
@@ -2134,6 +2246,9 @@ bool handleSequencerRotaryTurn(int8_t direction) {
 }
 
 bool handleSequencerEncoderClick() {
+  if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    return true;
+  }
   if (isSequencerNamingActive()) {
     return commitSequencerNaming();
   }
@@ -2153,6 +2268,33 @@ GEMPage menuPageSequencerFiles("File Management", menuPageSequencer);
 GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
+  if (buttonIndex == SEQUENCER_TRANSPORT_BUTTON_INDEX) {
+    if (pressed) {
+      screenTime = 0;
+      if (screenSaverOn) {
+        screenSaverOn = false;
+        u8g2.setContrast(SEQUENCER_OVERLAY_CONTRAST);
+      }
+      sequencerTransportHeld = true;
+      sequencerTransportPressedAt = runTime;
+    } else {
+      bool showedPerformanceMonitor = (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor);
+      sequencerTransportHeld = false;
+      sequencerTransportPressedAt = 0;
+      if (showedPerformanceMonitor) {
+        hideSequencerPerformanceMonitor();
+      } else {
+        setSequencerTransportState(
+          (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_STOP : SEQUENCER_TRANSPORT_PLAY);
+      }
+    }
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    return;
+  }
+
   if (isSequencerNamingActive()) {
     if (!pressed) {
       return;
@@ -2241,12 +2383,6 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
   if (sequencerOverlayMode == SequencerOverlayMode::Overview) {
     hideSequencerOverlay();
-  }
-
-  if (buttonIndex == SEQUENCER_TRANSPORT_BUTTON_INDEX) {
-    setSequencerTransportState(
-      (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_STOP : SEQUENCER_TRANSPORT_PLAY);
-    return;
   }
 
   if (buttonIndex == SEQUENCER_CONFIRM_BUTTON_INDEX) {
@@ -2364,6 +2500,44 @@ void drawSequencerOverlay() {
     u8g2.drawStr(4, 64, "Q R S T U V W X");
     u8g2.drawStr(4, 78, "Y Z SPC - 1 2 3");
     u8g2.drawStr(4, 96, "<-  CANCEL");
+    u8g2.sendBuffer();
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    refreshSequencerPerformanceStats(false);
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    char cpuLine[20];
+    char memoryLine[24];
+    char storageLine[24];
+    char usedLabel[10];
+    char totalLabel[10];
+
+    snprintf(cpuLine, sizeof(cpuLine), "CPU %u%%", static_cast<unsigned>(sequencerPerformanceCpuPercent));
+
+    formatSequencerUsageLabel(sequencerPerformanceHeapUsedBytes, usedLabel, sizeof(usedLabel));
+    formatSequencerUsageLabel(sequencerPerformanceHeapTotalBytes, totalLabel, sizeof(totalLabel));
+    snprintf(memoryLine, sizeof(memoryLine), "Mem %s/%s", usedLabel, totalLabel);
+
+    if (sequencerPerformanceStorageValid) {
+      formatSequencerUsageLabel(sequencerPerformanceStorageUsedBytes, usedLabel, sizeof(usedLabel));
+      formatSequencerUsageLabel(sequencerPerformanceStorageTotalBytes, totalLabel, sizeof(totalLabel));
+      snprintf(storageLine, sizeof(storageLine), "FS  %s/%s", usedLabel, totalLabel);
+    } else {
+      snprintf(storageLine, sizeof(storageLine), "FS  unavailable");
+    }
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(8, 18, "Performance");
+    u8g2.drawStr(8, 46, cpuLine);
+    u8g2.drawStr(8, 66, memoryLine);
+    u8g2.drawStr(8, 86, storageLine);
+    u8g2.setFont(u8g2_font_5x8_tf);
+    u8g2.drawStr(8, 108, "Hold Play/Stop");
+    u8g2.drawStr(8, 120, "release to exit");
     u8g2.sendBuffer();
     return;
   }
@@ -2608,6 +2782,15 @@ void updateSequencerTransport() {
     if (heldMicros >= SEQUENCER_CLEAR_HOLD_MICROS) {
       clearSelectedSequencerStep();
     }
+  }
+
+  if (sequencerTransportHeld && sequencerTransportPressedAt != 0) {
+    uint64_t heldMicros = runTime - sequencerTransportPressedAt;
+    if (heldMicros >= SEQUENCER_PERFORMANCE_HOLD_MICROS) {
+      showSequencerPerformanceMonitor();
+    }
+  } else if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    hideSequencerPerformanceMonitor();
   }
 
   serviceSequencerPlaybackGroups();

@@ -42,6 +42,7 @@ The step grid uses the first 8 playable keys from the first 4 rows:
 - Top-right key: Play/Stop
 - Second-row 9th key: step overview page button
 - Second-row far-right key: blue action key
+- Hold the top-right key for 2 seconds to show the performance monitor while held
 
 4.3 Lower keyboard area
 
@@ -169,6 +170,16 @@ The top-right key toggles transport:
 
 - red when stopped
 - green when playing
+
+Press and hold the Play/Stop key for about 2 seconds to open the performance
+monitor. The monitor stays visible only while the key is held and closes when
+the key is released.
+
+The performance monitor shows:
+
+- CPU load as an approximate percentage based on the audio poll interrupt load
+- heap memory used versus total
+- LittleFS storage used versus total
 
 8.2 Tempo
 
@@ -375,7 +386,28 @@ While naming is active:
 Maximum name length is 20 characters.
 
 
-17. Header Title And Unsaved Changes
+17. Performance Monitor
+
+The sequencer has a temporary performance monitor overlay.
+
+How to open it:
+
+- press and hold the Play/Stop key for about 2 seconds
+
+How it behaves:
+
+- it appears while the key is still held
+- it closes immediately when the key is released
+- it does not replace the normal sequencer screen permanently
+
+What it shows:
+
+- CPU: approximate audio engine load percentage
+- Mem: heap used versus total heap
+- FS: LittleFS storage used versus total storage
+
+
+18. Header Title And Unsaved Changes
 
 At the top of the Sequencer menu:
 
@@ -390,7 +422,7 @@ The star marks the sequence as dirty, meaning the current state differs from
 the last saved version.
 
 
-18. What Is Stored In A Sequence File
+19. What Is Stored In A Sequence File
 
 The current save file stores:
 
@@ -403,7 +435,7 @@ The current save file stores:
 - the gate/length value for each step
 
 
-19. Current Limits
+20. Current Limits
 
 - 1 track
 - 32 steps
@@ -412,19 +444,19 @@ The current save file stores:
 - no direct computer-drive mode for the sequence files yet
 
 
-20. Practical Workflow Example
+21. Practical Workflow Example
 
 1. Enter Sequencer mode.
 2. Press a step to select it.
 3. Play notes on the lower keyboard area to build the step.
-4. Hold the selected step and turn the encoder to set note length.
+4. Turn the encoder while the step is selected to set note length quickly.
 5. Repeat for other steps.
 6. Press the top-right key to start playback.
 7. Adjust Tempo, Steps, Direction, Tap Preview, or Play Type as needed.
 8. Choose Save or Save New to store the sequence.
 
 
-21. Quick Troubleshooting
+22. Quick Troubleshooting
 
 If a step does not sound:
 
