@@ -22,7 +22,11 @@ extern RP2040 rp2040;
 extern volatile bool isrProfilingEnabled;
 extern volatile uint32_t isrProfileAvgUs;
 extern volatile uint32_t isrProfileCount;
+extern volatile uint32_t midiMonitorQueueDepth;
+extern volatile uint32_t midiMonitorDroppedCount;
+extern volatile uint32_t midiMonitorLateCount;
 extern void readAndResetISRProfile();
+extern void resetMidiMonitorStats();
 
 int sequencerConfirmHue = 250;
 byte sequencerConfirmSaturation = 255;
@@ -1147,6 +1151,7 @@ void showSequencerPerformanceMonitor() {
   sequencerOverlayVisible = false;
   sequencerOverlayDirty = true;
   sequencerPerformanceLastSampleAt = 0;
+  resetMidiMonitorStats();
   isrProfilingEnabled = true;
   readAndResetISRProfile();
   refreshSequencerPerformanceStats(true);
@@ -2512,10 +2517,12 @@ void drawSequencerOverlay() {
     char cpuLine[20];
     char memoryLine[24];
     char storageLine[24];
+    char midiQueueLine[20];
+    char midiStateLine[24];
     char usedLabel[10];
     char totalLabel[10];
 
-    snprintf(cpuLine, sizeof(cpuLine), "CPU %u%%", static_cast<unsigned>(sequencerPerformanceCpuPercent));
+    snprintf(cpuLine, sizeof(cpuLine), "AudioEng %u%%", static_cast<unsigned>(sequencerPerformanceCpuPercent));
 
     formatSequencerUsageLabel(sequencerPerformanceHeapUsedBytes, usedLabel, sizeof(usedLabel));
     formatSequencerUsageLabel(sequencerPerformanceHeapTotalBytes, totalLabel, sizeof(totalLabel));
@@ -2529,15 +2536,19 @@ void drawSequencerOverlay() {
       snprintf(storageLine, sizeof(storageLine), "FS  unavailable");
     }
 
+    snprintf(midiQueueLine, sizeof(midiQueueLine), "MIDI Q %u",
+             static_cast<unsigned>(midiMonitorQueueDepth));
+    snprintf(midiStateLine, sizeof(midiStateLine), "Drop %u Late %u",
+             static_cast<unsigned>(midiMonitorDroppedCount),
+             static_cast<unsigned>(midiMonitorLateCount));
+
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
-    u8g2.drawStr(8, 18, "Performance");
-    u8g2.drawStr(8, 46, cpuLine);
-    u8g2.drawStr(8, 66, memoryLine);
-    u8g2.drawStr(8, 86, storageLine);
-    u8g2.setFont(u8g2_font_5x8_tf);
-    u8g2.drawStr(8, 108, "Hold Play/Stop");
-    u8g2.drawStr(8, 120, "release to exit");
+    u8g2.drawStr(8, 16, cpuLine);
+    u8g2.drawStr(8, 36, memoryLine);
+    u8g2.drawStr(8, 56, storageLine);
+    u8g2.drawStr(8, 76, midiQueueLine);
+    u8g2.drawStr(8, 96, midiStateLine);
     u8g2.sendBuffer();
     return;
   }

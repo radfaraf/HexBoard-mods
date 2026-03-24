@@ -1210,6 +1210,17 @@ volatile uint32_t isrProfileMinUs  = 0;
 volatile uint32_t isrProfileMaxUs  = 0;
 volatile uint32_t isrProfileAvgUs  = 0;
 volatile uint32_t isrProfileCount  = 0;
+volatile uint32_t midiMonitorQueueDepth = 0;
+volatile uint32_t midiMonitorDroppedCount = 0;
+volatile uint32_t midiMonitorLateCount = 0;
+uint64_t midiMonitorBacklogStartedAt = 0;
+bool midiMonitorLateLatched = false;
+bool midiMonitorDropLatched = false;
+constexpr uint64_t MIDI_MONITOR_LATE_THRESHOLD_MICROS = 5000ULL;
+constexpr uint32_t MIDI_MONITOR_USB_RX_SOFT_LIMIT = 64;
+constexpr uint32_t MIDI_MONITOR_SERIAL_RX_SOFT_LIMIT = 64;
+void resetMidiMonitorStats();
+void updateMidiMonitorStats();
 void readAndResetISRProfile() {
   // Briefly disable profiling to get a consistent snapshot
   isrProfilingEnabled = false;
@@ -2178,6 +2189,47 @@ MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, SMIDI);
 #define MIDID_SER 2
 #define MIDID_BOTH 3
 byte midiD = MIDID_USB | MIDID_SER;
+
+void resetMidiMonitorStats() {
+  midiMonitorQueueDepth = 0;
+  midiMonitorDroppedCount = 0;
+  midiMonitorLateCount = 0;
+  midiMonitorBacklogStartedAt = 0;
+  midiMonitorLateLatched = false;
+  midiMonitorDropLatched = false;
+}
+
+void updateMidiMonitorStats() {
+  uint32_t usbPending = static_cast<uint32_t>(usb_midi.available());
+  uint32_t serialPending = static_cast<uint32_t>(Serial1.available());
+  uint32_t totalPending = usbPending + serialPending;
+
+  midiMonitorQueueDepth = totalPending;
+
+  if (totalPending == 0) {
+    midiMonitorBacklogStartedAt = 0;
+    midiMonitorLateLatched = false;
+    midiMonitorDropLatched = false;
+    return;
+  }
+
+  if (midiMonitorBacklogStartedAt == 0) {
+    midiMonitorBacklogStartedAt = runTime;
+  }
+
+  if (!midiMonitorLateLatched &&
+      midiMonitorBacklogStartedAt != 0 &&
+      (runTime - midiMonitorBacklogStartedAt) >= MIDI_MONITOR_LATE_THRESHOLD_MICROS) {
+    midiMonitorLateCount++;
+    midiMonitorLateLatched = true;
+  }
+
+  if (!midiMonitorDropLatched &&
+      (usbPending >= MIDI_MONITOR_USB_RX_SOFT_LIMIT || serialPending >= MIDI_MONITOR_SERIAL_RX_SOFT_LIMIT)) {
+    midiMonitorDroppedCount++;
+    midiMonitorDropLatched = true;
+  }
+}
 
 // What program change number we last sent (General MIDI/Roland MT-32)
 byte programChange = 0;
@@ -7500,6 +7552,7 @@ void loop() {        // run on first core
   readHexes();       // Read and store the digital button states of the scanning matrix
   arpeggiate();      // arpeggiate if synth mode allows it
   updateWheels();    // deal with the pitch/mod wheel
+  updateMidiMonitorStats();
   processIncomingMIDI();  // respond to external MIDI input
   updateSequencerTransport();
   animateLEDs();     // deal with animations

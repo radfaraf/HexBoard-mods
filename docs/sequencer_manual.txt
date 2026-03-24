@@ -402,9 +402,12 @@ How it behaves:
 
 What it shows:
 
-- CPU: approximate audio engine load percentage
+- AudioEng: approximate audio engine load percentage
 - Mem: heap used versus total heap
 - FS: LittleFS storage used versus total storage
+- MIDI Q: current incoming MIDI backlog in pending bytes
+- Drop: backlog episodes that hit the receive soft limit
+- Late: backlog episodes that stayed pending long enough to count as delayed
 
 
 18. Header Title And Unsaved Changes

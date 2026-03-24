@@ -17,7 +17,8 @@ Main Controls
 - Steps: the first 8 playable keys of the first 4 rows are steps 1-32.
 - Play/Stop: the top-right key starts and stops playback on a short press.
 - Performance monitor: hold the top-right Play/Stop key for 2 seconds to show
-  CPU, memory, and storage usage; release it to close the monitor.
+  audio engine load, memory, storage, and MIDI receive stats; release it to
+  close the monitor.
 - Overview: the 9th key on the second row pages through an 8-step note view.
 - Blue action key: the far-right key on the second row does undo on short
   press and clears the selected step on a 1-second hold.
@@ -111,6 +112,6 @@ Status And Display
 - The selected step blinks.
 - The overview screen shows 8 steps at a time.
 - Empty steps are dark when idle.
-- The performance monitor shows CPU load, heap usage, and flash usage while
-  the Play/Stop key is held.
+- The performance monitor shows:
+  AudioEng, Mem, FS, MIDI Q, Drop, and Late while the Play/Stop key is held.
 - The top title shows the loaded file name and unsaved state.
