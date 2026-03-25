@@ -1,0 +1,117 @@
+HEXBOARD SEQUENCER MENU AND SETTINGS REQUIREMENTS
+
+ID: SEQ-MENU-001
+Title: Main Sequencer Menu
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The main Sequencer menu shall include the current top-level Sequencer actions
+and settings.
+
+Details:
+- Keyboard
+- Synth Options
+- File Management
+- Save
+- Save New
+- Load
+- Revert
+- Play/Stop
+- Steps
+- Direction
+- Tempo
+- Tap Preview
+- Play Type
+- Update Firmware
+
+
+ID: SEQ-MENU-002
+Title: File Management Submenu
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The File Management submenu shall include the current file-management actions.
+
+Details:
+- Rename File
+- Rename Folder
+- Create Folder
+- Delete File
+- Delete Folder
+
+
+ID: SEQ-MENU-003
+Title: Shared Synth Options Access
+Status: Active
+Area: Menus
+Priority: Medium
+
+Requirement:
+Sequencer mode shall provide access to Synth Options from the Sequencer menu.
+
+
+ID: SEQ-MENU-004
+Title: Firmware Update Access
+Status: Active
+Area: Menus
+Priority: Medium
+
+Requirement:
+Sequencer mode shall provide access to firmware update reboot from the
+Sequencer menu.
+
+
+ID: SEQ-MENU-005
+Title: Steps Setting
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Steps menu item shall set the active playback step count.
+
+
+ID: SEQ-MENU-006
+Title: Direction Setting
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Direction menu item shall set the current playback direction mode.
+
+
+ID: SEQ-MENU-007
+Title: Tempo Setting
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Tempo menu item shall set the current BPM used by the sequencer step clock.
+
+
+ID: SEQ-MENU-008
+Title: Tap Preview Setting
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Tap Preview menu item shall control whether selecting a step also previews
+its stored notes.
+
+
+ID: SEQ-MENU-009
+Title: Play Type Setting
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Play Type menu item shall switch between MIDI playback and onboard synth
+playback.

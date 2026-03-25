@@ -62,6 +62,24 @@ When needed:
 
 These layout files are documentation only and are not part of the firmware.
 
+## Requirements Maintenance
+
+Keep the requirements files in `docs/requirements` current whenever Sequencer
+behavior changes in a meaningful way.
+
+Current requirements folder:
+
+- `docs/requirements/`
+
+When needed:
+
+- update the existing requirement entries so they match the current intended behavior
+- add new requirement entries for meaningful new Sequencer features or workflows
+- avoid reusing old requirement IDs for unrelated meanings
+- prefer updating an existing requirement ID when the same feature changes details
+- treat the requirements docs as an intended-behavior reference alongside the latest explicit user instructions
+- if requirements and code disagree, treat that as something to clarify or align rather than ignoring it
+
 ## Maintenance Preference
 
 - If a behavior has changed over time, make sure the current code and the manuals reflect only the latest intended behavior.

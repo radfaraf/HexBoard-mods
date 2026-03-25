@@ -1,0 +1,173 @@
+HEXBOARD SEQUENCER STORAGE AND FILE REQUIREMENTS
+
+ID: SEQ-FILE-001
+Title: Storage Root
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+Sequence files shall be stored under /Sequences in onboard flash.
+
+
+ID: SEQ-FILE-002
+Title: Current Path Memory
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+The system shall remember the current sequence file path so the last loaded
+sequence can return on startup.
+
+
+ID: SEQ-FILE-003
+Title: Sequence Extension
+Status: Active
+Area: Files
+Priority: Medium
+
+Requirement:
+Sequence files shall use the .hbseq extension.
+
+
+ID: SEQ-FILE-004
+Title: Visible File Name
+Status: Active
+Area: Files
+Priority: Medium
+
+Requirement:
+The visible sequence name shown in the UI shall be the file name without the
+extension.
+
+
+ID: SEQ-FILE-005
+Title: Save Current Sequence
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+Save shall write the current sequence back to the currently loaded file.
+
+Details:
+- If no current file exists, Save shall create a new file in /Sequences.
+
+
+ID: SEQ-FILE-006
+Title: Save New Sequence
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+Save New shall let the user choose a folder, enter a new sequence name, and
+save a new sequence file there.
+
+
+ID: SEQ-FILE-007
+Title: Load Sequence
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+Load shall open the sequence browser and load a selected sequence file.
+
+
+ID: SEQ-FILE-008
+Title: Revert Sequence
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+Revert shall discard unsaved edits and reload the last saved version of the
+current sequence.
+
+
+ID: SEQ-FILE-009
+Title: File Browser Paging
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+The file browser shall show up to 8 file or folder rows at a time.
+
+Details:
+- ^ more ^ indicates earlier pages exist.
+- v more v indicates later pages exist.
+- Turning past the first or last real file row changes page.
+
+
+ID: SEQ-FILE-010
+Title: File Management Actions
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+The system shall support Rename File, Rename Folder, Create Folder, Delete File,
+and Delete Folder actions through the file management workflow.
+
+
+ID: SEQ-FILE-011
+Title: Recursive Folder Deletion
+Status: Active
+Area: Files
+Priority: Medium
+
+Requirement:
+Deleting a folder shall remove that folder and its contents recursively.
+
+
+ID: SEQ-FILE-012
+Title: Naming Mode Character Set
+Status: Active
+Area: Files
+Priority: Medium
+
+Requirement:
+Naming mode shall support uppercase letters plus SPC, hyphen, and the digits
+1, 2, and 3.
+
+
+ID: SEQ-FILE-013
+Title: Naming Mode Save And Cancel
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+Naming mode shall save on encoder press and cancel without saving when the
+Cancel key is pressed.
+
+
+ID: SEQ-FILE-014
+Title: Dirty Title Indicator
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+The Sequencer title shall indicate unsaved changes with a leading asterisk in
+the file portion of the title.
+
+Details:
+- If no file is loaded, the title is Sequencer.
+- If a file is loaded, the title is Seq-FILENAME.
+- If a file is loaded and unsaved changes exist, the title is Seq-*FILENAME.
+
+
+ID: SEQ-FILE-015
+Title: Sequence File Contents
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+A saved sequence file shall store the current tempo, active step count, tap
+preview state, play type, direction, notes per step, gate or length per step,
+and velocity per step.

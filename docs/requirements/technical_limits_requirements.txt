@@ -1,0 +1,63 @@
+HEXBOARD SEQUENCER TECHNICAL LIMITS REQUIREMENTS
+
+ID: SEQ-LIMIT-001
+Title: Track Count Limit
+Status: Active
+Area: Limits
+Priority: High
+
+Requirement:
+The current Sequencer implementation shall support 1 track.
+
+
+ID: SEQ-LIMIT-002
+Title: Step Count Limit
+Status: Active
+Area: Limits
+Priority: High
+
+Requirement:
+The current Sequencer implementation shall support 32 total editable steps.
+
+
+ID: SEQ-LIMIT-003
+Title: Notes Per Step Limit
+Status: Active
+Area: Limits
+Priority: High
+
+Requirement:
+The current Sequencer implementation shall support up to 4 notes per step.
+
+
+ID: SEQ-LIMIT-004
+Title: Sequence Name Length Limit
+Status: Active
+Area: Limits
+Priority: Medium
+
+Requirement:
+The current naming system shall limit sequence and folder names to 20
+characters.
+
+
+ID: SEQ-LIMIT-005
+Title: Current Computer File Access Limit
+Status: Active
+Area: Limits
+Priority: Medium
+
+Requirement:
+The current system shall not assume a direct normal computer drive mode for
+sequence files.
+
+
+ID: SEQ-LIMIT-006
+Title: Placeholder Tool Limit
+Status: Active
+Area: Limits
+Priority: Medium
+
+Requirement:
+The current step tools picker shall treat Prob and Tie as placeholders rather
+than fully implemented editing tools.

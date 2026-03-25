@@ -1,0 +1,134 @@
+HEXBOARD SEQUENCER SCREEN AND OVERLAY REQUIREMENTS
+
+ID: SEQ-UI-001
+Title: Edit Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+Selecting a step shall show an edit overlay for that step.
+
+Details:
+- The header shall use the form Edit #NN.
+- The overlay shall show a compact info line in the form L ...%  V ....
+- The overlay shall show the selected step notes in ascending order.
+
+
+ID: SEQ-UI-002
+Title: Selected Step Blink
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+The selected step shall blink to show selection.
+
+Details:
+- Blink timing is 1.0 seconds on and 0.2 seconds off.
+- Empty selected steps blink visibly instead of staying dark.
+
+
+ID: SEQ-UI-003
+Title: Selected Step Brightness
+Status: Active
+Area: UI
+Priority: Medium
+
+Requirement:
+During the visible phase of the selected-step blink, a note step shall use a
+brighter selected-note color that preserves the note's hue better than the play
+highlight tint.
+
+
+ID: SEQ-UI-004
+Title: Step Tools Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+The step tools overlay shall show the selected step number, the compact length
+and velocity line, the selected step notes, and the currently available tool
+labels.
+
+
+ID: SEQ-UI-005
+Title: Exact Length Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+The exact length overlay shall show the selected step number, the current
+numeric value with a blinking underscore cursor, the keypad layout, and a save
+instruction.
+
+
+ID: SEQ-UI-006
+Title: Exact Velocity Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+The exact velocity overlay shall show the selected step number, the compact
+length and velocity line, the selected step notes, the large current velocity
+value, and the short encoder instructions.
+
+
+ID: SEQ-UI-007
+Title: Overview Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+The overview overlay shall show 8 steps per page and page through the 32-step
+pattern.
+
+Details:
+- Empty steps show underscores.
+
+
+ID: SEQ-UI-008
+Title: Naming Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+Naming mode shall show the current name line, a blinking cursor, and the
+on-screen character layout.
+
+
+ID: SEQ-UI-009
+Title: Performance Monitor Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+The performance monitor overlay shall show AudioEng, Mem, FS, MIDI Q, Drop,
+and Late while the Play/Stop key is held.
+
+
+ID: SEQ-UI-010
+Title: Overlay Wake Behavior
+Status: Active
+Area: UI
+Priority: Medium
+
+Requirement:
+Active sequencer overlays shall keep the display awake while they are in use.
+
+
+ID: SEQ-UI-011
+Title: Status Messages
+Status: Active
+Area: UI
+Priority: Medium
+
+Requirement:
+The sequencer shall use temporary status overlays for actions such as save,
+revert, erase, and placeholder tool actions.

@@ -1,0 +1,152 @@
+HEXBOARD SEQUENCER PLAYBACK AND TIMING REQUIREMENTS
+
+ID: SEQ-PLAY-001
+Title: Step Clocking
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The sequencer shall treat each step as a 16th-note step at the current tempo.
+
+
+ID: SEQ-PLAY-002
+Title: Tempo Control
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The Sequencer menu shall provide a tempo control.
+
+Details:
+- Tempo is stored in the sequence file.
+
+
+ID: SEQ-PLAY-003
+Title: Active Playback Length
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The Sequencer menu shall provide a Steps control that sets the active playback
+range from 1 to 32 steps.
+
+
+ID: SEQ-PLAY-004
+Title: Direction Modes
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The Sequencer menu shall provide the direction modes Forward, Backward,
+Ping-Pong, Random, Brownian, and Drunk.
+
+
+ID: SEQ-PLAY-005
+Title: Tap Preview Control
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The Sequencer menu shall provide a Tap Preview setting with On and Off states.
+
+Details:
+- Off means tapping a step only selects it.
+- On means tapping a step selects it and previews its stored notes.
+
+
+ID: SEQ-PLAY-006
+Title: Play Type Control
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The Sequencer menu shall provide a Play Type setting with MIDI and OB Synth
+choices.
+
+
+ID: SEQ-PLAY-007
+Title: Length Value Set
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Quick length editing shall use the current supported length values.
+
+Details:
+- Supported values are:
+  0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800,
+  900, 1000 percent.
+
+
+ID: SEQ-PLAY-008
+Title: Exact Length Entry Range
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Exact length entry shall allow direct numeric entry up to 4 digits and shall
+clamp the saved value to 1000 percent maximum.
+
+
+ID: SEQ-PLAY-009
+Title: Velocity Range
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Step velocity shall support the range 0 through 127.
+
+Details:
+- Default step velocity is 96.
+- Velocity is stored per step.
+
+
+ID: SEQ-PLAY-010
+Title: Velocity Editing Values
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Exact velocity editing shall use coarse encoder values of 0, 5, 10, 15 and so
+on up to 125, plus 127.
+
+
+ID: SEQ-PLAY-011
+Title: Note Order
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Step notes shall be stored and displayed in ascending pitch order.
+
+
+ID: SEQ-PLAY-012
+Title: Chord Playback
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Playback of a step shall send all notes stored in that step together.
+
+
+ID: SEQ-PLAY-013
+Title: Step Velocity Use
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The stored velocity value of a step shall affect sequencer playback, tap
+preview, and live note audition while a step is selected.
