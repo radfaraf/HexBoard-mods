@@ -8,3 +8,8 @@ MPE/microtonal support for sequencer and all related features including save loa
 
 
 Maybe use the 7 side buttons somehow as a quick way to adjust note velocity and/or length, and perhaps other features.
+
+
+keyboard section of sequencer needs to respect color option settings and animations etc..
+
+

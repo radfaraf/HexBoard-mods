@@ -10,6 +10,7 @@ extern byte sequencerConfirmValue;
 bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote);
 bool isBoardButtonPressed(byte buttonIndex);
 bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut);
+bool getBoardSelectedLedColorForMidiNote(byte midiNote, uint32_t& colorOut);
 uint32_t getSequencerTransportLedColor(bool running);
 uint32_t getSequencerConfirmLedColor();
 uint32_t getSequencerUnsetStepLedColor(bool highlighted);

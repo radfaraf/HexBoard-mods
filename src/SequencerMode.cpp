@@ -51,7 +51,6 @@ constexpr uint64_t SEQUENCER_PERFORMANCE_HOLD_MICROS = 2000000ULL;
 constexpr uint64_t SEQUENCER_PERFORMANCE_REFRESH_MICROS = 250000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_ON_MICROS = 1000000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_OFF_MICROS = 200000ULL;
-constexpr float SEQUENCER_SELECTED_BRIGHTNESS_MULTIPLIER = 1.35f;
 constexpr uint32_t SEQUENCER_AUDIO_ISR_PERIOD_MICROS = 24;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
@@ -1270,19 +1269,6 @@ bool isSequencerSelectionLit() {
     return true;
   }
   return (runTime % cycleMicros) < SEQUENCER_SELECTED_ON_MICROS;
-}
-
-uint32_t brightenSequencerLedColor(uint32_t colorCode, float multiplier) {
-  uint32_t brightenedColor = 0;
-  for (byte shift = 0; shift <= 24; shift += 8) {
-    uint8_t channelValue = static_cast<uint8_t>((colorCode >> shift) & 0xFF);
-    uint16_t scaledValue = static_cast<uint16_t>(channelValue * multiplier);
-    if (scaledValue > 255) {
-      scaledValue = 255;
-    }
-    brightenedColor |= (static_cast<uint32_t>(scaledValue) << shift);
-  }
-  return brightenedColor;
 }
 
 void fillOverlayNoteLines(char* lineOne, size_t lineOneSize, char* lineTwo, size_t lineTwoSize) {
@@ -3313,10 +3299,9 @@ void applySequencerLedOverrides() {
 
     if (primaryMidiNote >= 128) {
       strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing));
+    } else if (selected && !playing && getBoardSelectedLedColorForMidiNote(primaryMidiNote, colorCode)) {
+      strip.setPixelColor(buttonIndex, colorCode);
     } else if (getBoardLedColorForMidiNote(primaryMidiNote, playing, colorCode)) {
-      if (selected && !playing) {
-        colorCode = brightenSequencerLedColor(colorCode, SEQUENCER_SELECTED_BRIGHTNESS_MULTIPLIER);
-      }
       strip.setPixelColor(buttonIndex, colorCode);
     }
   }

@@ -1345,6 +1345,7 @@ public:
   uint32_t LEDcodeAnim = 0;  // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodePlay = 0;  // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeRest = 0;  // calculate it once and store value, to make LED playback snappier
+  uint32_t LEDcodeSelected = 0;  // sequencer-selected color that preserves the note hue while standing out more
   uint32_t LEDcodeOff = 0;   // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeDim = 0;   // calculate it once and store value, to make LED playback snappier
   bool animate = 0;          // hex is flagged as part of the animation in this frame, helps make animations smoother
@@ -1623,6 +1624,17 @@ bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colo
     } else {
       colorOut = h[i].LEDcodeDim;
     }
+    return true;
+  }
+  return false;
+}
+
+bool getBoardSelectedLedColorForMidiNote(byte midiNote, uint32_t& colorOut) {
+  for (byte i = 0; i < LED_COUNT; i++) {
+    if (h[i].isCmd || h[i].note != midiNote) {
+      continue;
+    }
+    colorOut = h[i].LEDcodeSelected;
     return true;
   }
   return false;
@@ -2042,6 +2054,9 @@ void setLEDcolorCodes() {
       colorDef restColor = setColor;
       restColor.val = applyLEDLevel(restColor.val, ledRestBrightness);
       h[i].LEDcodeRest = getLEDcode(restColor);
+      colorDef selectedColor = setColor;
+      selectedColor.val = applyLEDLevel(VALUE_FULL, ledRestBrightness);
+      h[i].LEDcodeSelected = getLEDcode(selectedColor);
       colorDef playColor = setColor.tint();
       h[i].LEDcodePlay = getLEDcode(playColor);
       colorDef dimColor = setColor.shade();
