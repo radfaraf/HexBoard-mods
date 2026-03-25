@@ -65,7 +65,6 @@ Step Velocity
 - Turn the encoder to move through:
   0, 5, 10, 15, ... 125, 127
 - Press the encoder to save.
-- CANCEL exits without saving.
 - Playback, tap preview, save, and load all use the stored step velocity.
 
 Note Length

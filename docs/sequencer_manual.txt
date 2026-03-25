@@ -292,7 +292,6 @@ The exact velocity screen uses encoder entry:
 - turn the encoder to move through coarse musical values
 - the values are:
   0, 5, 10, 15, ... 125, 127
-- CANCEL exits without saving
 - pressing the encoder saves and returns to the tools picker
 
 Velocity affects:

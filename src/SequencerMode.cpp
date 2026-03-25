@@ -2707,10 +2707,6 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     if (!pressed) {
       return;
     }
-
-    if (buttonIndex == SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX) {
-      exitSequencerExactVelocityEdit(false);
-    }
     return;
   }
 
@@ -3040,8 +3036,7 @@ void drawSequencerOverlay() {
 
     u8g2.setFont(u8g2_font_5x8_tf);
     u8g2.drawStr(8, 98, "Turn +/-5");
-    u8g2.drawStr(8, 110, "Press save");
-    u8g2.drawStr(8, 122, "Cancel exits");
+    u8g2.drawStr(8, 116, "Press encoder to save");
     u8g2.sendBuffer();
     return;
   }

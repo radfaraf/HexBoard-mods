@@ -85,6 +85,7 @@ Details:
 - Exact velocity editing is encoder-driven and does not require dedicated lit
   button hints.
 - While this overlay is open, all keys remain dark.
+- The helper text shall instruct the user to press the encoder to save.
 
 
 ID: SEQ-UI-007

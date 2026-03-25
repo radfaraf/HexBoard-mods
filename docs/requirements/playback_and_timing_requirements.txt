@@ -127,7 +127,6 @@ Exact velocity editing shall use coarse encoder values of 0, 5, 10, 15 and so
 on up to 125, plus 127.
 
 Details:
-- Cancel exits without saving changes.
 - Encoder press saves and returns to the tools picker.
 
 

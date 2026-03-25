@@ -15,14 +15,12 @@ Current OLED layout:
   96
 
   Turn +/-5
-  Press save
-  Cancel exits
+  Press encoder to save
 
 Controls:
 
 - turning the encoder moves through:
   0, 5, 10, 15, ... 125, 127
-- CANCEL exits without saving
 - encoder press saves and returns to the tools picker
 
 LED behavior while the screen is open:
