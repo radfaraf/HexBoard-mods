@@ -35,18 +35,20 @@ Step Editing
 - Press the same step again to deselect it.
 - With a step selected, play note keys on the lower part of the board to add
   or remove notes from that step.
+- The edit screen shows a compact info line for the selected step:
+  `L ...%  V ...`, then the notes.
 - Step notes are kept sorted from lowest to highest.
 - Tap Preview can make a tapped step audition its stored notes when selected.
 
 Step Tools Picker
 
 - Press the last button on the third row with a step selected to open tools.
-- The tools screen shows the selected step number and its current notes.
+- The tools screen shows the selected step number, a compact
+  `L ...%  V ...` line, and the current notes.
 - Current tool choices are:
   Vel, Oct+, Oct-, Prob, Tie
 - The tools screen also shows:
   Cancel/Finished
-  Press tool key
 - Oct+ transposes the selected step up 1 octave and stays in the tools screen.
 - Oct- transposes the selected step down 1 octave and stays in the tools screen.
 - Vel opens exact velocity entry for the selected step.

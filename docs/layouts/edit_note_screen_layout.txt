@@ -4,16 +4,14 @@ Main edit screen while a step is selected:
 
   Edit #13
 
-  Length 150%
-  Vel 96
+  L 150%  V 96
 
   C3 E3 G3
 
 Notes:
 
 - The top line shows the selected step number.
-- The next line shows the current stored step length percentage.
-- The next line shows the current stored step velocity.
+- The next line shows the compact length and velocity readout.
 - The notes are shown on one row, sorted lowest to highest.
 - This screen is used while editing notes in the selected step.
 - With a step selected, turning the encoder changes the step length directly.

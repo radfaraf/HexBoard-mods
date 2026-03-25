@@ -11,11 +11,11 @@ Purpose:
 Current OLED layout:
 
   Tools #13
+  L 150%  V 96
   C3 E3 G3
   Vel Oct+ Oct-
   Prob Tie
   Cancel/Finished
-  Press tool key
 
 Current active tool keys:
 

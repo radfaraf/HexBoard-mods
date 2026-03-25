@@ -67,6 +67,8 @@ The lower part of the board remains playable in Sequencer mode. These keys:
 When a step is selected:
 
 - the Edit overlay appears
+- the Edit overlay shows the selected step number, a compact `L ...%  V ...`
+  line, and the notes
 - note keys add or remove notes from that step immediately
 - the step stores notes sorted from lowest to highest
 - the step can be length-edited immediately with the encoder
@@ -248,11 +250,11 @@ Current tool choices:
 The picker screen shows:
 
 - Tools #step number
+- the selected step's compact `L ...%  V ...` line
 - the selected step's current notes
 - Vel Oct+ Oct-
 - Prob Tie
 - Cancel/Finished
-- Press tool key
 
 Current behavior:
 
