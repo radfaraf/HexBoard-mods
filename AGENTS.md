@@ -63,3 +63,8 @@ These layout files are documentation only and are not part of the firmware.
 ## Maintenance Preference
 
 - If a behavior has changed over time, make sure the current code and the manuals reflect only the latest intended behavior.
+
+## Personal Notes File
+
+- `docs/TODO.txt` is the user's personal project notes and todo file.
+- Do not modify, reorganize, or overwrite `docs/TODO.txt` unless the user explicitly asks for help with it.
