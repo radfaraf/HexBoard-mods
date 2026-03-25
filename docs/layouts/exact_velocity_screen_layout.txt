@@ -27,9 +27,7 @@ Controls:
 
 LED behavior while the screen is open:
 
-- the selected step key is blue
-- CANCEL is blue
-- all other keys are off
+- all keys are off
 
 Display behavior:
 

@@ -3244,19 +3244,9 @@ void applySequencerLedOverrides() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
-    uint32_t activeColor = getSequencerConfirmLedColor();
     uint16_t ledCount = strip.numPixels();
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
-    }
-    if (SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX < ledCount) {
-      strip.setPixelColor(SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX, activeColor);
-    }
-    if (sequencerSelectedStep >= 0) {
-      int8_t selectedButton = sequencerStepToButtonIndex(static_cast<byte>(sequencerSelectedStep));
-      if (selectedButton >= 0 && static_cast<uint16_t>(selectedButton) < ledCount) {
-        strip.setPixelColor(static_cast<uint16_t>(selectedButton), activeColor);
-      }
     }
     return;
   }
