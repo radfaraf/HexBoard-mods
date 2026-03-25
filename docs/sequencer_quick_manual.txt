@@ -80,10 +80,9 @@ Exact length screen:
 - press number keys to enter the value
 - the first digit typed replaces the current value
 - up to 4 digits are allowed
-- <- deletes the previous digit
-- CANCEL exits without saving
+- <- deletes the previous digit and is on the third-row first key
+- CANCEL exits without saving and is on the fifth-row first key
 - press the encoder to save
-- the physical CANCEL key is placed lower on the board to reduce accidental exits
 
 Playback
 
