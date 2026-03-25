@@ -265,6 +265,7 @@ byte findNoteInBuffer(const byte* notes, byte count, byte midiNote);
 void saveEditBufferToStep(byte stepIndex);
 void previewSequencerStep(byte stepIndex);
 byte sequencerSelectedStepVelocity();
+int getVisibleBrowserEntryMenuIndex(bool firstVisible);
 const SequencerToolKey* getSequencerToolKey(byte buttonIndex);
 bool transposeSelectedSequencerStep(int8_t semitoneDelta);
 void handleSequencerToolAction(SequencerToolAction action);
@@ -2449,6 +2450,29 @@ GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
   &menuItemSequencerBrowserEntry5
 };
 
+int getVisibleBrowserEntryMenuIndex(bool firstVisible) {
+  int matchIndex = -1;
+  byte visibleItemCount = menuPageSequencerBrowser.getItemsCount();
+  for (byte itemIndex = 0; itemIndex < visibleItemCount; itemIndex++) {
+    GEMItem* item = menuPageSequencerBrowser.getMenuItem(itemIndex);
+    if (item == nullptr) {
+      continue;
+    }
+    if (item == &menuItemSequencerBrowserEntry0 ||
+        item == &menuItemSequencerBrowserEntry1 ||
+        item == &menuItemSequencerBrowserEntry2 ||
+        item == &menuItemSequencerBrowserEntry3 ||
+        item == &menuItemSequencerBrowserEntry4 ||
+        item == &menuItemSequencerBrowserEntry5) {
+      if (firstVisible) {
+        return itemIndex;
+      }
+      matchIndex = itemIndex;
+    }
+  }
+  return matchIndex;
+}
+
 void refreshSequencerBrowserMenu(bool resetSelection) {
   rebuildSequencerBrowserEntries();
 
@@ -2499,8 +2523,8 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
     }
   }
 
-  menuItemSequencerBrowserPrev.hide(sequencerBrowserOffset == 0);
-  menuItemSequencerBrowserNext.hide(sequencerBrowserOffset + SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT >= sequencerBrowserEntryCount);
+  menuItemSequencerBrowserPrev.hide();
+  menuItemSequencerBrowserNext.hide();
 
   if (resetSelection) {
     menuPageSequencerBrowser.setCurrentMenuItemIndex(0);
@@ -2523,6 +2547,36 @@ bool handleSequencerRotaryTurn(int8_t direction) {
   if (isSequencerNamingActive()) {
     (void)direction;
     return true;
+  }
+  if (menu.getCurrentMenuPage() == &menuPageSequencerBrowser && direction != 0) {
+    int currentIndex = menuPageSequencerBrowser.getCurrentMenuItemIndex();
+    int lastVisibleIndex = static_cast<int>(menuPageSequencerBrowser.getItemsCount()) - 1;
+    if (direction > 0 &&
+        currentIndex >= lastVisibleIndex &&
+        sequencerBrowserOffset + SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT < sequencerBrowserEntryCount) {
+      sequencerBrowserOffset += SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
+      refreshSequencerBrowserMenu(false);
+      int firstEntryIndex = getVisibleBrowserEntryMenuIndex(true);
+      if (firstEntryIndex >= 0) {
+        menuPageSequencerBrowser.setCurrentMenuItemIndex(static_cast<byte>(firstEntryIndex));
+        menu.drawMenu();
+      }
+      return true;
+    }
+    if (direction < 0 && currentIndex == 0 && sequencerBrowserOffset > 0) {
+      if (sequencerBrowserOffset >= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) {
+        sequencerBrowserOffset -= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
+      } else {
+        sequencerBrowserOffset = 0;
+      }
+      refreshSequencerBrowserMenu(false);
+      int lastEntryIndex = getVisibleBrowserEntryMenuIndex(false);
+      if (lastEntryIndex >= 0) {
+        menuPageSequencerBrowser.setCurrentMenuItemIndex(static_cast<byte>(lastEntryIndex));
+        menu.drawMenu();
+      }
+      return true;
+    }
   }
   return handleSequencerRotaryTurnInternal(direction);
 }
