@@ -3126,21 +3126,38 @@ void drawSequencerOverlay() {
 
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x13_tf);
-  u8g2.drawStr(20, 18, headerLabel);
+  int headerY = 18;
+  int stepLabelY = 36;
   int hintLineOneY = (stepLabel[0] != '\0') ? 54 : 40;
   int hintLineTwoY = (stepLabel[0] != '\0') ? 68 : 54;
   int noteLineOneY = (stepLabel[0] != '\0') ? 96 : 88;
   int noteLineTwoY = (stepLabel[0] != '\0') ? 112 : 104;
+
+  if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
+    headerY = 16;
+    hintLineOneY = 34;
+    hintLineTwoY = 48;
+    noteLineOneY = 68;
+    noteLineTwoY = 84;
+  } else if (sequencerOverlayMode == SequencerOverlayMode::StepCleared) {
+    headerY = 18;
+    hintLineOneY = 40;
+    hintLineTwoY = 56;
+  } else if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage) {
+    headerY = 18;
+    hintLineOneY = 42;
+  }
+
+  u8g2.drawStr(20, headerY, headerLabel);
   if (stepLabel[0] != '\0') {
-    u8g2.drawStr(36, 36, stepLabel);
+    u8g2.drawStr(36, stepLabelY, stepLabel);
   }
   if (hintLineOne[0] != '\0') {
     u8g2.drawStr(8, hintLineOneY, hintLineOne);
   }
   if (hintLineTwo[0] != '\0') {
-    u8g2.drawStr(4, hintLineTwoY, hintLineTwo);
+    u8g2.drawStr(8, hintLineTwoY, hintLineTwo);
   }
-  u8g2.setFont(u8g2_font_6x13_tf);
   if (noteLineOne[0] != '\0') {
     u8g2.drawStr(12, noteLineOneY, noteLineOne);
   }
