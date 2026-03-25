@@ -132,12 +132,13 @@ enum class SequencerNamingAction : uint8_t {
 };
 
 enum class SequencerToolAction : uint8_t {
-  Velocity = 0,
-  OctaveUp = 1,
-  OctaveDown = 2,
-  Probability = 3,
-  Tie = 4,
-  Cancel = 5
+  Length = 0,
+  Velocity = 1,
+  OctaveUp = 2,
+  OctaveDown = 3,
+  Probability = 4,
+  Tie = 5,
+  Cancel = 6
 };
 
 struct SequencerBrowserEntry {
@@ -323,9 +324,10 @@ const SequencerNamingKey sequencerExactLengthKeys[] = {
 };
 
 const SequencerToolKey sequencerToolKeys[] = {
-  { 1, SequencerToolAction::Velocity },
-  { 2, SequencerToolAction::OctaveUp },
-  { 3, SequencerToolAction::OctaveDown },
+  { 1, SequencerToolAction::Length },
+  { 2, SequencerToolAction::Velocity },
+  { 3, SequencerToolAction::OctaveUp },
+  { 4, SequencerToolAction::OctaveDown },
   { 10, SequencerToolAction::Probability },
   { 11, SequencerToolAction::Tie },
   { SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX, SequencerToolAction::Cancel }
@@ -827,7 +829,7 @@ void exitSequencerExactLengthEdit(bool saveChanges) {
     }
     sequencerLengthPercentDisplay = finalValue;
   }
-  sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+  sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
   sequencerOverlayUntil = 0;
   sequencerOverlayVisible = false;
   sequencerOverlayDirty = true;
@@ -999,6 +1001,9 @@ bool transposeSelectedSequencerStep(int8_t semitoneDelta) {
 
 void handleSequencerToolAction(SequencerToolAction action) {
   switch (action) {
+    case SequencerToolAction::Length:
+      enterSequencerExactLengthEdit();
+      return;
     case SequencerToolAction::Velocity:
       enterSequencerExactVelocityEdit();
       return;
@@ -2616,7 +2621,6 @@ bool handleSequencerEncoderClick() {
     return true;
   }
   if (sequencerSelectedStep >= 0) {
-    enterSequencerExactLengthEdit();
     return true;
   }
   return false;
@@ -3062,7 +3066,7 @@ void drawSequencerOverlay() {
     if (noteLineTwo[0] != '\0') {
       u8g2.drawStr(12, 60, noteLineTwo);
     }
-    u8g2.drawStr(8, 80, "Vel Oct+ Oct-");
+    u8g2.drawStr(8, 80, "Len Vel Oct+ Oct-");
     u8g2.drawStr(8, 92, "Prob Tie");
     u8g2.drawStr(8, 104, "Cancel/Finished");
     u8g2.sendBuffer();
