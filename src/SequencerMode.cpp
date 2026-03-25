@@ -319,8 +319,8 @@ const SequencerNamingKey sequencerExactLengthKeys[] = {
   { 12, SequencerNamingAction::InsertChar, '7' },
   { 13, SequencerNamingAction::InsertChar, '8' },
   { 14, SequencerNamingAction::InsertChar, '9' },
-  { 41, SequencerNamingAction::Backspace, '\0' },
-  { 82, SequencerNamingAction::Cancel, '\0' }
+  { 21, SequencerNamingAction::Backspace, '\0' },
+  { 41, SequencerNamingAction::Cancel, '\0' }
 };
 
 const SequencerToolKey sequencerToolKeys[] = {
