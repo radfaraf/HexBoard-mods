@@ -14,6 +14,15 @@ These are standing instructions for work on the Sequencer for Codex to follow.
 
 Whenever Sequencer mode behavior, controls, menus, file management, naming, playback, or editing workflow changes, update the sequencer manuals to match the current behavior. Or any other Sequencer related features.
 
+Preferred workflow for larger Sequencer changes:
+
+- do the code changes first
+- then tell the user the code work is done and ready for testing
+- wait for the user to say to proceed with documentation updates when practical
+- if the user forgets to confirm after testing time has passed, remind them that
+  the manuals and layout docs still need updating
+- once confirmed, update the documentation files and regenerate the PDFs
+
 Manual files:
 
 - `docs/sequencer_quick_manual.txt`

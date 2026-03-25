@@ -42,6 +42,7 @@ The step grid uses the first 8 playable keys from the first 4 rows:
 - Top-right key: Play/Stop
 - Second-row 9th key: step overview page button
 - Second-row far-right key: blue action key
+- Third-row far-right key: step tools picker
 - Hold the top-right key for 2 seconds to show the performance monitor while held
 
 4.3 Lower keyboard area
@@ -217,7 +218,9 @@ Play Type controls where the sequencer sends notes:
 OB Synth uses the shared synth settings available from Synth Options.
 
 
-10. Undo And Clear
+10. Undo, Clear, And Step Tools
+
+10.1 Blue action key
 
 The blue action key on the far right of the second row has two jobs:
 
@@ -226,6 +229,31 @@ The blue action key on the far right of the second row has two jobs:
 - hold for about 1 second: clear the selected step
 
 After a clear, the screen reminds you that the blue key can undo the erase.
+
+10.2 Step tools picker
+
+Press the far-right button on the third row while a step is selected to open
+the step tools picker.
+
+Current tool choices:
+
+- Vel
+- Oct+
+- Oct-
+- Prob
+- Tie
+- CANCEL
+
+Current behavior:
+
+- Oct+: transposes all notes in the selected step up 12 semitones
+- Oct-: transposes all notes in the selected step down 12 semitones
+- Vel: placeholder for future per-step velocity editing
+- Prob: placeholder for future step probability editing
+- Tie: placeholder for future tie behavior
+- CANCEL: exits the tool picker
+
+The picker is only meant for the currently selected step.
 
 
 11. Overview Screen

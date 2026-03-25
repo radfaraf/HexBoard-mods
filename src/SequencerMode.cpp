@@ -37,6 +37,8 @@ constexpr byte SEQUENCER_STEP_COUNT = 32;
 constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
 constexpr byte SEQUENCER_OVERVIEW_BUTTON_INDEX = 18;
 constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
+constexpr byte SEQUENCER_FUNCTION_BUTTON_INDEX = 29;
+constexpr byte SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX = 82;
 constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
 constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
@@ -87,7 +89,8 @@ enum class SequencerOverlayMode : uint8_t {
   Overview = 6,
   Naming = 7,
   ExactLengthEdit = 8,
-  PerformanceMonitor = 9
+  PerformanceMonitor = 9,
+  FunctionPicker = 10
 };
 
 struct SequencerPlaybackGroup {
@@ -124,6 +127,15 @@ enum class SequencerNamingAction : uint8_t {
   Cancel = 2
 };
 
+enum class SequencerToolAction : uint8_t {
+  Velocity = 0,
+  OctaveUp = 1,
+  OctaveDown = 2,
+  Probability = 3,
+  Tie = 4,
+  Cancel = 5
+};
+
 struct SequencerBrowserEntry {
   bool isDirectory = false;
   char title[SEQUENCER_BROWSER_TITLE_LENGTH] = "";
@@ -134,6 +146,11 @@ struct SequencerNamingKey {
   byte buttonIndex = 0;
   SequencerNamingAction action = SequencerNamingAction::InsertChar;
   char character = '\0';
+};
+
+struct SequencerToolKey {
+  byte buttonIndex = 0;
+  SequencerToolAction action = SequencerToolAction::Velocity;
 };
 
 int8_t sequencerSelectedStep = -1;
@@ -205,6 +222,8 @@ void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
 void refreshSequencerMenuTitle();
 void enterSequencerExactLengthEdit();
 void exitSequencerExactLengthEdit(bool saveChanges);
+void enterSequencerFunctionPicker();
+void exitSequencerFunctionPicker();
 void showSequencerPerformanceMonitor();
 void hideSequencerPerformanceMonitor();
 void refreshSequencerPerformanceStats(bool forceRefresh);
@@ -230,6 +249,14 @@ const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
 byte sequencerGateChoiceIndex(uint16_t gatePercent);
 void sortSequencerBrowserEntriesRange(byte startIndex, byte endExclusive);
 void startSequencerNaming(SequencerNamingTarget target, const char* initialText);
+void clearSequencerNoteBuffer(byte* notes, byte& count);
+void sortSequencerNoteBuffer(byte* notes, byte count);
+byte findNoteInBuffer(const byte* notes, byte count, byte midiNote);
+void saveEditBufferToStep(byte stepIndex);
+void previewSequencerStep(byte stepIndex);
+const SequencerToolKey* getSequencerToolKey(byte buttonIndex);
+bool transposeSelectedSequencerStep(int8_t semitoneDelta);
+void handleSequencerToolAction(SequencerToolAction action);
 
 const SequencerNamingKey sequencerNamingKeys[] = {
   { 1, SequencerNamingAction::InsertChar, 'A' },
@@ -280,6 +307,15 @@ const SequencerNamingKey sequencerExactLengthKeys[] = {
   { 14, SequencerNamingAction::InsertChar, '9' },
   { 41, SequencerNamingAction::Backspace, '\0' },
   { 82, SequencerNamingAction::Cancel, '\0' }
+};
+
+const SequencerToolKey sequencerToolKeys[] = {
+  { 1, SequencerToolAction::Velocity },
+  { 2, SequencerToolAction::OctaveUp },
+  { 3, SequencerToolAction::OctaveDown },
+  { 10, SequencerToolAction::Probability },
+  { 11, SequencerToolAction::Tie },
+  { SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX, SequencerToolAction::Cancel }
 };
 
 void copySequencerString(char* destination, size_t destinationSize, const char* source) {
@@ -784,6 +820,27 @@ void exitSequencerExactLengthEdit(bool saveChanges) {
   sequencerOverlayDirty = true;
 }
 
+void enterSequencerFunctionPicker() {
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+  sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+void exitSequencerFunctionPicker() {
+  if (sequencerSelectedStep >= 0) {
+    sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+  } else {
+    sequencerOverlayMode = SequencerOverlayMode::Hidden;
+  }
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
 const SequencerNamingKey* getSequencerExactLengthKey(byte buttonIndex) {
   for (const SequencerNamingKey& key : sequencerExactLengthKeys) {
     if (key.buttonIndex == buttonIndex) {
@@ -829,10 +886,111 @@ void backspaceSequencerExactLengthChar() {
     sequencerOverlayDirty = true;
     return;
   }
+
   sequencerExactLengthLength--;
   sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
   sequencerLengthPercentDisplay = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
   sequencerOverlayDirty = true;
+}
+
+const SequencerToolKey* getSequencerToolKey(byte buttonIndex) {
+  for (const SequencerToolKey& key : sequencerToolKeys) {
+    if (key.buttonIndex == buttonIndex) {
+      return &key;
+    }
+  }
+  return nullptr;
+}
+
+bool transposeSelectedSequencerStep(int8_t semitoneDelta) {
+  if (sequencerSelectedStep < 0 || sequencerEditNoteCount == 0) {
+    return false;
+  }
+
+  byte transposedNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
+    SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
+  };
+  byte transposedCount = 0;
+
+  for (byte i = 0; i < sequencerEditNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
+    int transposed = static_cast<int>(sequencerEditMidiNotes[i]) + semitoneDelta;
+    if (transposed < 0) {
+      transposed = 0;
+    } else if (transposed > 127) {
+      transposed = 127;
+    }
+
+    byte midiNote = static_cast<byte>(transposed);
+    if (findNoteInBuffer(transposedNotes, transposedCount, midiNote) >= SEQUENCER_MAX_NOTES_PER_STEP &&
+        transposedCount < SEQUENCER_MAX_NOTES_PER_STEP) {
+      transposedNotes[transposedCount++] = midiNote;
+    }
+  }
+
+  sortSequencerNoteBuffer(transposedNotes, transposedCount);
+
+  bool changed = (transposedCount != sequencerEditNoteCount);
+  if (!changed) {
+    for (byte i = 0; i < transposedCount; i++) {
+      if (transposedNotes[i] != sequencerEditMidiNotes[i]) {
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  if (!changed) {
+    return false;
+  }
+
+  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  for (byte i = 0; i < transposedCount; i++) {
+    sequencerEditMidiNotes[i] = transposedNotes[i];
+  }
+  sequencerEditNoteCount = transposedCount;
+  saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+  setSequencerDirtyState(true);
+  previewSequencerStep(static_cast<byte>(sequencerSelectedStep));
+  return true;
+}
+
+void handleSequencerToolAction(SequencerToolAction action) {
+  switch (action) {
+    case SequencerToolAction::Velocity:
+      showSequencerStatusMessage("Vel", "Coming soon");
+      return;
+    case SequencerToolAction::OctaveUp:
+      if (sequencerEditNoteCount == 0) {
+        showSequencerStatusMessage("Step empty", "Add notes first");
+        return;
+      }
+      if (transposeSelectedSequencerStep(12)) {
+        exitSequencerFunctionPicker();
+      } else {
+        showSequencerStatusMessage("Oct+", "Step unchanged");
+      }
+      return;
+    case SequencerToolAction::OctaveDown:
+      if (sequencerEditNoteCount == 0) {
+        showSequencerStatusMessage("Step empty", "Add notes first");
+        return;
+      }
+      if (transposeSelectedSequencerStep(-12)) {
+        exitSequencerFunctionPicker();
+      } else {
+        showSequencerStatusMessage("Oct-", "Step unchanged");
+      }
+      return;
+    case SequencerToolAction::Probability:
+      showSequencerStatusMessage("Prob", "Coming soon");
+      return;
+    case SequencerToolAction::Tie:
+      showSequencerStatusMessage("Tie", "Coming soon");
+      return;
+    case SequencerToolAction::Cancel:
+      exitSequencerFunctionPicker();
+      return;
+  }
 }
 
 int8_t buttonIndexToSequencerStep(byte buttonIndex) {
@@ -2243,6 +2401,10 @@ bool handleSequencerRotaryTurn(int8_t direction) {
     (void)direction;
     return true;
   }
+  if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
+    (void)direction;
+    return true;
+  }
   if (isSequencerNamingActive()) {
     (void)direction;
     return true;
@@ -2252,6 +2414,9 @@ bool handleSequencerRotaryTurn(int8_t direction) {
 
 bool handleSequencerEncoderClick() {
   if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    return true;
+  }
+  if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
     return true;
   }
   if (isSequencerNamingActive()) {
@@ -2297,6 +2462,25 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
+    if (!pressed) {
+      return;
+    }
+
+    if (buttonIndex == SEQUENCER_FUNCTION_BUTTON_INDEX) {
+      exitSequencerFunctionPicker();
+      return;
+    }
+
+    const SequencerToolKey* toolKey = getSequencerToolKey(buttonIndex);
+    if (toolKey == nullptr) {
+      return;
+    }
+
+    handleSequencerToolAction(toolKey->action);
     return;
   }
 
@@ -2350,6 +2534,9 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     if (buttonIndex == SEQUENCER_OVERVIEW_BUTTON_INDEX) {
       return;
     }
+    if (buttonIndex == SEQUENCER_FUNCTION_BUTTON_INDEX) {
+      return;
+    }
     if (buttonIndex == SEQUENCER_CONFIRM_BUTTON_INDEX) {
       if (sequencerSelectedStep >= 0 && sequencerConfirmHeld) {
         clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
@@ -2383,6 +2570,15 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (buttonIndex == SEQUENCER_OVERVIEW_BUTTON_INDEX) {
     bool advancePage = (sequencerOverlayMode == SequencerOverlayMode::Overview);
     showSequencerOverviewPage(advancePage);
+    return;
+  }
+
+  if (buttonIndex == SEQUENCER_FUNCTION_BUTTON_INDEX) {
+    if (sequencerSelectedStep < 0) {
+      showSequencerStatusMessage("Select step", "Then open tools");
+      return;
+    }
+    enterSequencerFunctionPicker();
     return;
   }
 
@@ -2604,6 +2800,25 @@ void drawSequencerOverlay() {
     return;
   }
 
+  if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker && sequencerSelectedStep >= 0) {
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    char headerLabel[20];
+    snprintf(headerLabel, sizeof(headerLabel), "Tools #%02d", sequencerSelectedStep + 1);
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(20, 18, headerLabel);
+    u8g2.drawStr(8, 44, "Vel Oct+ Oct-");
+    u8g2.drawStr(8, 64, "Prob Tie");
+    u8g2.setFont(u8g2_font_5x8_tf);
+    u8g2.drawStr(8, 92, "Press tool key");
+    u8g2.drawStr(8, 106, "CANCEL exits");
+    u8g2.sendBuffer();
+    return;
+  }
+
   if ((sequencerOverlayMode == SequencerOverlayMode::NoteAssigned ||
        sequencerOverlayMode == SequencerOverlayMode::LengthEdit ||
        sequencerOverlayMode == SequencerOverlayMode::StatusMessage) &&
@@ -2754,6 +2969,20 @@ void applySequencerLedOverrides() {
     return;
   }
 
+  if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
+    uint32_t activeColor = getSequencerConfirmLedColor();
+    uint16_t ledCount = strip.numPixels();
+    for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
+      strip.setPixelColor(buttonIndex, 0);
+    }
+    for (const SequencerToolKey& key : sequencerToolKeys) {
+      if (key.buttonIndex < ledCount) {
+        strip.setPixelColor(key.buttonIndex, activeColor);
+      }
+    }
+    return;
+  }
+
   strip.setPixelColor(
     SEQUENCER_TRANSPORT_BUTTON_INDEX,
     getSequencerTransportLedColor(sequencerTransportState == SEQUENCER_TRANSPORT_PLAY));
@@ -2761,6 +2990,9 @@ void applySequencerLedOverrides() {
     SEQUENCER_OVERVIEW_BUTTON_INDEX,
     getSequencerUnsetStepLedColor(sequencerOverlayMode == SequencerOverlayMode::Overview));
   strip.setPixelColor(SEQUENCER_CONFIRM_BUTTON_INDEX, getSequencerConfirmLedColor());
+  strip.setPixelColor(
+    SEQUENCER_FUNCTION_BUTTON_INDEX,
+    getSequencerUnsetStepLedColor(sequencerOverlayMode == SequencerOverlayMode::FunctionPicker));
 
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
     int8_t buttonIndex = sequencerStepToButtonIndex(step);

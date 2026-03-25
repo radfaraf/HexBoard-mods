@@ -22,6 +22,8 @@ Main Controls
 - Overview: the 9th key on the second row pages through an 8-step note view.
 - Blue action key: the far-right key on the second row does undo on short
   press and clears the selected step on a 1-second hold.
+- Tools: the last button on the third row opens a step-tools picker for the
+  selected step.
 - Encoder:
   - Turn while a step is selected to change that step's length quickly.
   - Press while a step is selected to open exact length entry.
@@ -35,6 +37,16 @@ Step Editing
   or remove notes from that step.
 - Step notes are kept sorted from lowest to highest.
 - Tap Preview can make a tapped step audition its stored notes when selected.
+
+Step Tools Picker
+
+- Press the last button on the third row with a step selected to open tools.
+- Current tool choices are:
+  Vel, Oct+, Oct-, Prob, Tie
+- Oct+ transposes the selected step up 1 octave.
+- Oct- transposes the selected step down 1 octave.
+- Vel, Prob, and Tie are placeholder entries for now.
+- CANCEL closes the picker.
 
 Note Length
 

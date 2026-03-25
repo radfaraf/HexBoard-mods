@@ -1,0 +1,40 @@
+SEQUENCER STEP TOOLS PICKER
+
+This screen appears when the last button on the third row is pressed while a
+step is selected.
+
+Purpose:
+
+- give quick key-based access to step editing tools without adding more items
+  to the main Sequencer menu
+
+Current OLED layout:
+
+  Tools #13
+
+  Vel Oct+ Oct-
+  Prob Tie
+
+  Press tool key
+  CANCEL exits
+
+Current active tool keys:
+
+- first row key 1: Vel
+- first row key 2: Oct+
+- first row key 3: Oct-
+- second row key 1: Prob
+- second row key 2: Tie
+- lower CANCEL key: exits the picker
+
+Current behavior:
+
+- Oct+ transposes the selected step up 1 octave and returns to the edit screen
+- Oct- transposes the selected step down 1 octave and returns to the edit screen
+- Vel, Prob, and Tie currently show placeholder status messages
+
+LED behavior while the picker is open:
+
+- tool keys are blue
+- CANCEL is blue
+- all other keys are off
