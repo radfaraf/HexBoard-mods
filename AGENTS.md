@@ -17,11 +17,11 @@ Whenever Sequencer mode behavior, controls, menus, file management, naming, play
 Preferred workflow for larger Sequencer changes:
 
 - do the code changes first
-- then tell the user the code work is done and ready for testing
-- wait for the user to say to proceed with documentation updates when practical
-- if the user forgets to confirm after testing time has passed, remind them that
-  the manuals and layout docs still need updating
-- once confirmed, update the documentation files and regenerate the PDFs
+- then tell the user the code work is done and ready for testing as part of the same reply
+- then suggest a commit message for the current uncommitted work
+- then immediately update the documentation files and regenerate the PDFs in the same overall pass when Sequencer docs or layouts need it
+- this lets the user start compiling and testing while commit-message and documentation work continues
+- only wait for separate confirmation before docs if the user explicitly asks for that slower workflow in a specific case
 
 Manual files:
 
