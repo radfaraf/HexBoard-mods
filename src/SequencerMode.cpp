@@ -2621,6 +2621,8 @@ bool handleSequencerEncoderClick() {
     return true;
   }
   if (sequencerSelectedStep >= 0) {
+    sequencerSelectedStep = -1;
+    hideSequencerOverlay();
     return true;
   }
   return false;
