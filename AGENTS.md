@@ -68,12 +68,15 @@ These layout files are documentation only and are not part of the firmware.
 
 ## Commit Message Preference
 
-- When code changes are made and there are uncommitted changes available, always suggest a commit message for the current uncommitted work.
+- When any changes are made and there are uncommitted changes available, always suggest a commit message for the current uncommitted work.
 - Base commit message suggestions on what is currently uncommitted now, not on older work that may already have been committed.
 - If earlier changes are still uncommitted, suggest one combined commit message that covers all currently uncommitted changes together.
 - After the user commits those changes, future commit message suggestions should cover only the remaining new uncommitted changes.
 - Do not keep mentioning already committed work in later commit message suggestions.
 - Keep commit message suggestions simple, clear, and easy to use.
+- Format commit suggestions like this so they are easy to spot:
+  `COMMIT MESSAGE SUGGEST:`
+  `message here`
 
 ## Personal Notes File
 
