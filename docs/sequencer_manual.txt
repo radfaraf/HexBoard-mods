@@ -15,6 +15,7 @@ split, so you can return to the normal board behavior at any time.
 - Active playback length: 1 to 32 steps
 - Notes per step: up to 4
 - Length per step: stored per step
+- Velocity per step: stored per step
 - Output type: MIDI or onboard synth
 - Storage: onboard flash files in /Sequences
 
@@ -255,16 +256,50 @@ The picker screen shows:
 
 Current behavior:
 
+- Vel: opens exact velocity entry for the selected step
 - Oct+: transposes all notes in the selected step up 12 semitones and stays in
   the picker so you can apply another tool immediately
 - Oct-: transposes all notes in the selected step down 12 semitones and stays
   in the picker so you can apply another tool immediately
-- Vel: placeholder for future per-step velocity editing
 - Prob: placeholder for future step probability editing
 - Tie: placeholder for future tie behavior
 - Cancel/Finished: exits the tool picker when you are done
 
 The picker is only meant for the currently selected step.
+
+
+10.3 Step velocity
+
+Each step stores its own velocity value.
+
+- range: 1-127
+- default: 96
+
+This follows normal MIDI note-on velocity style behavior.
+
+How to edit velocity:
+
+- select a step
+- open the step tools picker
+- choose Vel
+
+The exact velocity screen uses keypad-style entry similar to exact length:
+
+- number keys enter the value directly
+- the first digit typed replaces the current value
+- up to 3 digits are allowed
+- values are clamped to 127
+- <- removes the previous digit
+- CANCEL exits without saving
+- pressing the encoder saves and returns to the tools picker
+
+Velocity affects:
+
+- sequencer playback
+- Tap Preview step previews
+- live note audition while a step is selected
+- MIDI output velocity
+- onboard synth preview/play loudness approximation
 
 
 11. Overview Screen
@@ -448,6 +483,9 @@ What it shows:
 - Drop: backlog episodes that hit the receive soft limit
 - Late: backlog episodes that stayed pending long enough to count as delayed
 
+While active sequencer overlays are open, the display is kept awake so edit
+screens do not fall asleep mid-entry.
+
 
 18. Header Title And Unsaved Changes
 
@@ -475,6 +513,7 @@ The current save file stores:
 - direction
 - the notes in each step
 - the gate/length value for each step
+- the velocity value for each step
 
 
 20. Current Limits

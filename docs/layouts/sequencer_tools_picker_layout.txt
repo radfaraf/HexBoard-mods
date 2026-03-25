@@ -28,12 +28,17 @@ Current active tool keys:
 
 Current behavior:
 
+- Vel opens the exact velocity screen for the selected step
 - Oct+ transposes the selected step up 1 octave and stays in the picker
 - Oct- transposes the selected step down 1 octave and stays in the picker
-- Vel, Prob, and Tie currently show placeholder status messages
+- Prob and Tie currently show placeholder status messages
 
 LED behavior while the picker is open:
 
 - tool keys are blue
 - CANCEL is blue
 - all other keys are off
+
+Display behavior:
+
+- this overlay keeps the display awake while it is open

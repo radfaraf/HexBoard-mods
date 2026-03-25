@@ -5,7 +5,7 @@ Overview
 
 Sequencer mode is a separate mode from Keyboard mode. It is a single-track,
 32-step sequencer. Each step can hold up to 4 notes, its own note length,
-and can play through MIDI or the onboard synth.
+its own velocity, and can play through MIDI or the onboard synth.
 
 Enter And Exit
 
@@ -49,8 +49,18 @@ Step Tools Picker
   Press tool key
 - Oct+ transposes the selected step up 1 octave and stays in the tools screen.
 - Oct- transposes the selected step down 1 octave and stays in the tools screen.
-- Vel, Prob, and Tie are placeholder entries for now.
+- Vel opens exact velocity entry for the selected step.
+- Prob and Tie are placeholder entries for now.
 - Cancel/Finished closes the picker when you are done.
+
+Step Velocity
+
+- Velocity is stored per step.
+- MIDI-style range is 1-127.
+- Default step velocity is 96.
+- Use Vel from the step tools picker to edit it.
+- Velocity entry uses the same keypad-style number input as exact length.
+- Playback, tap preview, save, and load all use the stored step velocity.
 
 Note Length
 
@@ -130,4 +140,5 @@ Status And Display
 - Empty steps are dark when idle.
 - The performance monitor shows:
   AudioEng, Mem, FS, MIDI Q, Drop, and Late while the Play/Stop key is held.
+- Active sequencer overlays stay awake while you are using them.
 - The top title shows the loaded file name and unsaved state.

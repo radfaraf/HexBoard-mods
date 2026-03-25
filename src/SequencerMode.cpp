@@ -43,6 +43,7 @@ constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
 constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
+constexpr byte SEQUENCER_DEFAULT_VELOCITY = 96;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
 constexpr uint64_t SEQUENCER_CLEAR_HOLD_MICROS = 1000000ULL;
 constexpr uint64_t SEQUENCER_PERFORMANCE_HOLD_MICROS = 2000000ULL;
@@ -78,6 +79,7 @@ constexpr size_t SEQUENCER_NAME_EDIT_MAX_LENGTH = 20;
 byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
 uint16_t sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {};
+byte sequencerStepVelocity[SEQUENCER_STEP_COUNT] = {};
 
 enum class SequencerOverlayMode : uint8_t {
   Hidden = 0,
@@ -90,7 +92,8 @@ enum class SequencerOverlayMode : uint8_t {
   Naming = 7,
   ExactLengthEdit = 8,
   PerformanceMonitor = 9,
-  FunctionPicker = 10
+  FunctionPicker = 10,
+  ExactVelocityEdit = 11
 };
 
 struct SequencerPlaybackGroup {
@@ -193,6 +196,11 @@ uint16_t sequencerExactLengthOriginal = 100;
 char sequencerExactLengthBuffer[5] = "100";
 byte sequencerExactLengthLength = 3;
 bool sequencerExactLengthReplaceOnNextDigit = true;
+byte sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
+byte sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
+char sequencerExactVelocityBuffer[4] = "96";
+byte sequencerExactVelocityLength = 2;
+bool sequencerExactVelocityReplaceOnNextDigit = true;
 byte sequencerOverviewPage = 0;
 char sequencerCurrentSequencePath[SEQUENCER_MAX_PATH_LENGTH] = "";
 char sequencerMenuTitle[SEQUENCER_MENU_TITLE_LENGTH] = "Sequencer";
@@ -222,6 +230,8 @@ void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
 void refreshSequencerMenuTitle();
 void enterSequencerExactLengthEdit();
 void exitSequencerExactLengthEdit(bool saveChanges);
+void enterSequencerExactVelocityEdit();
+void exitSequencerExactVelocityEdit(bool saveChanges);
 void enterSequencerFunctionPicker();
 void exitSequencerFunctionPicker();
 void showSequencerPerformanceMonitor();
@@ -254,6 +264,7 @@ void sortSequencerNoteBuffer(byte* notes, byte count);
 byte findNoteInBuffer(const byte* notes, byte count, byte midiNote);
 void saveEditBufferToStep(byte stepIndex);
 void previewSequencerStep(byte stepIndex);
+byte sequencerSelectedStepVelocity();
 const SequencerToolKey* getSequencerToolKey(byte buttonIndex);
 bool transposeSelectedSequencerStep(int8_t semitoneDelta);
 void handleSequencerToolAction(SequencerToolAction action);
@@ -820,6 +831,46 @@ void exitSequencerExactLengthEdit(bool saveChanges) {
   sequencerOverlayDirty = true;
 }
 
+void enterSequencerExactVelocityEdit() {
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+  sequencerExactVelocityOriginal = sequencerStepVelocity[sequencerSelectedStep];
+  snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "%u",
+           static_cast<unsigned>(sequencerExactVelocityOriginal));
+  sequencerExactVelocityLength = static_cast<byte>(strlen(sequencerExactVelocityBuffer));
+  sequencerExactVelocityReplaceOnNextDigit = true;
+  sequencerVelocityDisplay = sequencerExactVelocityOriginal;
+  sequencerOverlayMode = SequencerOverlayMode::ExactVelocityEdit;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+void exitSequencerExactVelocityEdit(bool saveChanges) {
+  if (sequencerSelectedStep >= 0) {
+    byte finalValue = sequencerExactVelocityOriginal;
+    if (saveChanges) {
+      int parsedValue = atoi(sequencerExactVelocityBuffer);
+      if (parsedValue < 1) {
+        parsedValue = 1;
+      } else if (parsedValue > 127) {
+        parsedValue = 127;
+      }
+      finalValue = static_cast<byte>(parsedValue);
+    }
+    if (sequencerStepVelocity[sequencerSelectedStep] != finalValue) {
+      sequencerStepVelocity[sequencerSelectedStep] = finalValue;
+      setSequencerDirtyState(true);
+    }
+    sequencerVelocityDisplay = finalValue;
+  }
+  sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
 void enterSequencerFunctionPicker() {
   if (sequencerSelectedStep < 0) {
     return;
@@ -848,6 +899,33 @@ const SequencerNamingKey* getSequencerExactLengthKey(byte buttonIndex) {
     }
   }
   return nullptr;
+}
+
+void insertSequencerExactVelocityChar(char character) {
+  if (character < '0' || character > '9') {
+    return;
+  }
+  if (sequencerExactVelocityReplaceOnNextDigit) {
+    sequencerExactVelocityBuffer[0] = character;
+    sequencerExactVelocityBuffer[1] = '\0';
+    sequencerExactVelocityLength = 1;
+    sequencerExactVelocityReplaceOnNextDigit = false;
+  } else if (sequencerExactVelocityLength >= 3) {
+    return;
+  } else if (sequencerExactVelocityLength == 1 && sequencerExactVelocityBuffer[0] == '0') {
+    sequencerExactVelocityBuffer[0] = character;
+  } else {
+    sequencerExactVelocityBuffer[sequencerExactVelocityLength++] = character;
+    sequencerExactVelocityBuffer[sequencerExactVelocityLength] = '\0';
+  }
+  int value = atoi(sequencerExactVelocityBuffer);
+  if (value > 127) {
+    snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "127");
+    sequencerExactVelocityLength = 3;
+    value = 127;
+  }
+  sequencerVelocityDisplay = static_cast<byte>(value);
+  sequencerOverlayDirty = true;
 }
 
 void insertSequencerExactLengthChar(char character) {
@@ -890,6 +968,22 @@ void backspaceSequencerExactLengthChar() {
   sequencerExactLengthLength--;
   sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
   sequencerLengthPercentDisplay = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
+  sequencerOverlayDirty = true;
+}
+
+void backspaceSequencerExactVelocityChar() {
+  sequencerExactVelocityReplaceOnNextDigit = false;
+  if (sequencerExactVelocityLength <= 1) {
+    snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "0");
+    sequencerExactVelocityLength = 1;
+    sequencerVelocityDisplay = 0;
+    sequencerOverlayDirty = true;
+    return;
+  }
+
+  sequencerExactVelocityLength--;
+  sequencerExactVelocityBuffer[sequencerExactVelocityLength] = '\0';
+  sequencerVelocityDisplay = static_cast<byte>(atoi(sequencerExactVelocityBuffer));
   sequencerOverlayDirty = true;
 }
 
@@ -957,7 +1051,7 @@ bool transposeSelectedSequencerStep(int8_t semitoneDelta) {
 void handleSequencerToolAction(SequencerToolAction action) {
   switch (action) {
     case SequencerToolAction::Velocity:
-      showSequencerStatusMessage("Vel", "Coming soon");
+      enterSequencerExactVelocityEdit();
       return;
     case SequencerToolAction::OctaveUp:
       if (sequencerEditNoteCount == 0) {
@@ -1351,16 +1445,23 @@ uint64_t sequencerStepDurationMicros() {
   return 60000000ULL / static_cast<uint64_t>(tempo) / 4ULL;
 }
 
-void sendSequencerManagedNoteOn(byte midiNote, bool playbackNote) {
+byte sequencerSelectedStepVelocity() {
+  if (sequencerSelectedStep >= 0) {
+    return sequencerStepVelocity[sequencerSelectedStep];
+  }
+  return SEQUENCER_DEFAULT_VELOCITY;
+}
+
+void sendSequencerManagedNoteOn(byte midiNote, bool playbackNote, byte velocity) {
   if (midiNote >= 128) {
     return;
   }
   byte& heldCount = playbackNote ? sequencerPlaybackHeldNoteCounts[midiNote] : sequencerAuditionHeldNoteCounts[midiNote];
   if (heldCount == 0 && sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
     if (sequencerPlayType == SEQUENCER_PLAY_TYPE_OB_SYNTH) {
-      sendBoardPreviewSynthNote(midiNote, true);
+      sendBoardPreviewSynthNote(midiNote, true, velocity);
     } else {
-      sendBoardPreviewMidiNote(midiNote, true);
+      sendBoardPreviewMidiNote(midiNote, true, velocity);
     }
   }
   if (heldCount < 255) {
@@ -1378,9 +1479,9 @@ void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote) {
   }
   if (sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
     if (sequencerPlayType == SEQUENCER_PLAY_TYPE_OB_SYNTH) {
-      sendBoardPreviewSynthNote(midiNote, false);
+      sendBoardPreviewSynthNote(midiNote, false, 0);
     } else {
-      sendBoardPreviewMidiNote(midiNote, false);
+      sendBoardPreviewMidiNote(midiNote, false, 0);
     }
   }
 }
@@ -1499,6 +1600,7 @@ void serviceSequencerPlaybackGroups() {
 void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration) {
   uint16_t gatePercent = sequencerStepGatePercent[stepIndex];
   byte noteCount = sequencerStepNoteCount[stepIndex];
+  byte stepVelocity = sequencerStepVelocity[stepIndex];
   if (noteCount == 0 || gatePercent == 0) {
     return;
   }
@@ -1539,7 +1641,7 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration) {
     if (midiNote >= 128) {
       continue;
     }
-    sendSequencerManagedNoteOn(midiNote, true);
+    sendSequencerManagedNoteOn(midiNote, true, stepVelocity);
     group.midiNotes[group.noteCount++] = midiNote;
   }
 }
@@ -1568,6 +1670,7 @@ void resetSequencerState() {
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
     clearSequencerNoteBuffer(sequencerStepMidiNotes[step], sequencerStepNoteCount[step]);
     sequencerStepGatePercent[step] = 100;
+    sequencerStepVelocity[step] = SEQUENCER_DEFAULT_VELOCITY;
   }
   memset(sequencerAuditionHeldNoteCounts, 0, sizeof(sequencerAuditionHeldNoteCounts));
   memset(sequencerPlaybackHeldNoteCounts, 0, sizeof(sequencerPlaybackHeldNoteCounts));
@@ -1589,6 +1692,17 @@ void resetSequencerState() {
   sequencerNextStepAt = 0;
   sequencerCurrentStepStartedAt = 0;
   sequencerOverviewPage = 0;
+  sequencerLengthPercentDisplay = 100;
+  sequencerExactLengthOriginal = 100;
+  snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "100");
+  sequencerExactLengthLength = 3;
+  sequencerExactLengthReplaceOnNextDigit = true;
+  sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
+  sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
+  snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "%u",
+           static_cast<unsigned>(SEQUENCER_DEFAULT_VELOCITY));
+  sequencerExactVelocityLength = 2;
+  sequencerExactVelocityReplaceOnNextDigit = true;
   hideSequencerOverlay();
   stopSequencerPlaybackNote();
 }
@@ -1683,6 +1797,12 @@ bool loadSequencerFromFlash() {
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && gateValue >= 0 && gateValue <= 1000) {
         sequencerStepGatePercent[stepNumber - 1] = static_cast<uint16_t>(gateValue);
       }
+    } else if (key.startsWith("vel")) {
+      int stepNumber = key.substring(3).toInt();
+      int velocityValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 1 && velocityValue <= 127) {
+        sequencerStepVelocity[stepNumber - 1] = static_cast<byte>(velocityValue);
+      }
     }
   }
 
@@ -1756,6 +1876,12 @@ bool loadSequencerFromPath(const char* path) {
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && gateValue >= 0 && gateValue <= 1000) {
         sequencerStepGatePercent[stepNumber - 1] = static_cast<uint16_t>(gateValue);
       }
+    } else if (key.startsWith("vel")) {
+      int stepNumber = key.substring(3).toInt();
+      int velocityValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 1 && velocityValue <= 127) {
+        sequencerStepVelocity[stepNumber - 1] = static_cast<byte>(velocityValue);
+      }
     }
   }
 
@@ -1808,6 +1934,10 @@ bool saveSequencerToPath(const char* path) {
     f.print(step + 1);
     f.print('=');
     f.println(sequencerStepGatePercent[step]);
+    f.print("vel");
+    f.print(step + 1);
+    f.print('=');
+    f.println(sequencerStepVelocity[step]);
   }
 
   f.close();
@@ -2405,6 +2535,10 @@ bool handleSequencerRotaryTurn(int8_t direction) {
     (void)direction;
     return true;
   }
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
+    (void)direction;
+    return true;
+  }
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
     (void)direction;
     return true;
@@ -2418,6 +2552,10 @@ bool handleSequencerRotaryTurn(int8_t direction) {
 
 bool handleSequencerEncoderClick() {
   if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    return true;
+  }
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
+    exitSequencerExactVelocityEdit(true);
     return true;
   }
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
@@ -2509,6 +2647,28 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
     sequencerOverlayVisible = false;
     sequencerOverlayDirty = true;
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
+    if (!pressed) {
+      return;
+    }
+
+    const SequencerNamingKey* exactKey = getSequencerExactLengthKey(buttonIndex);
+    if (exactKey == nullptr) {
+      return;
+    }
+
+    if (exactKey->action == SequencerNamingAction::InsertChar) {
+      insertSequencerExactVelocityChar(exactKey->character);
+    } else if (exactKey->action == SequencerNamingAction::Backspace) {
+      backspaceSequencerExactVelocityChar();
+    } else if (exactKey->action == SequencerNamingAction::Cancel) {
+      exitSequencerExactVelocityEdit(false);
+      return;
+    }
+
     return;
   }
 
@@ -2618,7 +2778,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   byte midiNote = 0;
   if (getButtonMidiNoteForSequencer(buttonIndex, midiNote)) {
     if (midiNote < 128) {
-      sendSequencerManagedNoteOn(midiNote, false);
+      sendSequencerManagedNoteOn(midiNote, false, sequencerSelectedStepVelocity());
     }
     if (sequencerSelectedStep >= 0) {
       toggleEditBufferNote(midiNote);
@@ -2770,8 +2930,10 @@ void drawSequencerOverlay() {
     return;
   }
 
+  screenTime = 0;
   if (screenSaverOn) {
-    return;
+    screenSaverOn = false;
+    u8g2.setContrast(SEQUENCER_OVERLAY_CONTRAST);
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
@@ -2800,6 +2962,41 @@ void drawSequencerOverlay() {
     u8g2.drawStr(8, 88, "<- CANCEL");
     u8g2.drawStr(8, 106, "Press encoder");
     u8g2.drawStr(8, 118, "to save");
+    u8g2.sendBuffer();
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    char headerLabel[20];
+    char valueLabel[6];
+    char noteLineOne[24];
+    char noteLineTwo[24];
+    snprintf(headerLabel, sizeof(headerLabel), "Vel #%02d", sequencerSelectedStep + 1);
+    snprintf(valueLabel, sizeof(valueLabel), "%s", sequencerExactVelocityBuffer);
+    bool showCursor = ((runTime / 400000ULL) % 2ULL) == 0ULL;
+    size_t valueLength = strlen(valueLabel);
+    if (showCursor && valueLength < 3) {
+      valueLabel[valueLength] = '_';
+      valueLabel[valueLength + 1] = '\0';
+    }
+    fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
+    (void)noteLineTwo;
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(24, 16, headerLabel);
+    u8g2.drawStr(12, 34, noteLineOne);
+    u8g2.drawStr(46, 52, valueLabel);
+
+    u8g2.setFont(u8g2_font_5x8_tf);
+    u8g2.drawStr(8, 70, "0 1 2 3 4");
+    u8g2.drawStr(8, 84, "5 6 7 8 9");
+    u8g2.drawStr(8, 98, "<- CANCEL");
+    u8g2.drawStr(8, 112, "Press encoder");
+    u8g2.drawStr(8, 124, "to save");
     u8g2.sendBuffer();
     return;
   }
@@ -2967,6 +3164,20 @@ void applySequencerLedOverrides() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
+    uint32_t activeColor = getSequencerConfirmLedColor();
+    uint16_t ledCount = strip.numPixels();
+    for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
+      strip.setPixelColor(buttonIndex, 0);
+    }
+    for (const SequencerNamingKey& key : sequencerExactLengthKeys) {
+      if (key.buttonIndex < ledCount) {
+        strip.setPixelColor(key.buttonIndex, activeColor);
+      }
+    }
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
     uint32_t activeColor = getSequencerConfirmLedColor();
     uint16_t ledCount = strip.numPixels();
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {

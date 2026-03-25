@@ -1,0 +1,41 @@
+SEQUENCER EXACT VELOCITY SCREEN
+
+This screen appears after choosing Vel from the step tools picker for a
+selected step.
+
+Purpose:
+
+- enter an exact per-step velocity value directly from the board
+
+Current OLED layout:
+
+  Vel #13
+  C3 E3 G3
+  96_
+
+  0 1 2 3 4
+  5 6 7 8 9
+  <- CANCEL
+  Press encoder
+  to save
+
+Controls:
+
+- number keys enter the velocity value
+- the first digit typed replaces the current value
+- up to 3 digits are allowed
+- values above 127 are clamped to 127
+- <- deletes the previous digit
+- CANCEL exits without saving
+- encoder press saves and returns to the tools picker
+
+LED behavior while the screen is open:
+
+- keypad digits are blue
+- <- is blue
+- CANCEL is blue
+- all other keys are off
+
+Display behavior:
+
+- this overlay keeps the display awake while it is open

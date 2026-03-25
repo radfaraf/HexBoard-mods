@@ -17,6 +17,7 @@ Current files:
 - edit_note_screen_layout.txt
 - overview_screen_layout.txt
 - exact_length_screen_layout.txt
+- exact_velocity_screen_layout.txt
 - performance_monitor_layout.txt
 - sequencer_special_keys_layout.txt
 - sequencer_tools_picker_layout.txt

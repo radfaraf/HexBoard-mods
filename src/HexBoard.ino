@@ -1541,6 +1541,7 @@ constexpr byte BOARD_PREVIEW_SYNTH_SLOT_START = 141;
 constexpr int16_t BOARD_PREVIEW_SYNTH_SLOT_NONE = -1;
 int16_t boardPreviewSynthSlotForMidi[128];
 byte boardPreviewSynthMidiForSlot[BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START];
+byte boardPreviewSynthVelocityForSlot[BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START];
 
 void resetBoardPreviewSynthSlots() {
   for (byte i = 0; i < 128; i++) {
@@ -1548,6 +1549,7 @@ void resetBoardPreviewSynthSlots() {
   }
   for (byte i = 0; i < (BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START); i++) {
     boardPreviewSynthMidiForSlot[i] = UNUSED_NOTE;
+    boardPreviewSynthVelocityForSlot[i] = 127;
   }
 }
 
@@ -1580,6 +1582,7 @@ void releaseBoardPreviewSynthSlot(byte midiNote) {
     return;
   }
   boardPreviewSynthMidiForSlot[slot - BOARD_PREVIEW_SYNTH_SLOT_START] = UNUSED_NOTE;
+  boardPreviewSynthVelocityForSlot[slot - BOARD_PREVIEW_SYNTH_SLOT_START] = 127;
   boardPreviewSynthSlotForMidi[midiNote] = BOARD_PREVIEW_SYNTH_SLOT_NONE;
 }
 
@@ -2301,7 +2304,7 @@ inline void withMIDI(F&& f) {
   if (midiD & MIDID_SER) f(SMIDI);
 }
 
-void sendBoardPreviewMidiNote(byte midiNote, bool noteOn) {
+void sendBoardPreviewMidiNote(byte midiNote, bool noteOn, byte velocity) {
   if (midiNote >= 128) {
     return;
   }
@@ -2310,13 +2313,14 @@ void sendBoardPreviewMidiNote(byte midiNote, bool noteOn) {
     targetChannel = 1;
   }
   if (noteOn) {
-    withMIDI([&](auto& M) { M.sendNoteOn(midiNote, 127, targetChannel); });
+    byte safeVelocity = (velocity == 0) ? 1 : velocity;
+    withMIDI([&](auto& M) { M.sendNoteOn(midiNote, safeVelocity, targetChannel); });
   } else {
     withMIDI([&](auto& M) { M.sendNoteOff(midiNote, 0, targetChannel); });
   }
 }
 
-void sendBoardPreviewSynthNote(byte midiNote, bool noteOn) {
+void sendBoardPreviewSynthNote(byte midiNote, bool noteOn, byte velocity) {
   if (midiNote >= 128) {
     return;
   }
@@ -2326,6 +2330,7 @@ void sendBoardPreviewSynthNote(byte midiNote, bool noteOn) {
     if (slot < BOARD_PREVIEW_SYNTH_SLOT_START || slot >= BTN_COUNT) {
       return;
     }
+    boardPreviewSynthVelocityForSlot[slot - BOARD_PREVIEW_SYNTH_SLOT_START] = (velocity == 0) ? 1 : velocity;
     h[slot].note = midiNote;
     h[slot].frequency = MIDItoFreq(static_cast<float>(midiNote));
     h[slot].MIDIch = 1;
@@ -3953,6 +3958,12 @@ void RAM_FUNC(poll)() {
     // Apply envelope (0..65535). Current bounds keep the product within
     // signed 32-bit, which avoids a 64-bit helper call in the ISR.
     s = (s * static_cast<int32_t>(env.level)) >> 16;
+
+    int16_t owner = synthChannelOwners[i].load(std::memory_order_relaxed);
+    if (owner >= BOARD_PREVIEW_SYNTH_SLOT_START && owner < BTN_COUNT) {
+      byte previewVelocity = boardPreviewSynthVelocityForSlot[owner - BOARD_PREVIEW_SYNTH_SLOT_START];
+      s = (s * static_cast<int32_t>(previewVelocity)) >> 7;
+    }
 
     // Accumulate signed mix
     mix += s;

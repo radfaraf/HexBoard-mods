@@ -13,8 +13,8 @@ bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colo
 uint32_t getSequencerTransportLedColor(bool running);
 uint32_t getSequencerConfirmLedColor();
 uint32_t getSequencerUnsetStepLedColor(bool highlighted);
-void sendBoardPreviewMidiNote(byte midiNote, bool noteOn);
-void sendBoardPreviewSynthNote(byte midiNote, bool noteOn);
+void sendBoardPreviewMidiNote(byte midiNote, bool noteOn, byte velocity);
+void sendBoardPreviewSynthNote(byte midiNote, bool noteOn, byte velocity);
 void enterKeyboardMode();
 
 extern GEMPage menuPageSequencer;
