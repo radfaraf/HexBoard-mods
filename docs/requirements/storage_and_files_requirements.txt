@@ -86,6 +86,12 @@ Requirement:
 Revert shall discard unsaved edits and reload the last saved version of the
 current sequence.
 
+Details:
+- If no current file exists, the system may fall back to the legacy sequence
+  file if present.
+- If no current or legacy file exists, the sequencer resets to a blank default
+  sequence state.
+
 
 ID: SEQ-FILE-009
 Title: File Browser Paging
@@ -159,6 +165,8 @@ Details:
 - If no file is loaded, the title is Sequencer.
 - If a file is loaded, the title is Seq-FILENAME.
 - If a file is loaded and unsaved changes exist, the title is Seq-*FILENAME.
+- Save and Revert clear the dirty state.
+- Editing notes, length, velocity, or sequencer settings sets the dirty state.
 
 
 ID: SEQ-FILE-015

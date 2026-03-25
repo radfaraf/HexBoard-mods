@@ -82,6 +82,7 @@ Pressing a step pad shall select that step.
 Details:
 - Pressing the same selected step again shall deselect it.
 - The selected step shall visually blink to show selection.
+- A selected step may also be deselected with encoder press.
 
 
 ID: SEQ-CTRL-007
@@ -151,3 +152,5 @@ Details:
 - Prob is a placeholder for future probability editing.
 - Tie is a placeholder for future tie behavior.
 - Cancel/Finished exits the tools picker.
+- Oct+ and Oct- shall leave the tools picker open after they apply.
+- If Oct+ or Oct- is chosen on an empty step, the step shall remain unchanged.

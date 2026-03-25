@@ -95,6 +95,12 @@ Requirement:
 Exact length entry shall allow direct numeric entry up to 4 digits and shall
 clamp the saved value to 1000 percent maximum.
 
+Details:
+- The first digit typed replaces the current shown value.
+- Backspace removes the previous digit.
+- Cancel exits without saving changes.
+- Encoder press saves and returns to the tools picker.
+
 
 ID: SEQ-PLAY-009
 Title: Velocity Range
@@ -119,6 +125,10 @@ Priority: High
 Requirement:
 Exact velocity editing shall use coarse encoder values of 0, 5, 10, 15 and so
 on up to 125, plus 127.
+
+Details:
+- Cancel exits without saving changes.
+- Encoder press saves and returns to the tools picker.
 
 
 ID: SEQ-PLAY-011
@@ -150,3 +160,24 @@ Priority: High
 Requirement:
 The stored velocity value of a step shall affect sequencer playback, tap
 preview, and live note audition while a step is selected.
+
+
+ID: SEQ-PLAY-014
+Title: Zero Length Behavior
+Status: Active
+Area: Playback
+Priority: Medium
+
+Requirement:
+A step with a length value of 0 percent shall not sound during playback.
+
+
+ID: SEQ-PLAY-015
+Title: Overlength Step Behavior
+Status: Active
+Area: Playback
+Priority: Medium
+
+Requirement:
+A step with a length value above 100 percent shall be allowed to continue
+across later steps.

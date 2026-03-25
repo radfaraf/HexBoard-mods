@@ -27,6 +27,7 @@ The selected step shall blink to show selection.
 Details:
 - Blink timing is 1.0 seconds on and 0.2 seconds off.
 - Empty selected steps blink visibly instead of staying dark.
+- A selected empty step uses the unset-step visual style while blinking.
 
 
 ID: SEQ-UI-003
@@ -63,6 +64,10 @@ Requirement:
 The exact length overlay shall show the selected step number, the current
 numeric value with a blinking underscore cursor, the keypad layout, and a save
 instruction.
+
+Details:
+- Backspace is on the third-row first key.
+- Cancel is on the fifth-row first key.
 
 
 ID: SEQ-UI-006
@@ -111,6 +116,9 @@ Priority: High
 Requirement:
 The performance monitor overlay shall show AudioEng, Mem, FS, MIDI Q, Drop,
 and Late while the Play/Stop key is held.
+
+Details:
+- The performance monitor closes when the Play/Stop key is released.
 
 
 ID: SEQ-UI-010
