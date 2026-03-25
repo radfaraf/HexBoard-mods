@@ -33,7 +33,7 @@ Always-on special keys:
 - Third-row last button:
   Step tools picker
   - opens the key-driven step tools overlay for the selected step
-  - current tool entries: Vel, Oct+, Oct-, Prob, Tie
+  - current tool entries: Len, Vel, Oct+, Oct-, Prob, Tie
 
 Current always-on special-key candidate:
 

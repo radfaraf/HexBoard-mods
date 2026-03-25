@@ -147,7 +147,7 @@ Length is stored as a percentage of the step duration.
 
 7.3 Exact length entry
 
-Pressing the encoder while a step is selected opens the exact length screen.
+Choosing Len from the step tools picker opens the exact length screen.
 
 In exact length mode:
 
@@ -156,7 +156,7 @@ In exact length mode:
 - up to 4 digits are allowed
 - <- removes the previous digit
 - CANCEL exits exact length entry without saving
-- pressing the encoder saves and exits
+- pressing the encoder saves and returns to the tools picker
 - the physical CANCEL key is placed lower on the board to reduce accidental presses
 
 The exact length screen shows this keypad-style layout:
@@ -240,6 +240,7 @@ the step tools picker.
 
 Current tool choices:
 
+- Len
 - Vel
 - Oct+
 - Oct-
@@ -252,12 +253,13 @@ The picker screen shows:
 - Tools #step number
 - the selected step's compact `L ...%  V ...` line
 - the selected step's current notes
-- Vel Oct+ Oct-
+- Len Vel Oct+ Oct-
 - Prob Tie
 - Cancel/Finished
 
 Current behavior:
 
+- Len: opens exact length entry for the selected step
 - Vel: opens exact velocity entry for the selected step
 - Oct+: transposes all notes in the selected step up 12 semitones and stays in
   the picker so you can apply another tool immediately

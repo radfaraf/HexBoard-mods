@@ -3,7 +3,7 @@ SEQUENCER EXACT LENGTH SCREEN LAYOUT
 Used when:
 
 - a step is selected
-- the encoder is pressed
+- Len is chosen from the step tools picker
 
 Screen layout:
 
@@ -26,5 +26,5 @@ Notes:
 - Up to 4 digits are allowed.
 - <- removes the previous digit.
 - CANCEL exits without saving.
-- Pressing the encoder saves and returns to normal step editing.
+- Pressing the encoder saves and returns to the tools picker.
 - The helper text stays compact, but the physical CANCEL key is placed lower on the board.

@@ -26,7 +26,6 @@ Main Controls
   selected step.
 - Encoder:
   - Turn while a step is selected to change that step's length quickly.
-  - Press while a step is selected to open exact length entry.
   - Press during file or folder naming to save the name.
 
 Step Editing
@@ -46,9 +45,10 @@ Step Tools Picker
 - The tools screen shows the selected step number, a compact
   `L ...%  V ...` line, and the current notes.
 - Current tool choices are:
-  Vel, Oct+, Oct-, Prob, Tie
+  Len, Vel, Oct+, Oct-, Prob, Tie
 - The tools screen also shows:
   Cancel/Finished
+- Len opens exact length entry for the selected step.
 - Oct+ transposes the selected step up 1 octave and stays in the tools screen.
 - Oct- transposes the selected step down 1 octave and stays in the tools screen.
 - Vel opens exact velocity entry for the selected step.
@@ -71,7 +71,7 @@ Step Velocity
 Note Length
 
 - With a step selected, turn the encoder for quick length changes.
-- Press the encoder while a step is selected to open exact length entry.
+- Use Len from the step tools picker to open exact length entry.
 - Available lengths are:
   0%, 25%, 50%, 75%, 100%, 150%, 200%, 250%, 300%, 350%, 400%, 500%, 600%, 700%, 800%, 900%, 1000%
 

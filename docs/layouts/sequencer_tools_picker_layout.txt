@@ -13,21 +13,23 @@ Current OLED layout:
   Tools #13
   L 150%  V 96
   C3 E3 G3
-  Vel Oct+ Oct-
+  Len Vel Oct+ Oct-
   Prob Tie
   Cancel/Finished
 
 Current active tool keys:
 
-- first row key 1: Vel
-- first row key 2: Oct+
-- first row key 3: Oct-
+- first row key 1: Len
+- first row key 2: Vel
+- first row key 3: Oct+
+- first row key 4: Oct-
 - second row key 1: Prob
 - second row key 2: Tie
 - lower CANCEL key: exits the picker
 
 Current behavior:
 
+- Len opens the exact length screen for the selected step
 - Vel opens the exact velocity screen for the selected step
 - Oct+ transposes the selected step up 1 octave and stays in the picker
 - Oct- transposes the selected step down 1 octave and stays in the picker
