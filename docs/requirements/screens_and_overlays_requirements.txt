@@ -81,6 +81,11 @@ The exact velocity overlay shall show the selected step number, the compact
 length and velocity line, the selected step notes, the large current velocity
 value, and the short encoder instructions.
 
+Details:
+- Exact velocity editing is encoder-driven and does not require dedicated lit
+  button hints.
+- While this overlay is open, all keys remain dark.
+
 
 ID: SEQ-UI-007
 Title: Overview Overlay

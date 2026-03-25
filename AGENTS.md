@@ -19,7 +19,9 @@ Preferred workflow for larger Sequencer changes:
 - do the code changes first
 - then tell the user the code work is done and ready for testing as part of the same reply
 - then suggest a commit message for the current uncommitted work
-- then immediately update the documentation files and regenerate the PDFs in the same overall pass when Sequencer docs or layouts need it
+- then immediately update the documentation files in the same overall pass when Sequencer docs, layouts, or requirements need it
+- if a Sequencer change affects requirements, include the relevant `docs/requirements` updates as part of the documentation pass
+- regenerate the manual PDFs after the text documentation updates when the manuals changed
 - this lets the user start compiling and testing while commit-message and documentation work continues
 - only wait for separate confirmation before docs if the user explicitly asks for that slower workflow in a specific case
 
