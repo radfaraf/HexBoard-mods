@@ -1,5 +1,8 @@
 #!/bin/zsh
 
+# Sync the current sketch files into the Arduino IDE project folder, then
+# activate Arduino IDE and run a chosen Sketch action once the app is ready.
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
