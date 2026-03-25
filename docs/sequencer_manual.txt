@@ -285,7 +285,7 @@ How to edit velocity:
 - open the step tools picker
 - choose Vel
 
-The exact velocity screen uses encoder entry instead of a keypad:
+The exact velocity screen uses encoder entry:
 
 - turn the encoder to move through coarse musical values
 - the values are:
@@ -383,6 +383,13 @@ back on startup.
 Files use the .hbseq extension internally.
 
 The visible sequence name is the file name without the extension.
+
+Browser behavior:
+
+- the browser shows up to 8 file or folder rows at a time
+- `^ more ^` means there are earlier pages
+- `v more v` means there are later pages
+- turning the encoder past the first or last real file row changes page
 
 
 15. Renaming, Creating, And Deleting Files

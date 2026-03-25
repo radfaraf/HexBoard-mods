@@ -40,6 +40,7 @@ When the manuals are updated:
 - keep the quick manual brief but complete
 - keep the detailed manual clearer and more thorough without becoming bloated
 - avoid leaving outdated behavior or superseded workflows in either manual
+- describe the current behavior directly without comparing it to removed older behavior unless the user specifically asks for history or migration notes
 - regenerate the PDF versions after updating the text versions
 
 ## Layout Reference Maintenance
@@ -57,6 +58,7 @@ When needed:
 - update the existing layout reference text files
 - create new layout reference files for newly added complex screens or menus
 - remove or revise outdated layout descriptions so they match current behavior
+- describe layouts in terms of the current UI only, not past versions, unless the user specifically asks for comparison notes
 
 These layout files are documentation only and are not part of the firmware.
 

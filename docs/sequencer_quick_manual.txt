@@ -61,7 +61,7 @@ Step Velocity
 - Range is 0-127.
 - Default step velocity is 96.
 - Use Vel from the step tools picker to edit it.
-- Velocity entry uses the encoder instead of a keypad.
+- Velocity entry uses the encoder.
 - Turn the encoder to move through:
   0, 5, 10, 15, ... 125, 127
 - Press the encoder to save.
@@ -115,6 +115,9 @@ Menu Items
 Saving And Files
 
 - Sequences are stored under /Sequences in onboard flash.
+- File browsers show up to 8 file/folder rows at a time.
+- `^ more ^` and `v more v` indicate earlier or later pages.
+- Scrolling past the first or last real file row pages automatically.
 - The menu title shows the current file name as:
   Seq-FILENAME
 - If there are unsaved changes, it becomes:

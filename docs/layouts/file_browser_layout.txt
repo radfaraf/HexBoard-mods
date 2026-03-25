@@ -17,14 +17,16 @@ Common structure:
   [top action, if used by this mode]
   [secondary top action, if used by this mode]
   ..
+  ^ more ^    [only when earlier pages exist]
   entry 1
   entry 2
   entry 3
   entry 4
   entry 5
   entry 6
-  Prev
-  Next
+  entry 7
+  entry 8
+  v more v    [only when later pages exist]
 
 Mode-specific top actions:
 
@@ -73,3 +75,4 @@ Notes:
 - Folders can be entered by selecting them.
 - Files can be loaded, renamed, or deleted depending on the current mode.
 - The root folder is /Sequences.
+- Turning the encoder past the first or last real file row changes page.
