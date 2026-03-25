@@ -70,7 +70,7 @@ constexpr const char* SEQUENCER_LEGACY_STORAGE_PATH = "/sequence.hbseq";
 constexpr const char* SEQUENCER_FILE_EXTENSION = ".hbseq";
 constexpr byte SEQUENCER_GATE_CHOICE_COUNT = 17;
 constexpr byte SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS = 16;
-constexpr byte SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT = 6;
+constexpr byte SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT = 8;
 constexpr byte SEQUENCER_BROWSER_MAX_ENTRIES = 128;
 constexpr size_t SEQUENCER_MAX_PATH_LENGTH = 255;
 constexpr size_t SEQUENCER_BROWSER_TITLE_LENGTH = 28;
@@ -245,6 +245,7 @@ void openSequencerDeleteFolderBrowser();
 void openSequencerRenameFileBrowser();
 void openSequencerRenameFolderBrowser();
 void openSequencerCreateFolderBrowser();
+void sequencerBrowserIndicatorCallback();
 void sequencerBrowserDeleteFolderCallback();
 void sequencerBrowserRenameFolderCallback();
 
@@ -2081,6 +2082,9 @@ void sequencerBrowserNextPageCallback() {
   refreshSequencerBrowserMenu(false);
 }
 
+void sequencerBrowserIndicatorCallback() {
+}
+
 void sequencerBrowserEntryCallback(GEMCallbackData callbackData) {
   int entryIndex = callbackData.valInt;
   if (entryIndex < 0 || entryIndex >= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) {
@@ -2433,12 +2437,16 @@ GEMItem menuItemSequencerBrowserNewFolder("New Folder", sequencerBrowserNewFolde
 GEMItem menuItemSequencerBrowserRenameFolder("Rename This Folder", sequencerBrowserRenameFolderCallback);
 GEMItem menuItemSequencerBrowserDeleteFolder("Delete This Folder", sequencerBrowserDeleteFolderCallback);
 GEMItem menuItemSequencerBrowserUp("..", sequencerBrowserUpCallback);
+GEMItem menuItemSequencerBrowserMoreAbove("^ more ^", sequencerBrowserIndicatorCallback);
 GEMItem menuItemSequencerBrowserEntry0("", sequencerBrowserEntryCallback, 0);
 GEMItem menuItemSequencerBrowserEntry1("", sequencerBrowserEntryCallback, 1);
 GEMItem menuItemSequencerBrowserEntry2("", sequencerBrowserEntryCallback, 2);
 GEMItem menuItemSequencerBrowserEntry3("", sequencerBrowserEntryCallback, 3);
 GEMItem menuItemSequencerBrowserEntry4("", sequencerBrowserEntryCallback, 4);
 GEMItem menuItemSequencerBrowserEntry5("", sequencerBrowserEntryCallback, 5);
+GEMItem menuItemSequencerBrowserEntry6("", sequencerBrowserEntryCallback, 6);
+GEMItem menuItemSequencerBrowserEntry7("", sequencerBrowserEntryCallback, 7);
+GEMItem menuItemSequencerBrowserMoreBelow("v more v", sequencerBrowserIndicatorCallback);
 GEMItem menuItemSequencerBrowserPrev("Prev", sequencerBrowserPrevPageCallback);
 GEMItem menuItemSequencerBrowserNext("Next", sequencerBrowserNextPageCallback);
 GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
@@ -2447,7 +2455,9 @@ GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
   &menuItemSequencerBrowserEntry2,
   &menuItemSequencerBrowserEntry3,
   &menuItemSequencerBrowserEntry4,
-  &menuItemSequencerBrowserEntry5
+  &menuItemSequencerBrowserEntry5,
+  &menuItemSequencerBrowserEntry6,
+  &menuItemSequencerBrowserEntry7
 };
 
 int getVisibleBrowserEntryMenuIndex(bool firstVisible) {
@@ -2458,16 +2468,13 @@ int getVisibleBrowserEntryMenuIndex(bool firstVisible) {
     if (item == nullptr) {
       continue;
     }
-    if (item == &menuItemSequencerBrowserEntry0 ||
-        item == &menuItemSequencerBrowserEntry1 ||
-        item == &menuItemSequencerBrowserEntry2 ||
-        item == &menuItemSequencerBrowserEntry3 ||
-        item == &menuItemSequencerBrowserEntry4 ||
-        item == &menuItemSequencerBrowserEntry5) {
-      if (firstVisible) {
-        return itemIndex;
+    for (byte entryIndex = 0; entryIndex < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; entryIndex++) {
+      if (item == sequencerBrowserEntryItems[entryIndex]) {
+        if (firstVisible) {
+          return itemIndex;
+        }
+        matchIndex = itemIndex;
       }
-      matchIndex = itemIndex;
     }
   }
   return matchIndex;
@@ -2503,6 +2510,8 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 
   bool showSaveHere = (sequencerBrowserMode == SequencerBrowserMode::SaveNew);
   bool showCreateHere = (sequencerBrowserMode == SequencerBrowserMode::CreateFolder);
+  bool showMoreAbove = (sequencerBrowserOffset > 0);
+  bool showMoreBelow = (sequencerBrowserOffset + SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT < sequencerBrowserEntryCount);
   menuItemSequencerBrowserSaveHere.setTitle(showCreateHere ? "Create Here" : "Save Here");
   menuItemSequencerBrowserSaveHere.hide(!(showSaveHere || showCreateHere));
   menuItemSequencerBrowserNewFolder.hide(!showSaveHere);
@@ -2511,6 +2520,8 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
   menuItemSequencerBrowserDeleteFolder.hide(!(sequencerBrowserMode == SequencerBrowserMode::DeleteFolder) ||
                                             sequencerPathIsRoot(sequencerBrowserPath));
   menuItemSequencerBrowserUp.hide(sequencerPathIsRoot(sequencerBrowserPath));
+  menuItemSequencerBrowserMoreAbove.hide(!showMoreAbove);
+  menuItemSequencerBrowserMoreBelow.hide(!showMoreBelow);
 
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
     GEMItem* item = sequencerBrowserEntryItems[i];
@@ -2550,29 +2561,34 @@ bool handleSequencerRotaryTurn(int8_t direction) {
   }
   if (menu.getCurrentMenuPage() == &menuPageSequencerBrowser && direction != 0) {
     int currentIndex = menuPageSequencerBrowser.getCurrentMenuItemIndex();
-    int lastVisibleIndex = static_cast<int>(menuPageSequencerBrowser.getItemsCount()) - 1;
+    int firstEntryIndex = getVisibleBrowserEntryMenuIndex(true);
+    int lastEntryIndex = getVisibleBrowserEntryMenuIndex(false);
     if (direction > 0 &&
-        currentIndex >= lastVisibleIndex &&
+        lastEntryIndex >= 0 &&
+        currentIndex >= lastEntryIndex &&
         sequencerBrowserOffset + SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT < sequencerBrowserEntryCount) {
       sequencerBrowserOffset += SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
       refreshSequencerBrowserMenu(false);
-      int firstEntryIndex = getVisibleBrowserEntryMenuIndex(true);
-      if (firstEntryIndex >= 0) {
-        menuPageSequencerBrowser.setCurrentMenuItemIndex(static_cast<byte>(firstEntryIndex));
+      int nextFirstEntryIndex = getVisibleBrowserEntryMenuIndex(true);
+      if (nextFirstEntryIndex >= 0) {
+        menuPageSequencerBrowser.setCurrentMenuItemIndex(static_cast<byte>(nextFirstEntryIndex));
         menu.drawMenu();
       }
       return true;
     }
-    if (direction < 0 && currentIndex == 0 && sequencerBrowserOffset > 0) {
+    if (direction < 0 &&
+        firstEntryIndex >= 0 &&
+        currentIndex <= firstEntryIndex &&
+        sequencerBrowserOffset > 0) {
       if (sequencerBrowserOffset >= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) {
         sequencerBrowserOffset -= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
       } else {
         sequencerBrowserOffset = 0;
       }
       refreshSequencerBrowserMenu(false);
-      int lastEntryIndex = getVisibleBrowserEntryMenuIndex(false);
-      if (lastEntryIndex >= 0) {
-        menuPageSequencerBrowser.setCurrentMenuItemIndex(static_cast<byte>(lastEntryIndex));
+      int previousLastEntryIndex = getVisibleBrowserEntryMenuIndex(false);
+      if (previousLastEntryIndex >= 0) {
+        menuPageSequencerBrowser.setCurrentMenuItemIndex(static_cast<byte>(previousLastEntryIndex));
         menu.drawMenu();
       }
       return true;
@@ -2844,9 +2860,11 @@ void setupSequencerMenu() {
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserRenameFolder);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserDeleteFolder);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserUp);
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserMoreAbove);
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
     menuPageSequencerBrowser.addMenuItem(*sequencerBrowserEntryItems[i]);
   }
+  menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserMoreBelow);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserPrev);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserNext);
 
@@ -2855,6 +2873,8 @@ void setupSequencerMenu() {
   menuItemSequencerBrowserRenameFolder.hide();
   menuItemSequencerBrowserDeleteFolder.hide();
   menuItemSequencerBrowserUp.hide();
+  menuItemSequencerBrowserMoreAbove.hide();
+  menuItemSequencerBrowserMoreBelow.hide();
   menuItemSequencerBrowserPrev.hide();
   menuItemSequencerBrowserNext.hide();
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
