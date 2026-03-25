@@ -11,12 +11,11 @@ Purpose:
 Current OLED layout:
 
   Tools #13
-
+  C3 E3 G3
   Vel Oct+ Oct-
   Prob Tie
-
+  Cancel/Finished
   Press tool key
-  CANCEL exits
 
 Current active tool keys:
 
@@ -29,8 +28,8 @@ Current active tool keys:
 
 Current behavior:
 
-- Oct+ transposes the selected step up 1 octave and returns to the edit screen
-- Oct- transposes the selected step down 1 octave and returns to the edit screen
+- Oct+ transposes the selected step up 1 octave and stays in the picker
+- Oct- transposes the selected step down 1 octave and stays in the picker
 - Vel, Prob, and Tie currently show placeholder status messages
 
 LED behavior while the picker is open:

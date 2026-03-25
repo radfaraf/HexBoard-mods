@@ -242,16 +242,27 @@ Current tool choices:
 - Oct-
 - Prob
 - Tie
-- CANCEL
+- Cancel/Finished
+
+The picker screen shows:
+
+- Tools #step number
+- the selected step's current notes
+- Vel Oct+ Oct-
+- Prob Tie
+- Cancel/Finished
+- Press tool key
 
 Current behavior:
 
-- Oct+: transposes all notes in the selected step up 12 semitones
-- Oct-: transposes all notes in the selected step down 12 semitones
+- Oct+: transposes all notes in the selected step up 12 semitones and stays in
+  the picker so you can apply another tool immediately
+- Oct-: transposes all notes in the selected step down 12 semitones and stays
+  in the picker so you can apply another tool immediately
 - Vel: placeholder for future per-step velocity editing
 - Prob: placeholder for future step probability editing
 - Tie: placeholder for future tie behavior
-- CANCEL: exits the tool picker
+- Cancel/Finished: exits the tool picker when you are done
 
 The picker is only meant for the currently selected step.
 

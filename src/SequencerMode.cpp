@@ -965,7 +965,9 @@ void handleSequencerToolAction(SequencerToolAction action) {
         return;
       }
       if (transposeSelectedSequencerStep(12)) {
-        exitSequencerFunctionPicker();
+        sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
+        sequencerOverlayVisible = false;
+        sequencerOverlayDirty = true;
       } else {
         showSequencerStatusMessage("Oct+", "Step unchanged");
       }
@@ -976,7 +978,9 @@ void handleSequencerToolAction(SequencerToolAction action) {
         return;
       }
       if (transposeSelectedSequencerStep(-12)) {
-        exitSequencerFunctionPicker();
+        sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
+        sequencerOverlayVisible = false;
+        sequencerOverlayDirty = true;
       } else {
         showSequencerStatusMessage("Oct-", "Step unchanged");
       }
@@ -2805,16 +2809,23 @@ void drawSequencerOverlay() {
     sequencerOverlayDirty = false;
 
     char headerLabel[20];
+    char noteLineOne[24];
+    char noteLineTwo[24];
     snprintf(headerLabel, sizeof(headerLabel), "Tools #%02d", sequencerSelectedStep + 1);
+    fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
     u8g2.drawStr(20, 18, headerLabel);
-    u8g2.drawStr(8, 44, "Vel Oct+ Oct-");
-    u8g2.drawStr(8, 64, "Prob Tie");
+    u8g2.drawStr(12, 38, noteLineOne);
+    if (noteLineTwo[0] != '\0') {
+      u8g2.drawStr(12, 52, noteLineTwo);
+    }
+    u8g2.drawStr(8, 72, "Vel Oct+ Oct-");
+    u8g2.drawStr(8, 88, "Prob Tie");
+    u8g2.drawStr(8, 104, "Cancel/Finished");
     u8g2.setFont(u8g2_font_5x8_tf);
-    u8g2.drawStr(8, 92, "Press tool key");
-    u8g2.drawStr(8, 106, "CANCEL exits");
+    u8g2.drawStr(8, 120, "Press tool key");
     u8g2.sendBuffer();
     return;
   }

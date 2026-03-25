@@ -41,12 +41,16 @@ Step Editing
 Step Tools Picker
 
 - Press the last button on the third row with a step selected to open tools.
+- The tools screen shows the selected step number and its current notes.
 - Current tool choices are:
   Vel, Oct+, Oct-, Prob, Tie
-- Oct+ transposes the selected step up 1 octave.
-- Oct- transposes the selected step down 1 octave.
+- The tools screen also shows:
+  Cancel/Finished
+  Press tool key
+- Oct+ transposes the selected step up 1 octave and stays in the tools screen.
+- Oct- transposes the selected step down 1 octave and stays in the tools screen.
 - Vel, Prob, and Tie are placeholder entries for now.
-- CANCEL closes the picker.
+- Cancel/Finished closes the picker when you are done.
 
 Note Length
 
