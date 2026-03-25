@@ -44,6 +44,7 @@ constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr byte SEQUENCER_DEFAULT_VELOCITY = 96;
+constexpr byte SEQUENCER_VELOCITY_CHOICE_COUNT = 27;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
 constexpr uint64_t SEQUENCER_CLEAR_HOLD_MICROS = 1000000ULL;
 constexpr uint64_t SEQUENCER_PERFORMANCE_HOLD_MICROS = 2000000ULL;
@@ -198,9 +199,6 @@ byte sequencerExactLengthLength = 3;
 bool sequencerExactLengthReplaceOnNextDigit = true;
 byte sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
-char sequencerExactVelocityBuffer[4] = "96";
-byte sequencerExactVelocityLength = 2;
-bool sequencerExactVelocityReplaceOnNextDigit = true;
 byte sequencerOverviewPage = 0;
 char sequencerCurrentSequencePath[SEQUENCER_MAX_PATH_LENGTH] = "";
 char sequencerMenuTitle[SEQUENCER_MENU_TITLE_LENGTH] = "Sequencer";
@@ -240,6 +238,8 @@ void refreshSequencerPerformanceStats(bool forceRefresh);
 void refreshSequencerBrowserMenu(bool resetSelection = true);
 void sequencerBrowserNewFolderCallback();
 bool isSequencerNamingActive();
+byte sequencerVelocityChoiceValue(byte choiceIndex);
+byte sequencerVelocityChoiceIndex(byte velocity);
 void openSequencerDeleteFileBrowser();
 void openSequencerDeleteFolderBrowser();
 void openSequencerRenameFileBrowser();
@@ -836,10 +836,6 @@ void enterSequencerExactVelocityEdit() {
     return;
   }
   sequencerExactVelocityOriginal = sequencerStepVelocity[sequencerSelectedStep];
-  snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "%u",
-           static_cast<unsigned>(sequencerExactVelocityOriginal));
-  sequencerExactVelocityLength = static_cast<byte>(strlen(sequencerExactVelocityBuffer));
-  sequencerExactVelocityReplaceOnNextDigit = true;
   sequencerVelocityDisplay = sequencerExactVelocityOriginal;
   sequencerOverlayMode = SequencerOverlayMode::ExactVelocityEdit;
   sequencerOverlayUntil = 0;
@@ -851,13 +847,7 @@ void exitSequencerExactVelocityEdit(bool saveChanges) {
   if (sequencerSelectedStep >= 0) {
     byte finalValue = sequencerExactVelocityOriginal;
     if (saveChanges) {
-      int parsedValue = atoi(sequencerExactVelocityBuffer);
-      if (parsedValue < 1) {
-        parsedValue = 1;
-      } else if (parsedValue > 127) {
-        parsedValue = 127;
-      }
-      finalValue = static_cast<byte>(parsedValue);
+      finalValue = sequencerVelocityDisplay;
     }
     if (sequencerStepVelocity[sequencerSelectedStep] != finalValue) {
       sequencerStepVelocity[sequencerSelectedStep] = finalValue;
@@ -901,33 +891,6 @@ const SequencerNamingKey* getSequencerExactLengthKey(byte buttonIndex) {
   return nullptr;
 }
 
-void insertSequencerExactVelocityChar(char character) {
-  if (character < '0' || character > '9') {
-    return;
-  }
-  if (sequencerExactVelocityReplaceOnNextDigit) {
-    sequencerExactVelocityBuffer[0] = character;
-    sequencerExactVelocityBuffer[1] = '\0';
-    sequencerExactVelocityLength = 1;
-    sequencerExactVelocityReplaceOnNextDigit = false;
-  } else if (sequencerExactVelocityLength >= 3) {
-    return;
-  } else if (sequencerExactVelocityLength == 1 && sequencerExactVelocityBuffer[0] == '0') {
-    sequencerExactVelocityBuffer[0] = character;
-  } else {
-    sequencerExactVelocityBuffer[sequencerExactVelocityLength++] = character;
-    sequencerExactVelocityBuffer[sequencerExactVelocityLength] = '\0';
-  }
-  int value = atoi(sequencerExactVelocityBuffer);
-  if (value > 127) {
-    snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "127");
-    sequencerExactVelocityLength = 3;
-    value = 127;
-  }
-  sequencerVelocityDisplay = static_cast<byte>(value);
-  sequencerOverlayDirty = true;
-}
-
 void insertSequencerExactLengthChar(char character) {
   if (character < '0' || character > '9') {
     return;
@@ -968,22 +931,6 @@ void backspaceSequencerExactLengthChar() {
   sequencerExactLengthLength--;
   sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
   sequencerLengthPercentDisplay = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
-  sequencerOverlayDirty = true;
-}
-
-void backspaceSequencerExactVelocityChar() {
-  sequencerExactVelocityReplaceOnNextDigit = false;
-  if (sequencerExactVelocityLength <= 1) {
-    snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "0");
-    sequencerExactVelocityLength = 1;
-    sequencerVelocityDisplay = 0;
-    sequencerOverlayDirty = true;
-    return;
-  }
-
-  sequencerExactVelocityLength--;
-  sequencerExactVelocityBuffer[sequencerExactVelocityLength] = '\0';
-  sequencerVelocityDisplay = static_cast<byte>(atoi(sequencerExactVelocityBuffer));
   sequencerOverlayDirty = true;
 }
 
@@ -1128,6 +1075,23 @@ bool handleSequencerRotaryTurnInternal(int8_t direction) {
     return false;
   }
 
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
+    byte currentIndex = sequencerVelocityChoiceIndex(sequencerVelocityDisplay);
+    int nextIndex = static_cast<int>(currentIndex) + direction;
+    if (nextIndex < 0) {
+      nextIndex = 0;
+    } else if (nextIndex >= SEQUENCER_VELOCITY_CHOICE_COUNT) {
+      nextIndex = SEQUENCER_VELOCITY_CHOICE_COUNT - 1;
+    }
+
+    byte newVelocity = sequencerVelocityChoiceValue(static_cast<byte>(nextIndex));
+    if (newVelocity != sequencerVelocityDisplay) {
+      sequencerVelocityDisplay = newVelocity;
+      sequencerOverlayDirty = true;
+    }
+    return true;
+  }
+
   if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
     return true;
   }
@@ -1169,6 +1133,27 @@ byte sequencerGateChoiceIndex(uint16_t gatePercent) {
   uint16_t nearestDistance = 65535;
   for (byte i = 0; i < SEQUENCER_GATE_CHOICE_COUNT; i++) {
     uint16_t distance = static_cast<uint16_t>(abs(static_cast<int>(sequencerGateChoices[i]) - static_cast<int>(gatePercent)));
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = i;
+    }
+  }
+  return nearestIndex;
+}
+
+byte sequencerVelocityChoiceValue(byte choiceIndex) {
+  if (choiceIndex >= SEQUENCER_VELOCITY_CHOICE_COUNT - 1) {
+    return 127;
+  }
+  return static_cast<byte>(choiceIndex * 5);
+}
+
+byte sequencerVelocityChoiceIndex(byte velocity) {
+  byte nearestIndex = 0;
+  uint16_t nearestDistance = 65535;
+  for (byte i = 0; i < SEQUENCER_VELOCITY_CHOICE_COUNT; i++) {
+    byte choiceValue = sequencerVelocityChoiceValue(i);
+    uint16_t distance = static_cast<uint16_t>(abs(static_cast<int>(choiceValue) - static_cast<int>(velocity)));
     if (distance < nearestDistance) {
       nearestDistance = distance;
       nearestIndex = i;
@@ -1699,10 +1684,6 @@ void resetSequencerState() {
   sequencerExactLengthReplaceOnNextDigit = true;
   sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
   sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
-  snprintf(sequencerExactVelocityBuffer, sizeof(sequencerExactVelocityBuffer), "%u",
-           static_cast<unsigned>(SEQUENCER_DEFAULT_VELOCITY));
-  sequencerExactVelocityLength = 2;
-  sequencerExactVelocityReplaceOnNextDigit = true;
   hideSequencerOverlay();
   stopSequencerPlaybackNote();
 }
@@ -1800,7 +1781,7 @@ bool loadSequencerFromFlash() {
     } else if (key.startsWith("vel")) {
       int stepNumber = key.substring(3).toInt();
       int velocityValue = value.toInt();
-      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 1 && velocityValue <= 127) {
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 0 && velocityValue <= 127) {
         sequencerStepVelocity[stepNumber - 1] = static_cast<byte>(velocityValue);
       }
     }
@@ -1879,7 +1860,7 @@ bool loadSequencerFromPath(const char* path) {
     } else if (key.startsWith("vel")) {
       int stepNumber = key.substring(3).toInt();
       int velocityValue = value.toInt();
-      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 1 && velocityValue <= 127) {
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 0 && velocityValue <= 127) {
         sequencerStepVelocity[stepNumber - 1] = static_cast<byte>(velocityValue);
       }
     }
@@ -2535,10 +2516,6 @@ bool handleSequencerRotaryTurn(int8_t direction) {
     (void)direction;
     return true;
   }
-  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
-    (void)direction;
-    return true;
-  }
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
     (void)direction;
     return true;
@@ -2655,20 +2632,9 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
       return;
     }
 
-    const SequencerNamingKey* exactKey = getSequencerExactLengthKey(buttonIndex);
-    if (exactKey == nullptr) {
-      return;
-    }
-
-    if (exactKey->action == SequencerNamingAction::InsertChar) {
-      insertSequencerExactVelocityChar(exactKey->character);
-    } else if (exactKey->action == SequencerNamingAction::Backspace) {
-      backspaceSequencerExactVelocityChar();
-    } else if (exactKey->action == SequencerNamingAction::Cancel) {
+    if (buttonIndex == SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX) {
       exitSequencerExactVelocityEdit(false);
-      return;
     }
-
     return;
   }
 
@@ -2971,32 +2937,31 @@ void drawSequencerOverlay() {
     sequencerOverlayDirty = false;
 
     char headerLabel[20];
-    char valueLabel[6];
+    char infoLine[24];
+    char valueLabel[8];
     char noteLineOne[24];
     char noteLineTwo[24];
     snprintf(headerLabel, sizeof(headerLabel), "Vel #%02d", sequencerSelectedStep + 1);
-    snprintf(valueLabel, sizeof(valueLabel), "%s", sequencerExactVelocityBuffer);
-    bool showCursor = ((runTime / 400000ULL) % 2ULL) == 0ULL;
-    size_t valueLength = strlen(valueLabel);
-    if (showCursor && valueLength < 3) {
-      valueLabel[valueLength] = '_';
-      valueLabel[valueLength + 1] = '\0';
-    }
+    snprintf(infoLine, sizeof(infoLine), "L %u%%  V %u",
+             static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]),
+             static_cast<unsigned>(sequencerVelocityDisplay));
+    snprintf(valueLabel, sizeof(valueLabel), "%u", static_cast<unsigned>(sequencerVelocityDisplay));
     fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
-    (void)noteLineTwo;
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
-    u8g2.drawStr(24, 16, headerLabel);
-    u8g2.drawStr(12, 34, noteLineOne);
-    u8g2.drawStr(46, 52, valueLabel);
+    u8g2.drawStr(24, 14, headerLabel);
+    u8g2.drawStr(8, 30, infoLine);
+    u8g2.drawStr(12, 48, noteLineOne);
+    if (noteLineTwo[0] != '\0') {
+      u8g2.drawStr(12, 60, noteLineTwo);
+    }
+    u8g2.drawStr(44, 82, valueLabel);
 
     u8g2.setFont(u8g2_font_5x8_tf);
-    u8g2.drawStr(8, 70, "0 1 2 3 4");
-    u8g2.drawStr(8, 84, "5 6 7 8 9");
-    u8g2.drawStr(8, 98, "<- CANCEL");
-    u8g2.drawStr(8, 112, "Press encoder");
-    u8g2.drawStr(8, 124, "to save");
+    u8g2.drawStr(8, 98, "Turn +/-5");
+    u8g2.drawStr(8, 110, "Press save");
+    u8g2.drawStr(8, 122, "Cancel exits");
     u8g2.sendBuffer();
     return;
   }
@@ -3204,9 +3169,13 @@ void applySequencerLedOverrides() {
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
     }
-    for (const SequencerNamingKey& key : sequencerExactLengthKeys) {
-      if (key.buttonIndex < ledCount) {
-        strip.setPixelColor(key.buttonIndex, activeColor);
+    if (SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX < ledCount) {
+      strip.setPixelColor(SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX, activeColor);
+    }
+    if (sequencerSelectedStep >= 0) {
+      int8_t selectedButton = sequencerStepToButtonIndex(static_cast<byte>(sequencerSelectedStep));
+      if (selectedButton >= 0 && static_cast<uint16_t>(selectedButton) < ledCount) {
+        strip.setPixelColor(static_cast<uint16_t>(selectedButton), activeColor);
       }
     }
     return;

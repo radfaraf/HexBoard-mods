@@ -274,7 +274,7 @@ The picker is only meant for the currently selected step.
 
 Each step stores its own velocity value.
 
-- range: 1-127
+- range: 0-127
 - default: 96
 
 This follows normal MIDI note-on velocity style behavior.
@@ -285,13 +285,11 @@ How to edit velocity:
 - open the step tools picker
 - choose Vel
 
-The exact velocity screen uses keypad-style entry similar to exact length:
+The exact velocity screen uses encoder entry instead of a keypad:
 
-- number keys enter the value directly
-- the first digit typed replaces the current value
-- up to 3 digits are allowed
-- values are clamped to 127
-- <- removes the previous digit
+- turn the encoder to move through coarse musical values
+- the values are:
+  0, 5, 10, 15, ... 125, 127
 - CANCEL exits without saving
 - pressing the encoder saves and returns to the tools picker
 
