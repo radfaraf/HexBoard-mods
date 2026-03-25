@@ -68,3 +68,5 @@ These layout files are documentation only and are not part of the firmware.
 
 - `docs/TODO.txt` is the user's personal project notes and todo file.
 - Do not modify, reorganize, or overwrite `docs/TODO.txt` unless the user explicitly asks for help with it.
+- Use `docs/TODO.txt` as one source to reference when suggesting future improvements or next features.
+- Do not treat `docs/TODO.txt` as the only source of truth for suggestions; also consider the current codebase, recent changes, and the user's current goals.
