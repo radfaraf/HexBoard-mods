@@ -3104,6 +3104,8 @@ void drawSequencerOverlay() {
     snprintf(headerLabel, sizeof(headerLabel), "Edit #%02d", sequencerSelectedStep + 1);
     snprintf(hintLineOne, sizeof(hintLineOne), "Length %u%%",
              static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]));
+    snprintf(hintLineTwo, sizeof(hintLineTwo), "Vel %u",
+             static_cast<unsigned>(sequencerStepVelocity[sequencerSelectedStep]));
   } else if (sequencerOverlayMode == SequencerOverlayMode::LengthEdit) {
     snprintf(headerLabel, sizeof(headerLabel), "Step Length");
     snprintf(hintLineOne, sizeof(hintLineOne), "Length %u%%", static_cast<unsigned>(sequencerLengthPercentDisplay));

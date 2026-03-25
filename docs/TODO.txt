@@ -1,0 +1,7 @@
+Just written by the human controlling the AI -- a list of reminders of things to do related to the project.
+
+
+Check all modes in tool pickers, Oct+/Oct-, vel, prob, tie, etc..
+(Save/load after changing things), (Make sure onboard synth words and external - VST, hardware)
+
+MPE/microtonal support
