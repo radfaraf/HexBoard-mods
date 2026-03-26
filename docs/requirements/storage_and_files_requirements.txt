@@ -109,6 +109,17 @@ Details:
 
 
 ID: SEQ-FILE-010
+Title: Startup Sequence Restore
+Status: Active
+Area: Files
+Priority: Medium
+
+Requirement:
+On startup, the sequencer shall attempt to restore the last remembered current
+sequence path before falling back to the legacy sequence file.
+
+
+ID: SEQ-FILE-010
 Title: File Management Actions
 Status: Active
 Area: Files

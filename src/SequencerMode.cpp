@@ -556,7 +556,8 @@ void setSequencerCurrentPath(const char* path) {
 }
 
 bool loadRememberedSequencerCurrentPath() {
-  clearSequencerCurrentPath();
+  sequencerCurrentSequencePath[0] = '\0';
+  refreshSequencerMenuTitle();
   if (!fileSystemExists || !LittleFS.exists(SEQUENCER_CURRENT_PATH_FILE)) {
     return false;
   }
