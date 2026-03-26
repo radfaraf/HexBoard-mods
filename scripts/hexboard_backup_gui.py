@@ -499,6 +499,18 @@ class HexBoardBackupApp:
             remote_path = selected.path / local_path.name
         else:
             remote_path = selected.path
+
+        try:
+            with connect(self._selected_port()) as protocol:
+                remote_entry = get_remote_entry(protocol, remote_path)
+        except Exception as exc:
+            messagebox.showerror("Upload File", str(exc))
+            return
+
+        if remote_entry is not None:
+            if remote_entry.is_dir:
+                messagebox.showerror("Upload File", f"Remote destination is a folder, not a file: {remote_path}")
+                return
             if not messagebox.askokcancel(
                 "Replace Remote File",
                 f"Upload {local_path.name} into {remote_path} ?\n\n"

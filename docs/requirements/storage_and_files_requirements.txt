@@ -250,9 +250,10 @@ Details:
 - The graphical desktop tool shall warn one file at a time when Upload Folder
   would overwrite an existing remote file, and it shall let the user overwrite,
   skip that file, or cancel the folder upload.
-- The graphical desktop tool shall warn before Upload File replaces a selected
-  remote file, and it shall direct the user to select a folder first when they
-  want to copy into that folder instead.
+- The graphical desktop tool shall warn before Upload File replaces an existing
+  remote file, including when that file is already inside the selected target
+  folder, and it shall direct the user to select a folder first when they want
+  to copy into that folder instead.
 - The graphical desktop tool shall allow multi-selection in the remote tree for
   batch delete actions.
 - The graphical desktop tool shall disable single-target actions when multiple

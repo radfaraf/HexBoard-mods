@@ -182,9 +182,10 @@ Saving And Files
   not delete the existing remote folder first.
 - During GUI Upload Folder, any existing remote file conflict is shown one file
   at a time so you can overwrite, skip that file, or cancel the folder upload.
-- If a remote file is selected, GUI Upload File warns before replacing that
-  selected remote file and tells you to select a folder first if you want to
-  copy into that folder instead.
+- GUI Upload File warns before replacing an existing remote file, whether that
+  file was selected directly or is already inside the selected target folder.
+- The warning also tells you to select a folder first if you want to copy the
+  file into that folder instead of replacing a selected file.
 - When multiple remote items are selected, single-target actions like Download,
   Upload, and Rename are disabled until only one item is selected again.
 - The GUI remembers the last local folder used for Upload File and Upload

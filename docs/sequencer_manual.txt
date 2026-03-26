@@ -530,9 +530,10 @@ Available host-side operations include:
   the existing remote folder first
 - during Upload Folder, each conflicting remote file is shown one at a time so
   you can overwrite it, skip it, or cancel the folder upload
-- if a remote file is selected, Upload File warns before replacing that
-  selected remote file and tells you to select a folder first if you want to
-  copy into that folder instead
+- Upload File warns before replacing an existing remote file, whether that file
+  was selected directly or is already inside the selected target folder
+- that warning also tells you to select a folder first if you want to copy the
+  file into that folder instead of replacing a selected file
 - when multiple items are selected, single-target actions such as Download
   Selected, Upload File, Upload Folder, Rename File, and Rename Folder are
   disabled until the selection returns to one item
