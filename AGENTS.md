@@ -18,8 +18,12 @@ Preferred workflow for larger Sequencer changes:
 
 - do the code changes first
 - then tell the user the code work is done and ready for testing as part of the same reply
+- use this exact line for that handoff:
+  `CODING READY FOR TESTING.`
 - then suggest a commit message for the current uncommitted work
 - then immediately update the documentation files in the same overall pass when Sequencer docs, layouts, or requirements need it
+- when beginning that documentation pass, use this exact line:
+  `UPDATING DOCS.`
 - if a Sequencer change affects requirements, include the relevant `docs/requirements` updates as part of the documentation pass
 - regenerate the manual PDFs after the text documentation updates when the manuals changed
 - this lets the user start compiling and testing while commit-message and documentation work continues
@@ -91,6 +95,9 @@ When needed:
 - When any changes are made and there are uncommitted changes available, always suggest a commit message for the current uncommitted work.
 - Base commit message suggestions on what is currently uncommitted now, not on older work that may already have been committed.
 - If earlier changes are still uncommitted, suggest one combined commit message that covers all currently uncommitted changes together.
+- Commit message suggestions must always cover all currently uncommitted changes, not just the most recent change from the current turn.
+- This applies to all affected files, including `AGENTS.md`, manuals, layout docs, requirements, scripts, and code.
+- Only stop including earlier work in the suggested message after it has actually been committed.
 - After the user commits those changes, future commit message suggestions should cover only the remaining new uncommitted changes.
 - Do not keep mentioning already committed work in later commit message suggestions.
 - Keep commit message suggestions simple, clear, and easy to use.
