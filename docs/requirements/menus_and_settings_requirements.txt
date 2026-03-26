@@ -116,3 +116,15 @@ Priority: High
 Requirement:
 The Play Type menu item shall switch between MIDI playback and onboard synth
 playback.
+
+
+ID: SEQ-MENU-010
+Title: Shared Menu Navigation Buttons
+Status: Active
+Area: Menus
+Priority: Medium
+
+Requirement:
+When a menu page is active and the bottom command button below the encoder is
+held, the top two command buttons below the encoder shall act like one encoder
+step up and one encoder step down until that bottom button is released.

@@ -118,6 +118,9 @@ Playback
 
 Menu Items
 
+- When a menu page is open, hold the bottom command button below the encoder to
+  temporarily make the top two command buttons act like one encoder step up or
+  down. Releasing that bottom button returns them to normal behavior.
 - Save: saves to the current file.
 - Save New: saves as a new file in the selected folder.
 - Load: loads a saved sequence.

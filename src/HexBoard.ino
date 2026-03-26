@@ -7345,6 +7345,10 @@ uint64_t rotaryPressStart = 0;
 bool rotaryPanicLatched = false;
 bool rotaryPanicSuppressClick = false;
 
+bool menuShortcutButtonsEnabled() {
+  return menu.readyForKey() && isBoardButtonPressed(assignCmd[6]);
+}
+
 void readHexes() {
   // Simplified button reading to reduce time it takes to read. Stil uses slower Arduino digitalRead and digitalWrite.
   /* for (byte r = 0; r < ROWCOUNT; r++) {      // Iterate through each of the row pins on the multiplexing chip.
@@ -7399,9 +7403,26 @@ void readHexes() {
     }
     pinMode(p, INPUT);  // Set the selected column pin back to INPUT mode (0V / LOW).
   }*/
+  auto handleMenuShortcutButton = [&](byte buttonIndex, bool pressed) -> bool {
+    if (buttonIndex != assignCmd[0] && buttonIndex != assignCmd[1]) {
+      return false;
+    }
+    if (!menuShortcutButtonsEnabled()) {
+      return false;
+    }
+    if (pressed) {
+      menu.registerKeyPress((buttonIndex == assignCmd[0]) ? GEM_KEY_UP : GEM_KEY_DOWN);
+      screenTime = 0;
+    }
+    return true;
+  };
+
   for (byte i = 0; i < BTN_COUNT; i++) {  // For all buttons in the deck
     switch (h[i].btnState) {
       case BTN_STATE_NEWPRESS:  // just pressed
+        if (handleMenuShortcutButton(i, true)) {
+          break;
+        }
         if (!isKeyboardMode()) {
           handleSequencerButtonEvent(i, true);
           break;
@@ -7415,6 +7436,9 @@ void readHexes() {
         }
         break;
       case BTN_STATE_RELEASED:  // just released
+        if (handleMenuShortcutButton(i, false)) {
+          break;
+        }
         if (!isKeyboardMode()) {
           handleSequencerButtonEvent(i, false);
           break;
@@ -7438,6 +7462,17 @@ void updateWheels() {
   if (delegatedControl || !isKeyboardMode()) {
     return;
   }
+
+  bool menuShortcutButtonsActive = menuShortcutButtonsEnabled();
+  byte savedMenuShortcutTopState = h[assignCmd[0]].btnState;
+  byte savedMenuShortcutMidState = h[assignCmd[1]].btnState;
+  byte savedMenuShortcutModifierState = h[assignCmd[6]].btnState;
+  if (menuShortcutButtonsActive) {
+    h[assignCmd[0]].btnState = BTN_STATE_OFF;
+    h[assignCmd[1]].btnState = BTN_STATE_OFF;
+    h[assignCmd[6]].btnState = BTN_STATE_OFF;
+  }
+
   velWheel.setTargetValue();
   bool upd = velWheel.updateValue(runTime);
   if (upd) {
@@ -7456,6 +7491,12 @@ void updateWheels() {
     if (upd) {
       sendMIDImodulationToCh1();
     }
+  }
+
+  if (menuShortcutButtonsActive) {
+    h[assignCmd[0]].btnState = savedMenuShortcutTopState;
+    h[assignCmd[1]].btnState = savedMenuShortcutMidState;
+    h[assignCmd[6]].btnState = savedMenuShortcutModifierState;
   }
 }
 void setupRotary() {
