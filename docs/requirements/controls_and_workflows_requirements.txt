@@ -27,6 +27,8 @@ The first-row last button shall act as the Play/Stop key.
 
 Details:
 - A short press toggles transport.
+- If a step is selected, a short press also deselects that step before the
+  transport change happens.
 - A hold of about 2 seconds opens the performance monitor while held.
 
 

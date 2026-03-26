@@ -2759,6 +2759,10 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
       if (showedPerformanceMonitor) {
         hideSequencerPerformanceMonitor();
       } else {
+        if (sequencerSelectedStep >= 0) {
+          sequencerSelectedStep = -1;
+          hideSequencerOverlay();
+        }
         setSequencerTransportState(
           (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_STOP : SEQUENCER_TRANSPORT_PLAY);
       }

@@ -17,6 +17,7 @@ Main Controls
 
 - Steps: the first 8 playable keys of the first 4 rows are steps 1-32.
 - Play/Stop: the top-right key starts and stops playback on a short press.
+- Play/Stop also deselects the current step if one is selected.
 - Performance monitor: hold the top-right Play/Stop key for 2 seconds to show
   audio engine load, memory, storage, and MIDI receive stats; release it to
   close the monitor.

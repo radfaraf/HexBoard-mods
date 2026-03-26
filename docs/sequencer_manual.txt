@@ -175,6 +175,8 @@ The top-right key toggles transport:
 
 - red when stopped
 - green when playing
+- if a step is selected, a short Play/Stop press deselects it before toggling
+  transport
 
 Press and hold the Play/Stop key for about 2 seconds to open the performance
 monitor. The monitor stays visible only while the key is held and closes when
