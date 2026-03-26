@@ -41,6 +41,10 @@ Priority: High
 Requirement:
 The second-row second-to-last button shall page the step overview overlay.
 
+Details:
+- This button shall stay lit white while idle.
+- This button shall become brighter white while the overview overlay is active.
+
 
 ID: SEQ-CTRL-004
 Title: Blue Action Key
@@ -70,6 +74,8 @@ selected step.
 Details:
 - If no step is selected, the system shall show a status message instead of
   opening the picker.
+- This button shall stay lit white while idle.
+- This button shall become brighter white while the tools picker is active.
 
 
 ID: SEQ-CTRL-006

@@ -22,10 +22,14 @@ Main Controls
   audio engine load, memory, storage, and MIDI receive stats; release it to
   close the monitor.
 - Overview: the 9th key on the second row pages through an 8-step note view.
+- Overview stays lit white while idle and becomes brighter white while the
+  overview is open.
 - Blue action key: the far-right key on the second row does undo on short
   press and clears the selected step on a 1-second hold.
 - Tools: the last button on the third row opens a step-tools picker for the
   selected step.
+- Tools stays lit white while idle and becomes brighter white while the tools
+  picker is open.
 - Encoder:
   - Turn while a step is selected to change that step's length quickly.
   - Press during file or folder naming to save the name.

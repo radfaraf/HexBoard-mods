@@ -3419,6 +3419,9 @@ void applySequencerLedOverrides() {
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
     }
+    if (SEQUENCER_FUNCTION_BUTTON_INDEX < ledCount) {
+      strip.setPixelColor(SEQUENCER_FUNCTION_BUTTON_INDEX, getSequencerUtilityLedColor(true));
+    }
     for (const SequencerToolKey& key : sequencerToolKeys) {
       if (key.buttonIndex < ledCount) {
         strip.setPixelColor(key.buttonIndex, activeColor);
@@ -3432,11 +3435,11 @@ void applySequencerLedOverrides() {
     getSequencerTransportLedColor(sequencerTransportState == SEQUENCER_TRANSPORT_PLAY));
   strip.setPixelColor(
     SEQUENCER_OVERVIEW_BUTTON_INDEX,
-    getSequencerUnsetStepLedColor(sequencerOverlayMode == SequencerOverlayMode::Overview));
+    getSequencerUtilityLedColor(sequencerOverlayMode == SequencerOverlayMode::Overview));
   strip.setPixelColor(SEQUENCER_CONFIRM_BUTTON_INDEX, getSequencerConfirmLedColor());
   strip.setPixelColor(
     SEQUENCER_FUNCTION_BUTTON_INDEX,
-    getSequencerUnsetStepLedColor(sequencerOverlayMode == SequencerOverlayMode::FunctionPicker));
+    getSequencerUtilityLedColor(sequencerOverlayMode == SequencerOverlayMode::FunctionPicker));
 
   byte activeStepCount = sequencerActiveStepCount();
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {

@@ -46,6 +46,8 @@ The step grid uses the first 8 playable keys from the first 4 rows:
 - Second-row far-right key: blue action key
 - Third-row far-right key: step tools picker
 - Hold the top-right key for 2 seconds to show the performance monitor while held
+- The overview and tools buttons stay lit white while idle and become brighter
+  white while their overlays are active
 
 4.3 Lower keyboard area
 
