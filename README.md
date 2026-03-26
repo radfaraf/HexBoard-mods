@@ -74,3 +74,41 @@ Since Version 0.1.0, the version number for the "Arduino" firmware has been in t
 2. It should appear as a disk in your computer.
 3. Copy the .uf2 firmware file onto that disk
 4. The disk should eject, and the HexBoard should automatically reboot into that firmware.
+
+## HexBoard Backup GUI
+
+The USB Backup desktop tool lives in:
+
+- `scripts/hexboard_backup_gui.py`
+
+For skilled users, the simplest setup is:
+
+1. Install Python 3 from [python.org](https://www.python.org/downloads/).
+2. Install `pyserial`.
+3. Launch the GUI.
+
+Install `pyserial` with:
+
+```sh
+python3 -m pip install --user pyserial
+```
+
+On Windows, this is also common:
+
+```sh
+py -m pip install pyserial
+```
+
+You can still launch the GUI from a terminal:
+
+- macOS:
+  `python3 scripts/hexboard_backup_gui.py`
+- Windows:
+  `py scripts\hexboard_backup_gui.py`
+
+There are also simple double-click launchers in the repo root:
+
+- macOS: `Launch HexBoard Backup.command`
+- Windows: `Launch HexBoard Backup.bat`
+
+Those launcher files expect Python 3 and `pyserial` to already be installed.

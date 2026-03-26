@@ -155,6 +155,11 @@ Saving And Files
 - The computer-side tools are:
   `scripts/hexboard_backup.py` for the command line and
   `scripts/hexboard_backup_gui.py` for a desktop GUI.
+- For skilled computer users, the simplest desktop setup is:
+  install Python 3, install `pyserial`, then launch the GUI.
+- The repo root also includes simple double-click launchers:
+  `Launch HexBoard Backup.command` for macOS and
+  `Launch HexBoard Backup.bat` for Windows.
 - The backup tools can work on the full /Sequences tree or on a selected file
   or folder.
 - In the desktop GUI, you can multi-select remote items with Shift-click and

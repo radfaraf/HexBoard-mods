@@ -492,6 +492,11 @@ Computer-side tools:
 
 - `scripts/hexboard_backup.py` provides the command-line workflow
 - `scripts/hexboard_backup_gui.py` provides a desktop GUI on macOS and Windows
+- for skilled users, the simplest setup is to install Python 3, install
+  `pyserial`, and then launch the GUI locally
+- the repo root includes simple double-click launcher files:
+  `Launch HexBoard Backup.command` for macOS and
+  `Launch HexBoard Backup.bat` for Windows
 
 Available host-side operations include:
 
@@ -535,6 +540,9 @@ Available host-side operations include:
   Folder, and restores those locations after the app is closed and reopened
 - the top GUI status line shows active operations, including Refresh Remote
 - the `Size Bytes` column shows raw file sizes in bytes
+- users who already have Python 3 and `pyserial` installed can launch the GUI
+  by double-clicking the platform launcher file in the repo root instead of
+  typing the launch command each time
 
 While the USB backup session is active:
 

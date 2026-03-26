@@ -266,3 +266,6 @@ Details:
   refresh actions, in the top status line.
 - The graphical desktop tool shall label the size column in bytes when showing
   raw file sizes.
+- The desktop-tool workflow may include simple launcher files for macOS and
+  Windows so users with Python and `pyserial` already installed can start the
+  GUI by opening those launcher files directly.
