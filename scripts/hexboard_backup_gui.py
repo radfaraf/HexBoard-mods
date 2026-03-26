@@ -400,9 +400,13 @@ class HexBoardBackupApp:
         )
 
     def restore_backup(self) -> None:
-        source_dir = filedialog.askdirectory(title="Choose backup folder")
+        source_dir = filedialog.askdirectory(
+            title="Choose backup folder",
+            initialdir=self._initial_directory("restore_backup_dir"),
+        )
         if not source_dir:
             return
+        self._remember_directory("restore_backup_dir", Path(source_dir))
         answer = messagebox.askyesnocancel(
             "Restore Backup",
             "Replace the board contents first?\n\nYes = wipe remote /Sequences first\nNo = merge without deleting old files",

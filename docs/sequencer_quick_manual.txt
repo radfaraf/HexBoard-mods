@@ -188,7 +188,8 @@ Saving And Files
 - When multiple remote items are selected, single-target actions like Download,
   Upload, and Rename are disabled until only one item is selected again.
 - The GUI remembers the last local folder used for Upload File and Upload
-  Folder, and restores those locations after reopening the desktop tool.
+  Folder, and it also remembers the last backup folder used for Restore
+  Backup. Those locations return after reopening the desktop tool.
 - The top GUI status line shows active operations, including Refresh Remote.
 - The `Size Bytes` column shows raw file sizes in bytes.
 - While that session is active, Save, Revert, and file-browser actions are

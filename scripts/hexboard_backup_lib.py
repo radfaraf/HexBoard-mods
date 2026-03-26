@@ -341,7 +341,13 @@ def get_remote_entry(protocol: HexBoardProtocol, remote_path: PurePosixPath) -> 
     if normalized == REMOTE_ROOT:
         return RemoteEntry(path=normalized, is_dir=True, size=0)
     parent = normalized.parent
-    for entry in protocol.list_dir(parent):
+    try:
+        entries = protocol.list_dir(parent)
+    except RuntimeError as exc:
+        if str(exc).strip() == "ERR BAD_PATH":
+            return None
+        raise
+    for entry in entries:
         if entry.path == normalized:
             return entry
     return None

@@ -262,6 +262,8 @@ Details:
   remaining actions grouped into rows below.
 - The graphical desktop tool shall remember the most recently used local upload
   locations for file and folder uploads across app relaunches.
+- The graphical desktop tool shall remember the most recently used local
+  backup folder for Restore Backup across app relaunches.
 - The graphical desktop tool shall show active operation status, including
   refresh actions, in the top status line.
 - The graphical desktop tool shall label the size column in bytes when showing

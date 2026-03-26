@@ -537,7 +537,8 @@ Available host-side operations include:
   Selected, Upload File, Upload Folder, Rename File, and Rename Folder are
   disabled until the selection returns to one item
 - the GUI remembers the last local folder used for Upload File and Upload
-  Folder, and restores those locations after the app is closed and reopened
+  Folder, and it also remembers the last backup folder used for Restore
+  Backup. Those locations return after the app is closed and reopened
 - the top GUI status line shows active operations, including Refresh Remote
 - the `Size Bytes` column shows raw file sizes in bytes
 - users who already have Python 3 and `pyserial` installed can launch the GUI
