@@ -36,9 +36,10 @@ sync_file() {
   fi
 }
 
-sync_file "$REPO_ROOT/src/HexBoard.ino" "$TARGET_DIR/HexBoard.ino"
-sync_file "$REPO_ROOT/src/SequencerMode.cpp" "$TARGET_DIR/SequencerMode.cpp"
-sync_file "$REPO_ROOT/src/SequencerMode.h" "$TARGET_DIR/SequencerMode.h"
+for source_file in "$REPO_ROOT"/src/*(.N); do
+  target_file="$TARGET_DIR/${source_file:t}"
+  sync_file "$source_file" "$target_file"
+done
 
 echo "Synced sketch files to: $TARGET_DIR"
 

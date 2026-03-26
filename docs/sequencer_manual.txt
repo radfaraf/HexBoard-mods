@@ -379,6 +379,7 @@ File Management submenu:
 - Create Folder
 - Delete File
 - Delete Folder
+- USB Backup
 
 
 13. Saving, Loading, And Reverting
@@ -428,6 +429,8 @@ Browser behavior:
 - `^ more ^` means there are earlier pages
 - `v more v` means there are later pages
 - turning the encoder past the first or last real file row changes page
+- USB Backup uses the same LittleFS storage, but transfers files through a
+  dedicated USB serial session instead of mounting the board as a drive
 
 
 15. Renaming, Creating, And Deleting Files
@@ -462,6 +465,76 @@ Browser behavior:
 - choose Delete This Folder
 
 Folder deletion is recursive, so deleting a folder removes its contents.
+
+15.6 USB Backup
+
+- open File Management, then choose USB Backup
+- choose Start Session
+- the transport is stopped and the backup page shows live status lines
+- run the host backup tool on the connected computer
+- if you try to leave the USB Backup page while a session is active, the
+  sequencer warns that leaving the page closes USB Backup and asks whether you
+  want to continue
+- if you choose Stop Session while a session is active, the sequencer warns
+  that stopping USB Backup ends any current transfer and asks whether you want
+  to continue
+- choose Stop Session when you are done
+
+Computer-side tools:
+
+- `scripts/hexboard_backup.py` provides the command-line workflow
+- `scripts/hexboard_backup_gui.py` provides a desktop GUI on macOS and Windows
+
+Available host-side operations include:
+
+- list the remote /Sequences tree
+- back up or restore the full /Sequences tree
+- pull or push one sequence file
+- pull or push one sequence folder
+- rename one remote file or folder
+- delete one remote file or folder
+- the desktop GUI uses four action rows overall:
+  one row beside the serial port dropdown for `Refresh Ports` and
+  `Refresh Remote`, then three rows below for the remaining actions
+- the lower rows group:
+  full backup actions,
+  download and upload actions,
+  then rename and delete actions
+- use the GUI buttons to refresh ports, refresh the remote tree, back up all,
+  restore a backup, download the selected entry, upload a file, upload a
+  folder, rename a selected file, rename a selected folder, or delete the
+  selected entry
+- GUI renaming only allows simple sequencer-style names:
+  letters, numbers, spaces, and `-`
+- GUI renaming rejects periods and limits names to 20 characters so renamed
+  files and folders stay aligned with the on-device naming workflow
+- if a rename is not allowed, the GUI shows the full rename rules, points out
+  the broken rule(s), and then reopens the rename prompt with the previous
+  entry still there so you can fix it quickly
+- in the remote tree, Shift-click can select multiple items for a shared delete
+  action
+- GUI Upload Folder always merges into the target folder and does not delete
+  the existing remote folder first
+- during Upload Folder, each conflicting remote file is shown one at a time so
+  you can overwrite it, skip it, or cancel the folder upload
+- if a remote file is selected, Upload File warns before replacing that
+  selected remote file and tells you to select a folder first if you want to
+  copy into that folder instead
+- when multiple items are selected, single-target actions such as Download
+  Selected, Upload File, Upload Folder, Rename File, and Rename Folder are
+  disabled until the selection returns to one item
+- the GUI remembers the last local folder used for Upload File and Upload
+  Folder, and restores those locations after the app is closed and reopened
+- the top GUI status line shows active operations, including Refresh Remote
+- the `Size Bytes` column shows raw file sizes in bytes
+
+While the USB backup session is active:
+
+- Save is blocked
+- Revert is blocked
+- browser-based Load, Save New, Rename, Create Folder, and Delete workflows are
+  blocked until the session is stopped
+- the board does not present /Sequences as a normal computer drive
 
 
 16. Naming Mode
@@ -568,7 +641,8 @@ The current save file stores:
 - 32 steps
 - 4 notes maximum per step
 - naming uses uppercase letters plus a small set of extra characters
-- no direct computer-drive mode for the sequence files yet
+- backup and restore are available over a dedicated USB serial session
+- there is still no direct computer-drive mode for the sequence files
 
 
 21. Practical Workflow Example

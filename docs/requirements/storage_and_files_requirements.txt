@@ -127,7 +127,7 @@ Priority: High
 
 Requirement:
 The system shall support Rename File, Rename Folder, Create Folder, Delete File,
-and Delete Folder actions through the file management workflow.
+Delete Folder, and USB Backup actions through the file management workflow.
 
 
 ID: SEQ-FILE-011
@@ -190,3 +190,76 @@ Requirement:
 A saved sequence file shall store the current tempo, active step count, tap
 preview state, play type, direction, notes per step, gate or length per step,
 and velocity per step.
+
+
+ID: SEQ-FILE-016
+Title: USB Serial Backup Session
+Status: Active
+Area: Files
+Priority: Medium
+
+Requirement:
+The system shall provide a USB Backup workflow that keeps sequence storage on
+LittleFS while exposing /Sequences to a host backup tool over USB serial.
+
+Details:
+- The USB Backup entry shall be available from File Management.
+- Starting the session shall prepare the board for host-side list, backup, and
+  restore commands.
+- Leaving the USB Backup page while a session is active shall warn that
+  leaving the page closes USB Backup and shall ask whether the user wants to
+  continue.
+- Choosing Stop Session while a session is active shall warn that stopping USB
+  Backup ends any current transfer and shall ask whether the user wants to
+  continue.
+- While the session is active, Save, Revert, and browser-based file-management
+  workflows shall be blocked until the session is stopped.
+
+
+ID: SEQ-FILE-017
+Title: Host Backup Tool Operations
+Status: Active
+Area: Files
+Priority: Medium
+
+Requirement:
+The host-side USB backup tools shall support whole-tree backup and restore as
+well as selected file or folder transfer actions for /Sequences.
+
+Details:
+- The command-line tool shall support listing the remote tree.
+- The command-line tool shall support full backup and restore of /Sequences.
+- The command-line tool shall support pulling, pushing, and deleting an
+  individual file or folder.
+- The command-line tool shall support renaming an individual file or folder.
+- A graphical desktop tool shall provide access to the same workflow without
+  requiring command-line use, including dedicated rename actions for a selected
+  file and a selected folder.
+- The graphical desktop tool shall validate renamed file and folder names
+  before sending them to the device, rejecting periods, unsupported
+  characters, and names longer than 20 characters, while allowing only
+  letters, numbers, spaces, and `-`.
+- When rename validation fails, the graphical desktop tool shall show the full
+  naming rules, identify the broken rule(s), and return the user to the rename
+  prompt with the previous attempted name preserved.
+- The graphical desktop tool shall merge folder uploads into an existing remote
+  folder instead of deleting that remote folder as part of the upload action.
+- The graphical desktop tool shall warn one file at a time when Upload Folder
+  would overwrite an existing remote file, and it shall let the user overwrite,
+  skip that file, or cancel the folder upload.
+- The graphical desktop tool shall warn before Upload File replaces a selected
+  remote file, and it shall direct the user to select a folder first when they
+  want to copy into that folder instead.
+- The graphical desktop tool shall allow multi-selection in the remote tree for
+  batch delete actions.
+- The graphical desktop tool shall disable single-target actions when multiple
+  remote items are selected and the target would otherwise be ambiguous.
+- The graphical desktop tool shall organize its main action buttons into clear
+  logical rows, with refresh actions beside the serial port selector and the
+  remaining actions grouped into rows below.
+- The graphical desktop tool shall remember the most recently used local upload
+  locations for file and folder uploads across app relaunches.
+- The graphical desktop tool shall show active operation status, including
+  refresh actions, in the top status line.
+- The graphical desktop tool shall label the size column in bytes when showing
+  raw file sizes.

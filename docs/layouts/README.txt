@@ -12,6 +12,7 @@ Current files:
 
 - sequencer_menu_layout.txt
 - file_management_menu_layout.txt
+- usb_backup_menu_layout.txt
 - file_browser_layout.txt
 - naming_screen_layout.txt
 - edit_note_screen_layout.txt

@@ -11,9 +11,11 @@ Menu order:
   Create Folder
   Delete File
   Delete Folder
+  USB Backup
 
 Notes:
 
 - This submenu exists to keep the main Sequencer menu less cluttered.
 - Rename and delete actions open browser-based workflows.
 - Create Folder opens a folder-only browser flow.
+- USB Backup opens a dedicated status page with Start Session and Stop Session.

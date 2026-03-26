@@ -42,6 +42,7 @@ Details:
 - Create Folder
 - Delete File
 - Delete Folder
+- USB Backup
 
 
 ID: SEQ-MENU-003

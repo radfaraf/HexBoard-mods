@@ -25,7 +25,7 @@ Preferred workflow for larger Sequencer changes:
 - when beginning that documentation pass, use this exact line:
   `UPDATING DOCS.`
 - if a Sequencer change affects requirements, include the relevant `docs/requirements` updates as part of the documentation pass
-- regenerate the manual PDFs after the text documentation updates when the manuals changed
+- do not regenerate the manual PDFs unless the user explicitly asks for PDF updates
 - this lets the user start compiling and testing while commit-message and documentation work continues
 - only wait for separate confirmation before docs if the user explicitly asks for that slower workflow in a specific case
 
@@ -47,7 +47,7 @@ When the manuals are updated:
 - keep the detailed manual clearer and more thorough without becoming bloated
 - avoid leaving outdated behavior or superseded workflows in either manual
 - describe the current behavior directly without comparing it to removed older behavior unless the user specifically asks for history or migration notes
-- regenerate the PDF versions after updating the text versions
+- only regenerate the PDF versions after updating the text versions when the user explicitly asks for PDF updates
 
 ## Layout Reference Maintenance
 

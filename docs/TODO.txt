@@ -1,6 +1,9 @@
 Just written by the human controlling the AI -- a list of reminders of things to do related to the project.
 
 
+Need to double check logic for Backup all and Restore Backup still.
+
+
 Check all modes in tool pickers, Oct+/Oct-, vel, prob, tie, etc..
 (Save/load after changing things), (Make sure onboard synth words and external - VST, hardware)
 
@@ -16,6 +19,9 @@ keyboard section of sequencer needs to respect color option settings and animati
 add step based input where it advanced through all the notes one by one as you enter and confirm each step or blank step.
 
 maker a performance mode that allows easily changing interesting settings in rapid speed with the keys
+
+
+Make it into a drum machine with samples!?!?!
 
 
 -----

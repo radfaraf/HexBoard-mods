@@ -1,10 +1,12 @@
 #include "SequencerMode.h"
+#include "UsbBackup.h"
 
 #include <Adafruit_NeoPixel.h>
 #include <LittleFS.h>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 extern void rebootToBootloader();
 extern bool fileSystemExists;
@@ -13,6 +15,9 @@ extern GEMPage menuPageSynthSequencer;
 extern GEMPage menuPageSequencer;
 extern GEMPage menuPageSequencerBrowser;
 extern GEMPage menuPageSequencerFiles;
+extern GEMPage menuPageSequencerUsbBackup;
+extern GEMPage menuPageSequencerUsbBackupExitConfirm;
+extern GEMPage menuPageSequencerUsbBackupStopConfirm;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
 extern uint64_t screenTime;
@@ -220,6 +225,9 @@ SequencerNamingTarget sequencerNamingTarget = SequencerNamingTarget::None;
 char sequencerNamingBuffer[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1] = "";
 byte sequencerNamingLength = 0;
 char sequencerRenameSourcePath[SEQUENCER_MAX_PATH_LENGTH] = "";
+char sequencerUsbBackupStatusLineOne[SEQUENCER_BROWSER_TITLE_LENGTH] = "USB Backup Off";
+char sequencerUsbBackupStatusLineTwo[SEQUENCER_BROWSER_TITLE_LENGTH] = "Host tool idle";
+GEMPage* sequencerLastMenuPage = nullptr;
 uint64_t sequencerPerformanceLastSampleAt = 0;
 uint16_t sequencerPerformanceCpuPercent = 0;
 uint32_t sequencerPerformanceCpuAvgUs = 0;
@@ -259,6 +267,32 @@ void openSequencerCreateFolderBrowser();
 void sequencerBrowserIndicatorCallback();
 void sequencerBrowserDeleteFolderCallback();
 void sequencerBrowserRenameFolderCallback();
+extern GEMItem menuItemSequencerUsbBackupStatusOne;
+extern GEMItem menuItemSequencerUsbBackupStatusTwo;
+extern GEMItem menuItemSequencerUsbBackupStart;
+extern GEMItem menuItemSequencerUsbBackupStop;
+extern GEMItem menuItemSequencerUsbBackupExitPromptOne;
+extern GEMItem menuItemSequencerUsbBackupExitPromptTwo;
+extern GEMItem menuItemSequencerUsbBackupExitPromptThree;
+extern GEMItem menuItemSequencerUsbBackupExitYes;
+extern GEMItem menuItemSequencerUsbBackupExitNo;
+extern GEMItem menuItemSequencerUsbBackupStopPromptOne;
+extern GEMItem menuItemSequencerUsbBackupStopPromptTwo;
+extern GEMItem menuItemSequencerUsbBackupStopPromptThree;
+extern GEMItem menuItemSequencerUsbBackupStopYes;
+extern GEMItem menuItemSequencerUsbBackupStopNo;
+void setSequencerTransportState(byte newState);
+void refreshSequencerUsbBackupMenu(bool redrawMenu = true);
+void usbBackupStatusMenuCallback();
+void startUsbBackupMenuCallback();
+void stopUsbBackupMenuCallback();
+void usbBackupExitPromptMenuCallback();
+void confirmUsbBackupExitMenuCallback();
+void cancelUsbBackupExitMenuCallback();
+void usbBackupStopPromptMenuCallback();
+void confirmUsbBackupStopMenuCallback();
+void cancelUsbBackupStopMenuCallback();
+bool guardSequencerStorageForUsbBackup(const char* actionLineTwo);
 
 const char* sequencerChromaticNames[12] = {
   "C", "C#", "D", "Eb", "E", "F",
@@ -718,26 +752,43 @@ bool deleteSequencerFolderRecursive(const char* folderPath) {
     return false;
   }
 
-  Dir dir = LittleFS.openDir(folderPath);
-  while (dir.next()) {
-    String entryName = dir.fileName();
-    if (entryName.length() == 0 || entryName.startsWith(".")) {
+  std::vector<String> childPaths;
+  {
+    Dir dir = LittleFS.openDir(folderPath);
+    while (dir.next()) {
+      String entryName = dir.fileName();
+      if (entryName.length() == 0 || entryName.startsWith(".")) {
+        continue;
+      }
+
+      char childPath[SEQUENCER_MAX_PATH_LENGTH];
+      joinSequencerPath(folderPath, entryName.c_str(), childPath, sizeof(childPath));
+      childPaths.push_back(String(childPath));
+    }
+  }
+
+  for (const String& childPath : childPaths) {
+    File child = LittleFS.open(childPath.c_str(), "r");
+    if (!child) {
       continue;
     }
+    bool childIsDirectory = child.isDirectory();
+    child.close();
 
-    char childPath[SEQUENCER_MAX_PATH_LENGTH];
-    joinSequencerPath(folderPath, entryName.c_str(), childPath, sizeof(childPath));
-    if (dir.isDirectory()) {
-      if (!deleteSequencerFolderRecursive(childPath)) {
+    if (childIsDirectory) {
+      if (!deleteSequencerFolderRecursive(childPath.c_str())) {
         return false;
       }
     } else {
-      if (!LittleFS.remove(childPath)) {
+      if (!LittleFS.remove(childPath.c_str())) {
         return false;
       }
     }
   }
 
+  if (!LittleFS.exists(folderPath)) {
+    return true;
+  }
   return LittleFS.rmdir(folderPath);
 }
 
@@ -2113,7 +2164,124 @@ void showSequencerPathStatusMessage(const char* lineOne, const char* path) {
   showSequencerStatusMessage(lineOne, displayName);
 }
 
+bool guardSequencerStorageForUsbBackup(const char* actionLineTwo) {
+  if (!isUsbBackupActive()) {
+    return true;
+  }
+  showSequencerStatusMessage("USB Backup", actionLineTwo);
+  return false;
+}
+
+void refreshSequencerUsbBackupMenu(bool redrawMenu) {
+  if (isUsbBackupActive()) {
+    char statusLineOne[SEQUENCER_BROWSER_TITLE_LENGTH];
+    char statusLineTwo[SEQUENCER_BROWSER_TITLE_LENGTH];
+    getUsbBackupStatusLines(statusLineOne, sizeof(statusLineOne), statusLineTwo, sizeof(statusLineTwo));
+    snprintf(sequencerUsbBackupStatusLineOne, sizeof(sequencerUsbBackupStatusLineOne), "%s", statusLineOne);
+    snprintf(sequencerUsbBackupStatusLineTwo, sizeof(sequencerUsbBackupStatusLineTwo), "%s", statusLineTwo);
+    menuItemSequencerUsbBackupStart.hide();
+    menuItemSequencerUsbBackupStop.show();
+  } else {
+    copySequencerString(sequencerUsbBackupStatusLineOne, sizeof(sequencerUsbBackupStatusLineOne), "USB Backup Off");
+    copySequencerString(sequencerUsbBackupStatusLineTwo, sizeof(sequencerUsbBackupStatusLineTwo), "Host tool idle");
+    menuItemSequencerUsbBackupStart.show();
+    menuItemSequencerUsbBackupStop.hide();
+  }
+
+  menuItemSequencerUsbBackupStatusOne.setTitle(sequencerUsbBackupStatusLineOne);
+  menuItemSequencerUsbBackupStatusTwo.setTitle(sequencerUsbBackupStatusLineTwo);
+
+  if (redrawMenu) {
+    menu.drawMenu();
+  }
+}
+
+void usbBackupStatusMenuCallback() {
+}
+
+void startUsbBackupMenuCallback() {
+  if (enterUsbBackupMode()) {
+    setSequencerTransportState(SEQUENCER_TRANSPORT_STOP);
+    showSequencerStatusMessage("USB Backup", "Run host tool");
+  } else {
+    showSequencerStatusMessage("USB Backup", "FS unavailable");
+  }
+  refreshSequencerUsbBackupMenu(true);
+}
+
+void stopUsbBackupMenuCallback() {
+  if (!isUsbBackupActive()) {
+    exitUsbBackupMode();
+    showSequencerStatusMessage("USB Backup", "Session closed");
+    refreshSequencerUsbBackupMenu(true);
+    return;
+  }
+
+  menu.setMenuPageCurrent(menuPageSequencerUsbBackupStopConfirm);
+  menu.drawMenu();
+  sequencerLastMenuPage = &menuPageSequencerUsbBackupStopConfirm;
+}
+
+void usbBackupExitPromptMenuCallback() {
+}
+
+void usbBackupStopPromptMenuCallback() {
+}
+
+void confirmUsbBackupExitMenuCallback() {
+  exitUsbBackupMode();
+  menu.setMenuPageCurrent(menuPageSequencerFiles);
+  refreshSequencerUsbBackupMenu(false);
+  menu.drawMenu();
+  showSequencerStatusMessage("USB Backup", "Session closed");
+  sequencerLastMenuPage = &menuPageSequencerFiles;
+}
+
+void cancelUsbBackupExitMenuCallback() {
+  menu.setMenuPageCurrent(menuPageSequencerUsbBackup);
+  refreshSequencerUsbBackupMenu(false);
+  menu.drawMenu();
+  showSequencerStatusMessage("USB Backup", "Session active");
+  sequencerLastMenuPage = &menuPageSequencerUsbBackup;
+}
+
+void confirmUsbBackupStopMenuCallback() {
+  exitUsbBackupMode();
+  menu.setMenuPageCurrent(menuPageSequencerUsbBackup);
+  refreshSequencerUsbBackupMenu(false);
+  menu.drawMenu();
+  showSequencerStatusMessage("USB Backup", "Session closed");
+  sequencerLastMenuPage = &menuPageSequencerUsbBackup;
+}
+
+void cancelUsbBackupStopMenuCallback() {
+  menu.setMenuPageCurrent(menuPageSequencerUsbBackup);
+  refreshSequencerUsbBackupMenu(false);
+  menu.drawMenu();
+  showSequencerStatusMessage("USB Backup", "Session active");
+  sequencerLastMenuPage = &menuPageSequencerUsbBackup;
+}
+
+void guardUsbBackupMenuExit() {
+  GEMPage* currentMenuPage = menu.getCurrentMenuPage();
+  if (sequencerLastMenuPage == &menuPageSequencerUsbBackup &&
+      currentMenuPage != &menuPageSequencerUsbBackup &&
+      currentMenuPage != &menuPageSequencerUsbBackupExitConfirm &&
+      currentMenuPage != &menuPageSequencerUsbBackupStopConfirm) {
+    if (isUsbBackupActive()) {
+      menu.setMenuPageCurrent(menuPageSequencerUsbBackupExitConfirm);
+      menu.drawMenu();
+      sequencerLastMenuPage = &menuPageSequencerUsbBackupExitConfirm;
+      return;
+    }
+  }
+  sequencerLastMenuPage = currentMenuPage;
+}
+
 void saveSequencerMenuCallback() {
+  if (!guardSequencerStorageForUsbBackup("Stop session first")) {
+    return;
+  }
   if (saveSequencerToCurrentPath()) {
     showSequencerPathStatusMessage("Saved", sequencerCurrentSequencePath);
   } else {
@@ -2122,6 +2290,9 @@ void saveSequencerMenuCallback() {
 }
 
 void revertSequencerMenuCallback() {
+  if (!guardSequencerStorageForUsbBackup("Stop session first")) {
+    return;
+  }
   if (sequencerCurrentSequencePath[0] != '\0' && loadSequencerFromPath(sequencerCurrentSequencePath)) {
     showSequencerPathStatusMessage("Reverted", sequencerCurrentSequencePath);
   } else if (LittleFS.exists(SEQUENCER_LEGACY_STORAGE_PATH) && loadSequencerFromFlash()) {
@@ -2134,6 +2305,9 @@ void revertSequencerMenuCallback() {
 }
 
 void openSequencerBrowser(SequencerBrowserMode browserMode) {
+  if (!guardSequencerStorageForUsbBackup("Stop session first")) {
+    return;
+  }
   sequencerBrowserMode = browserMode;
   sequencerBrowserOffset = 0;
   if (sequencerCurrentSequencePath[0] != '\0') {
@@ -2528,6 +2702,7 @@ GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
 GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
+GEMItem menuGotoSequencerUsbBackup("USB Backup", menuPageSequencerUsbBackup);
 GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
 GEMItem menuItemSequencerSaveNew("Save New", openSequencerSaveNewBrowser);
 GEMItem menuItemSequencerLoad("Load", openSequencerLoadBrowser);
@@ -2561,6 +2736,20 @@ GEMItem menuItemSequencerBrowserEntry7("", sequencerBrowserEntryCallback, 7);
 GEMItem menuItemSequencerBrowserMoreBelow("v more v", sequencerBrowserIndicatorCallback);
 GEMItem menuItemSequencerBrowserPrev("Prev", sequencerBrowserPrevPageCallback);
 GEMItem menuItemSequencerBrowserNext("Next", sequencerBrowserNextPageCallback);
+GEMItem menuItemSequencerUsbBackupStatusOne(sequencerUsbBackupStatusLineOne, usbBackupStatusMenuCallback);
+GEMItem menuItemSequencerUsbBackupStatusTwo(sequencerUsbBackupStatusLineTwo, usbBackupStatusMenuCallback);
+GEMItem menuItemSequencerUsbBackupStart("Start Session", startUsbBackupMenuCallback);
+GEMItem menuItemSequencerUsbBackupStop("Stop Session", stopUsbBackupMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitPromptOne("Leaving this page", usbBackupExitPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitPromptTwo("closes USB Backup", usbBackupExitPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitPromptThree("Do you want to continue?", usbBackupExitPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitYes("Yes, Continue", confirmUsbBackupExitMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitNo("No, Stay Here", cancelUsbBackupExitMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopPromptOne("Stopping USB Backup", usbBackupStopPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopPromptTwo("ends any current transfer.", usbBackupStopPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopPromptThree("Do you want to continue?", usbBackupStopPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopYes("Yes, Continue", confirmUsbBackupStopMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopNo("No, Stay Here", cancelUsbBackupStopMenuCallback);
 GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
   &menuItemSequencerBrowserEntry0,
   &menuItemSequencerBrowserEntry1,
@@ -2742,6 +2931,9 @@ bool handleSequencerEncoderClick() {
 GEMPage menuPageSequencer("Sequencer");
 GEMPage menuPageSequencerFiles("File Management", menuPageSequencer);
 GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
+GEMPage menuPageSequencerUsbBackup("USB Backup", menuPageSequencerFiles);
+GEMPage menuPageSequencerUsbBackupExitConfirm("Leave USB Backup?", menuPageSequencerUsbBackup);
+GEMPage menuPageSequencerUsbBackupStopConfirm("Stop USB Backup?", menuPageSequencerUsbBackup);
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (buttonIndex == SEQUENCER_TRANSPORT_BUTTON_INDEX) {
@@ -2978,6 +3170,7 @@ void setupSequencerMenu() {
   menuPageSequencerFiles.addMenuItem(menuItemSequencerCreateFolder);
   menuPageSequencerFiles.addMenuItem(menuItemSequencerDeleteFile);
   menuPageSequencerFiles.addMenuItem(menuItemSequencerDeleteFolder);
+  menuPageSequencerFiles.addMenuItem(menuGotoSequencerUsbBackup);
 
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserSaveHere);
   menuPageSequencerBrowser.addMenuItem(menuItemSequencerBrowserNewFolder);
@@ -3004,9 +3197,31 @@ void setupSequencerMenu() {
   for (byte i = 0; i < SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT; i++) {
     sequencerBrowserEntryItems[i]->hide();
   }
+
+  menuPageSequencerUsbBackup.addMenuItem(menuItemSequencerUsbBackupStatusOne);
+  menuPageSequencerUsbBackup.addMenuItem(menuItemSequencerUsbBackupStatusTwo);
+  menuPageSequencerUsbBackup.addMenuItem(menuItemSequencerUsbBackupStart);
+  menuPageSequencerUsbBackup.addMenuItem(menuItemSequencerUsbBackupStop);
+  menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitPromptOne);
+  menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitPromptTwo);
+  menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitPromptThree);
+  menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitYes);
+  menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitNo);
+  menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptOne);
+  menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptTwo);
+  menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptThree);
+  menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopYes);
+  menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopNo);
+  refreshSequencerUsbBackupMenu(false);
 }
 
 void drawSequencerOverlay() {
+  guardUsbBackupMenuExit();
+
+  if (consumeUsbBackupUiRefreshRequested()) {
+    refreshSequencerUsbBackupMenu(menu.getCurrentMenuPage() == &menuPageSequencerUsbBackup);
+  }
+
   if (sequencerOverlayMode == SequencerOverlayMode::Naming && isSequencerNamingActive()) {
     sequencerOverlayVisible = true;
     sequencerOverlayDirty = false;

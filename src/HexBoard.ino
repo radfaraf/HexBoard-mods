@@ -86,6 +86,7 @@
 #include "pico/time.h" // Allows me to set delays that don't disable interrupts
 #include "hardware/structs/sio.h" // For fast GPIO read/write
 #include "SequencerMode.h"
+#include "UsbBackup.h"
 
 enum class EnvelopeCommand : uint8_t;
 
@@ -5218,6 +5219,9 @@ bool load_settings() {
 }
 
 void save_settings() {
+  if (isUsbBackupActive()) {
+    return;
+  }
   if (!fileSystemExists) {
     sendToLog("File system not available.");
     return;
@@ -5264,6 +5268,9 @@ bool autoSave = (settings[static_cast<uint8_t>(SettingKey::AutoSave)] !=0);
 // Call this in your main loop to autosave if changes have stabilized.
 void checkAndAutoSave() {
   if (!autoSave) {
+    return;
+  }
+  if (isUsbBackupActive()) {
     return;
   }
   if (!settingsDirty || (millis() - lastSettingsChangeTime <= debounceDelay)) {
@@ -6922,6 +6929,7 @@ void switchBoardMode(BoardMode newMode) {
 }
 
 void enterKeyboardMode() {
+  exitUsbBackupMode();
   switchBoardMode(BoardMode::Keyboard);
 }
 
@@ -6930,6 +6938,7 @@ void enterSequencerMode() {
 }
 
 void rebootToBootloader() {
+  exitUsbBackupMode();
   menu.setMenuPageCurrent(menuPageReboot);
   menu.drawMenu();
   strip.clear();
@@ -7565,6 +7574,7 @@ void setup() {
   irq_set_enabled(ALARM_IRQ, false);
   setupMIDI();
   setupFileSystem();
+  setupUsbBackup();
   Wire.setSDA(SDAPIN);
   Wire.setSCL(SCLPIN);
   setupPins();
@@ -7589,6 +7599,7 @@ void loop() {        // run on first core
   updateWheels();    // deal with the pitch/mod wheel
   updateMidiMonitorStats();
   processIncomingMIDI();  // respond to external MIDI input
+  serviceUsbBackup();  // process backup/restore commands while the session is active
   updateSequencerTransport();
   animateLEDs();     // deal with animations
   lightUpLEDs();     // refresh LEDs
