@@ -478,6 +478,9 @@ Folder deletion is recursive, so deleting a folder removes its contents.
 - if you choose Stop Session while a session is active, the sequencer warns
   that stopping USB Backup ends any current transfer and asks whether you want
   to continue
+- while USB Backup is active, the hex buttons are temporarily disabled and
+  their LEDs are blanked so you do not accidentally trigger other sequencer
+  actions; the encoder still works for menu navigation and confirmation
 - choose Stop Session when you are done
 
 Computer-side tools:
@@ -532,6 +535,8 @@ While the USB backup session is active:
 
 - Save is blocked
 - Revert is blocked
+- hex-button presses and releases are ignored
+- the sequencer button LEDs are blanked
 - browser-based Load, Save New, Rename, Create Folder, and Delete workflows are
   blocked until the session is stopped
 - the board does not present /Sequences as a normal computer drive

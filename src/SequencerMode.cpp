@@ -274,11 +274,13 @@ extern GEMItem menuItemSequencerUsbBackupStop;
 extern GEMItem menuItemSequencerUsbBackupExitPromptOne;
 extern GEMItem menuItemSequencerUsbBackupExitPromptTwo;
 extern GEMItem menuItemSequencerUsbBackupExitPromptThree;
+extern GEMItem menuItemSequencerUsbBackupExitPromptFour;
 extern GEMItem menuItemSequencerUsbBackupExitYes;
 extern GEMItem menuItemSequencerUsbBackupExitNo;
 extern GEMItem menuItemSequencerUsbBackupStopPromptOne;
 extern GEMItem menuItemSequencerUsbBackupStopPromptTwo;
 extern GEMItem menuItemSequencerUsbBackupStopPromptThree;
+extern GEMItem menuItemSequencerUsbBackupStopPromptFour;
 extern GEMItem menuItemSequencerUsbBackupStopYes;
 extern GEMItem menuItemSequencerUsbBackupStopNo;
 void setSequencerTransportState(byte newState);
@@ -311,6 +313,7 @@ byte findNoteInBuffer(const byte* notes, byte count, byte midiNote);
 void saveEditBufferToStep(byte stepIndex);
 void previewSequencerStep(byte stepIndex);
 byte sequencerSelectedStepVelocity();
+void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote);
 int getVisibleBrowserEntryMenuIndex(bool firstVisible);
 const SequencerToolKey* getSequencerToolKey(byte buttonIndex);
 bool transposeSelectedSequencerStep(int8_t semitoneDelta);
@@ -1591,6 +1594,14 @@ void sendSequencerManagedNoteOn(byte midiNote, bool playbackNote, byte velocity)
   }
 }
 
+void stopSequencerAuditionNotes() {
+  for (int midiNote = 0; midiNote < 128; midiNote++) {
+    while (sequencerAuditionHeldNoteCounts[midiNote] > 0) {
+      sendSequencerManagedNoteOff(static_cast<byte>(midiNote), false);
+    }
+  }
+}
+
 void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote) {
   if (midiNote >= 128) {
     return;
@@ -2202,6 +2213,7 @@ void usbBackupStatusMenuCallback() {
 void startUsbBackupMenuCallback() {
   if (enterUsbBackupMode()) {
     setSequencerTransportState(SEQUENCER_TRANSPORT_STOP);
+    stopSequencerAuditionNotes();
     showSequencerStatusMessage("USB Backup", "Run host tool");
   } else {
     showSequencerStatusMessage("USB Backup", "FS unavailable");
@@ -2741,15 +2753,17 @@ GEMItem menuItemSequencerUsbBackupStatusTwo(sequencerUsbBackupStatusLineTwo, usb
 GEMItem menuItemSequencerUsbBackupStart("Start Session", startUsbBackupMenuCallback);
 GEMItem menuItemSequencerUsbBackupStop("Stop Session", stopUsbBackupMenuCallback);
 GEMItem menuItemSequencerUsbBackupExitPromptOne("Leaving this page", usbBackupExitPromptMenuCallback);
-GEMItem menuItemSequencerUsbBackupExitPromptTwo("closes USB Backup", usbBackupExitPromptMenuCallback);
-GEMItem menuItemSequencerUsbBackupExitPromptThree("Do you want to continue?", usbBackupExitPromptMenuCallback);
-GEMItem menuItemSequencerUsbBackupExitYes("Yes, Continue", confirmUsbBackupExitMenuCallback);
-GEMItem menuItemSequencerUsbBackupExitNo("No, Stay Here", cancelUsbBackupExitMenuCallback);
-GEMItem menuItemSequencerUsbBackupStopPromptOne("Stopping USB Backup", usbBackupStopPromptMenuCallback);
-GEMItem menuItemSequencerUsbBackupStopPromptTwo("ends any current transfer.", usbBackupStopPromptMenuCallback);
-GEMItem menuItemSequencerUsbBackupStopPromptThree("Do you want to continue?", usbBackupStopPromptMenuCallback);
-GEMItem menuItemSequencerUsbBackupStopYes("Yes, Continue", confirmUsbBackupStopMenuCallback);
-GEMItem menuItemSequencerUsbBackupStopNo("No, Stay Here", cancelUsbBackupStopMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitPromptTwo("will close", usbBackupExitPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitPromptThree("USB Backup.", usbBackupExitPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitPromptFour("Continue?", usbBackupExitPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitYes("Yes, Leave", confirmUsbBackupExitMenuCallback);
+GEMItem menuItemSequencerUsbBackupExitNo("No, Stay", cancelUsbBackupExitMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopPromptOne("Stopping this", usbBackupStopPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopPromptTwo("session ends", usbBackupStopPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopPromptThree("any transfer.", usbBackupStopPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopPromptFour("Continue?", usbBackupStopPromptMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopYes("Yes, Stop", confirmUsbBackupStopMenuCallback);
+GEMItem menuItemSequencerUsbBackupStopNo("No, Stay", cancelUsbBackupStopMenuCallback);
 GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
   &menuItemSequencerBrowserEntry0,
   &menuItemSequencerBrowserEntry1,
@@ -2932,10 +2946,14 @@ GEMPage menuPageSequencer("Sequencer");
 GEMPage menuPageSequencerFiles("File Management", menuPageSequencer);
 GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
 GEMPage menuPageSequencerUsbBackup("USB Backup", menuPageSequencerFiles);
-GEMPage menuPageSequencerUsbBackupExitConfirm("Leave USB Backup?", menuPageSequencerUsbBackup);
-GEMPage menuPageSequencerUsbBackupStopConfirm("Stop USB Backup?", menuPageSequencerUsbBackup);
+GEMPage menuPageSequencerUsbBackupExitConfirm("Leave Backup?", menuPageSequencerUsbBackup);
+GEMPage menuPageSequencerUsbBackupStopConfirm("Stop Session?", menuPageSequencerUsbBackup);
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
+  if (isUsbBackupActive()) {
+    return;
+  }
+
   if (buttonIndex == SEQUENCER_TRANSPORT_BUTTON_INDEX) {
     if (pressed) {
       screenTime = 0;
@@ -3205,11 +3223,13 @@ void setupSequencerMenu() {
   menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitPromptOne);
   menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitPromptTwo);
   menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitPromptThree);
+  menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitPromptFour);
   menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitYes);
   menuPageSequencerUsbBackupExitConfirm.addMenuItem(menuItemSequencerUsbBackupExitNo);
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptOne);
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptTwo);
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptThree);
+  menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptFour);
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopYes);
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopNo);
   refreshSequencerUsbBackupMenu(false);
@@ -3584,6 +3604,14 @@ void drawSequencerOverlay() {
 }
 
 void applySequencerLedOverrides() {
+  if (isUsbBackupActive()) {
+    uint16_t ledCount = strip.numPixels();
+    for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
+      strip.setPixelColor(buttonIndex, 0);
+    }
+    return;
+  }
+
   if (isSequencerNamingActive()) {
     uint32_t activeColor = getSequencerConfirmLedColor();
     uint16_t ledCount = strip.numPixels();

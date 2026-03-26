@@ -212,6 +212,9 @@ Details:
 - Choosing Stop Session while a session is active shall warn that stopping USB
   Backup ends any current transfer and shall ask whether the user wants to
   continue.
+- While the USB Backup session is active, sequencer hex-button presses shall be
+  ignored and the sequencer button LEDs shall be blanked, while encoder-driven
+  menu navigation remains available.
 - While the session is active, Save, Revert, and browser-based file-management
   workflows shall be blocked until the session is stopped.
 

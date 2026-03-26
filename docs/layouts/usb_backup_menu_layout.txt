@@ -19,18 +19,20 @@ Active session example:
 Leave-page confirm example:
 
   Leaving this page
-  closes USB Backup
-  Do you want to continue?
-  Yes, Continue
-  No, Stay Here
+  will close
+  USB Backup.
+  Continue?
+  Yes, Leave
+  No, Stay
 
 Stop confirm example:
 
-  Stopping USB Backup
-  ends any current transfer.
-  Do you want to continue?
-  Yes, Continue
-  No, Stay Here
+  Stopping this
+  session ends
+  any transfer.
+  Continue?
+  Yes, Stop
+  No, Stay
 
 Notes:
 
@@ -43,3 +45,5 @@ Notes:
 - Stop Session opens a confirmation page before the session is closed.
 - Starting a session stops sequencer transport and prepares LittleFS for
   host-side backup or restore actions over USB serial.
+- While the session is active, the hex-button LEDs are blank and the encoder is
+  the intended control for the menu.

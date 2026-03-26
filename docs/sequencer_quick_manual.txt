@@ -146,6 +146,9 @@ Saving And Files
 - If you choose Stop Session while a session is active, the sequencer warns
   that stopping USB Backup ends any current transfer and asks whether you want
   to continue.
+- While USB Backup is active, the hex buttons are temporarily disabled and
+  their LEDs are blanked so you do not accidentally trigger other sequencer
+  actions. The encoder still works for the menu.
 - The computer-side tools are:
   `scripts/hexboard_backup.py` for the command line and
   `scripts/hexboard_backup_gui.py` for a desktop GUI.
