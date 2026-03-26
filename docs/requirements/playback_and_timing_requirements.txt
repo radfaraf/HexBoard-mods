@@ -180,3 +180,59 @@ Priority: Medium
 Requirement:
 A step with a length value above 100 percent shall be allowed to continue
 across later steps.
+
+
+ID: SEQ-PLAY-016
+Title: Probability Range
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Step probability shall support the range 0 through 100 percent.
+
+Details:
+- Default step probability is 100 percent.
+- Probability is stored per step.
+
+
+ID: SEQ-PLAY-017
+Title: Probability Editing Values
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+Exact probability editing shall use coarse encoder values of 0, 5, 10, 15 and
+so on up to 100 percent.
+
+Details:
+- Encoder press saves and returns to the tools picker.
+
+
+ID: SEQ-PLAY-018
+Title: Step Probability Use
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The stored probability value of a step shall control the playback chance of
+that step during sequencer transport playback.
+
+Details:
+- Probability applies to the whole step rather than individual notes.
+- 0 percent means the step never sounds during transport playback.
+- 100 percent means the step always sounds during transport playback.
+- Probability applies to both MIDI and OB Synth playback modes.
+
+
+ID: SEQ-PLAY-019
+Title: Tap Preview Probability Bypass
+Status: Active
+Area: Playback
+Priority: Medium
+
+Requirement:
+Tap Preview and manual step preview shall ignore step probability and always
+audition the step's stored notes when preview is triggered.

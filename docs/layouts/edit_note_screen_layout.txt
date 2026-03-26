@@ -4,14 +4,14 @@ Main edit screen while a step is selected:
 
   Edit #13
 
-  L 150%  V 96
+  L 150% V 96 P 75%
 
   C3 E3 G3
 
 Notes:
 
 - The top line shows the selected step number.
-- The next line shows the compact length and velocity readout.
+- The next line shows the compact length, velocity, and probability readout.
 - The notes are shown on one row, sorted lowest to highest.
 - This screen is used while editing notes in the selected step.
 - With a step selected, turning the encoder changes the step length directly.

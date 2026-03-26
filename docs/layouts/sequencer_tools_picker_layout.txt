@@ -11,7 +11,7 @@ Purpose:
 Current OLED layout:
 
   Tools #13
-  L 150%  V 96
+  L 150% V 96 P 75%
   C3 E3 G3
   Len Vel Oct+ Oct-
   Prob Tie
@@ -31,9 +31,10 @@ Current behavior:
 
 - Len opens the exact length screen for the selected step
 - Vel opens the exact velocity screen for the selected step
+- Prob opens the exact probability screen for the selected step
 - Oct+ transposes the selected step up 1 octave and stays in the picker
 - Oct- transposes the selected step down 1 octave and stays in the picker
-- Prob and Tie currently show placeholder status messages
+- Tie currently shows a placeholder status message
 
 LED behavior while the picker is open:
 

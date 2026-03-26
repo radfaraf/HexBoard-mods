@@ -11,7 +11,7 @@ Selecting a step shall show an edit overlay for that step.
 
 Details:
 - The header shall use the form Edit #NN.
-- The overlay shall show a compact info line in the form L ...%  V ....
+- The overlay shall show a compact info line in the form L ...% V ... P ...%.
 - The overlay shall show the selected step notes in ascending order.
 
 
@@ -50,8 +50,8 @@ Priority: High
 
 Requirement:
 The step tools overlay shall show the selected step number, the compact length
-and velocity line, the selected step notes, and the currently available tool
-labels.
+length, velocity, and probability line, the selected step notes, and the
+currently available tool labels.
 
 
 ID: SEQ-UI-005
@@ -78,12 +78,30 @@ Priority: High
 
 Requirement:
 The exact velocity overlay shall show the selected step number, the compact
-length and velocity line, the selected step notes, the large current velocity
-value, and the short encoder instructions.
+length, velocity, and probability line, the selected step notes, the large
+current velocity value, and the short encoder instructions.
 
 Details:
 - Exact velocity editing is encoder-driven and does not require dedicated lit
   button hints.
+- While this overlay is open, all keys remain dark.
+- The helper text shall instruct the user to press the encoder to save.
+
+
+ID: SEQ-UI-012
+Title: Exact Probability Overlay
+Status: Active
+Area: UI
+Priority: High
+
+Requirement:
+The exact probability overlay shall show the selected step number, the compact
+length, velocity, and probability line, the selected step notes, the large
+current probability value, and the short encoder instructions.
+
+Details:
+- Exact probability editing is encoder-driven and does not require dedicated
+  lit button hints.
 - While this overlay is open, all keys remain dark.
 - The helper text shall instruct the user to press the encoder to save.
 
@@ -145,4 +163,4 @@ Priority: Medium
 
 Requirement:
 The sequencer shall use temporary status overlays for actions such as save,
-revert, erase, and placeholder tool actions.
+revert, erase, and tie placeholder actions.

@@ -5,7 +5,8 @@ Overview
 
 Sequencer mode is a separate mode from Keyboard mode. It is a single-track,
 32-step sequencer. Each step can hold up to 4 notes, its own note length,
-its own velocity, and can play through MIDI or the onboard synth.
+its own velocity, its own probability, and can play through MIDI or the
+onboard synth.
 
 Enter And Exit
 
@@ -35,7 +36,7 @@ Step Editing
 - With a step selected, play note keys on the lower part of the board to add
   or remove notes from that step.
 - The edit screen shows a compact info line for the selected step:
-  `L ...%  V ...`, then the notes.
+  `L ...% V ... P ...%`, then the notes.
 - Step notes are kept sorted from lowest to highest.
 - Tap Preview can make a tapped step audition its stored notes when selected.
 
@@ -43,7 +44,7 @@ Step Tools Picker
 
 - Press the last button on the third row with a step selected to open tools.
 - The tools screen shows the selected step number, a compact
-  `L ...%  V ...` line, and the current notes.
+  `L ...% V ... P ...%` line, and the current notes.
 - Current tool choices are:
   Len, Vel, Oct+, Oct-, Prob, Tie
 - The tools screen also shows:
@@ -52,7 +53,8 @@ Step Tools Picker
 - Oct+ transposes the selected step up 1 octave and stays in the tools screen.
 - Oct- transposes the selected step down 1 octave and stays in the tools screen.
 - Vel opens exact velocity entry for the selected step.
-- Prob and Tie are placeholder entries for now.
+- Prob opens exact probability entry for the selected step.
+- Tie is still a placeholder entry for now.
 - Cancel/Finished closes the picker when you are done.
 
 Step Velocity
@@ -66,6 +68,19 @@ Step Velocity
   0, 5, 10, 15, ... 125, 127
 - Press the encoder to save.
 - Playback, tap preview, save, and load all use the stored step velocity.
+
+Step Probability
+
+- Probability is stored per step.
+- Range is 0-100%.
+- Default step probability is 100%.
+- Use Prob from the step tools picker to edit it.
+- Probability entry uses the encoder.
+- Turn the encoder to move through:
+  0, 5, 10, 15, ... 100
+- Press the encoder to save.
+- Playback, save, and load all use the stored step probability.
+- Tap Preview ignores probability and still auditions the step.
 
 Note Length
 

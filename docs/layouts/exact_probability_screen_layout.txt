@@ -1,26 +1,27 @@
-SEQUENCER EXACT VELOCITY SCREEN
+SEQUENCER EXACT PROBABILITY SCREEN
 
-This screen appears after choosing Vel from the step tools picker for a
+This screen appears after choosing Prob from the step tools picker for a
 selected step.
 
 Purpose:
 
-- adjust a per-step velocity quickly from the board without typing digits
+- adjust a per-step playback chance quickly from the board without typing
+  digits
 
 Current OLED layout:
 
-  Vel #13
+  Prob #13
   L 150% V 96 P 75%
   C3 E3 G3
-  96
+  75%
 
-  Turn +/-5
+  Turn +/-5%
   Press encoder to save
 
 Controls:
 
 - turning the encoder moves through:
-  0, 5, 10, 15, ... 125, 127
+  0, 5, 10, 15, ... 100
 - encoder press saves and returns to the tools picker
 
 LED behavior while the screen is open:

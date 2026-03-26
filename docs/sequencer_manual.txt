@@ -16,6 +16,7 @@ split, so you can return to the normal board behavior at any time.
 - Notes per step: up to 4
 - Length per step: stored per step
 - Velocity per step: stored per step
+- Probability per step: stored per step
 - Output type: MIDI or onboard synth
 - Storage: onboard flash files in /Sequences
 
@@ -67,7 +68,7 @@ The lower part of the board remains playable in Sequencer mode. These keys:
 When a step is selected:
 
 - the Edit overlay appears
-- the Edit overlay shows the selected step number, a compact `L ...%  V ...`
+- the Edit overlay shows the selected step number, a compact `L ...% V ... P ...%`
   line, and the notes
 - note keys add or remove notes from that step immediately
 - the step stores notes sorted from lowest to highest
@@ -251,7 +252,7 @@ Current tool choices:
 The picker screen shows:
 
 - Tools #step number
-- the selected step's compact `L ...%  V ...` line
+- the selected step's compact `L ...% V ... P ...%` line
 - the selected step's current notes
 - Len Vel Oct+ Oct-
 - Prob Tie
@@ -261,11 +262,11 @@ Current behavior:
 
 - Len: opens exact length entry for the selected step
 - Vel: opens exact velocity entry for the selected step
+- Prob: opens exact probability entry for the selected step
 - Oct+: transposes all notes in the selected step up 12 semitones and stays in
   the picker so you can apply another tool immediately
 - Oct-: transposes all notes in the selected step down 12 semitones and stays
   in the picker so you can apply another tool immediately
-- Prob: placeholder for future step probability editing
 - Tie: placeholder for future tie behavior
 - Cancel/Finished: exits the tool picker when you are done
 
@@ -301,6 +302,36 @@ Velocity affects:
 - live note audition while a step is selected
 - MIDI output velocity
 - onboard synth preview/play loudness approximation
+
+
+10.4 Step probability
+
+Each step stores its own playback probability value.
+
+- range: 0-100%
+- default: 100%
+
+How to edit probability:
+
+- select a step
+- open the step tools picker
+- choose Prob
+
+The exact probability screen uses encoder entry:
+
+- turn the encoder to move through:
+  0, 5, 10, 15, ... 100
+- pressing the encoder saves and returns to the tools picker
+
+Probability affects:
+
+- sequencer playback chance for that step
+- both MIDI and OB Synth playback modes
+
+Probability does not affect:
+
+- Tap Preview step previews
+- manual note audition while entering notes
 
 
 11. Overview Screen
@@ -522,6 +553,7 @@ The current save file stores:
 - the notes in each step
 - the gate/length value for each step
 - the velocity value for each step
+- the probability value for each step
 
 
 20. Current Limits

@@ -147,9 +147,9 @@ and Cancel/Finished.
 Details:
 - Len opens exact length entry.
 - Vel opens exact velocity entry.
+- Prob opens exact probability entry.
 - Oct+ transposes the selected step up one octave.
 - Oct- transposes the selected step down one octave.
-- Prob is a placeholder for future probability editing.
 - Tie is a placeholder for future tie behavior.
 - Cancel/Finished exits the tools picker.
 - Oct+ and Oct- shall leave the tools picker open after they apply.

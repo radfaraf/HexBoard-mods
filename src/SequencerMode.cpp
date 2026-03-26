@@ -44,7 +44,9 @@ constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr byte SEQUENCER_NO_NOTE = 255;
 constexpr byte SEQUENCER_DEFAULT_VELOCITY = 96;
+constexpr byte SEQUENCER_DEFAULT_PROBABILITY = 100;
 constexpr byte SEQUENCER_VELOCITY_CHOICE_COUNT = 27;
+constexpr byte SEQUENCER_PROBABILITY_CHOICE_COUNT = 21;
 constexpr uint64_t SEQUENCER_NOTE_CONFIRM_MICROS = 2000000ULL;
 constexpr uint64_t SEQUENCER_CLEAR_HOLD_MICROS = 1000000ULL;
 constexpr uint64_t SEQUENCER_PERFORMANCE_HOLD_MICROS = 2000000ULL;
@@ -81,6 +83,7 @@ byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] 
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
 uint16_t sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {};
 byte sequencerStepVelocity[SEQUENCER_STEP_COUNT] = {};
+byte sequencerStepProbability[SEQUENCER_STEP_COUNT] = {};
 
 enum class SequencerOverlayMode : uint8_t {
   Hidden = 0,
@@ -94,7 +97,8 @@ enum class SequencerOverlayMode : uint8_t {
   ExactLengthEdit = 8,
   PerformanceMonitor = 9,
   FunctionPicker = 10,
-  ExactVelocityEdit = 11
+  ExactVelocityEdit = 11,
+  ExactProbabilityEdit = 12
 };
 
 struct SequencerPlaybackGroup {
@@ -200,6 +204,8 @@ byte sequencerExactLengthLength = 3;
 bool sequencerExactLengthReplaceOnNextDigit = true;
 byte sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
+byte sequencerProbabilityDisplay = SEQUENCER_DEFAULT_PROBABILITY;
+byte sequencerExactProbabilityOriginal = SEQUENCER_DEFAULT_PROBABILITY;
 byte sequencerOverviewPage = 0;
 char sequencerCurrentSequencePath[SEQUENCER_MAX_PATH_LENGTH] = "";
 char sequencerMenuTitle[SEQUENCER_MENU_TITLE_LENGTH] = "Sequencer";
@@ -231,6 +237,8 @@ void enterSequencerExactLengthEdit();
 void exitSequencerExactLengthEdit(bool saveChanges);
 void enterSequencerExactVelocityEdit();
 void exitSequencerExactVelocityEdit(bool saveChanges);
+void enterSequencerExactProbabilityEdit();
+void exitSequencerExactProbabilityEdit(bool saveChanges);
 void enterSequencerFunctionPicker();
 void exitSequencerFunctionPicker();
 void showSequencerPerformanceMonitor();
@@ -241,6 +249,8 @@ void sequencerBrowserNewFolderCallback();
 bool isSequencerNamingActive();
 byte sequencerVelocityChoiceValue(byte choiceIndex);
 byte sequencerVelocityChoiceIndex(byte velocity);
+byte sequencerProbabilityChoiceValue(byte choiceIndex);
+byte sequencerProbabilityChoiceIndex(byte probability);
 void openSequencerDeleteFileBrowser();
 void openSequencerDeleteFolderBrowser();
 void openSequencerRenameFileBrowser();
@@ -865,6 +875,36 @@ void exitSequencerExactVelocityEdit(bool saveChanges) {
   sequencerOverlayDirty = true;
 }
 
+void enterSequencerExactProbabilityEdit() {
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+  sequencerExactProbabilityOriginal = sequencerStepProbability[sequencerSelectedStep];
+  sequencerProbabilityDisplay = sequencerExactProbabilityOriginal;
+  sequencerOverlayMode = SequencerOverlayMode::ExactProbabilityEdit;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+void exitSequencerExactProbabilityEdit(bool saveChanges) {
+  if (sequencerSelectedStep >= 0) {
+    byte finalValue = sequencerExactProbabilityOriginal;
+    if (saveChanges) {
+      finalValue = sequencerProbabilityDisplay;
+    }
+    if (sequencerStepProbability[sequencerSelectedStep] != finalValue) {
+      sequencerStepProbability[sequencerSelectedStep] = finalValue;
+      setSequencerDirtyState(true);
+    }
+    sequencerProbabilityDisplay = finalValue;
+  }
+  sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
 void enterSequencerFunctionPicker() {
   if (sequencerSelectedStep < 0) {
     return;
@@ -1034,7 +1074,7 @@ void handleSequencerToolAction(SequencerToolAction action) {
       }
       return;
     case SequencerToolAction::Probability:
-      showSequencerStatusMessage("Prob", "Coming soon");
+      enterSequencerExactProbabilityEdit();
       return;
     case SequencerToolAction::Tie:
       showSequencerStatusMessage("Tie", "Coming soon");
@@ -1094,6 +1134,23 @@ bool handleSequencerRotaryTurnInternal(int8_t direction) {
     byte newVelocity = sequencerVelocityChoiceValue(static_cast<byte>(nextIndex));
     if (newVelocity != sequencerVelocityDisplay) {
       sequencerVelocityDisplay = newVelocity;
+      sequencerOverlayDirty = true;
+    }
+    return true;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
+    byte currentIndex = sequencerProbabilityChoiceIndex(sequencerProbabilityDisplay);
+    int nextIndex = static_cast<int>(currentIndex) + direction;
+    if (nextIndex < 0) {
+      nextIndex = 0;
+    } else if (nextIndex >= SEQUENCER_PROBABILITY_CHOICE_COUNT) {
+      nextIndex = SEQUENCER_PROBABILITY_CHOICE_COUNT - 1;
+    }
+
+    byte newProbability = sequencerProbabilityChoiceValue(static_cast<byte>(nextIndex));
+    if (newProbability != sequencerProbabilityDisplay) {
+      sequencerProbabilityDisplay = newProbability;
       sequencerOverlayDirty = true;
     }
     return true;
@@ -1161,6 +1218,27 @@ byte sequencerVelocityChoiceIndex(byte velocity) {
   for (byte i = 0; i < SEQUENCER_VELOCITY_CHOICE_COUNT; i++) {
     byte choiceValue = sequencerVelocityChoiceValue(i);
     uint16_t distance = static_cast<uint16_t>(abs(static_cast<int>(choiceValue) - static_cast<int>(velocity)));
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = i;
+    }
+  }
+  return nearestIndex;
+}
+
+byte sequencerProbabilityChoiceValue(byte choiceIndex) {
+  if (choiceIndex >= SEQUENCER_PROBABILITY_CHOICE_COUNT - 1) {
+    return 100;
+  }
+  return static_cast<byte>(choiceIndex * 5);
+}
+
+byte sequencerProbabilityChoiceIndex(byte probability) {
+  byte nearestIndex = 0;
+  uint16_t nearestDistance = 65535;
+  for (byte i = 0; i < SEQUENCER_PROBABILITY_CHOICE_COUNT; i++) {
+    byte choiceValue = sequencerProbabilityChoiceValue(i);
+    uint16_t distance = static_cast<uint16_t>(abs(static_cast<int>(choiceValue) - static_cast<int>(probability)));
     if (distance < nearestDistance) {
       nearestDistance = distance;
       nearestIndex = i;
@@ -1589,12 +1667,21 @@ void serviceSequencerPlaybackGroups() {
   }
 }
 
-void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration) {
+void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability = true) {
   uint16_t gatePercent = sequencerStepGatePercent[stepIndex];
   byte noteCount = sequencerStepNoteCount[stepIndex];
   byte stepVelocity = sequencerStepVelocity[stepIndex];
+  byte stepProbability = sequencerStepProbability[stepIndex];
   if (noteCount == 0 || gatePercent == 0) {
     return;
+  }
+  if (applyProbability) {
+    if (stepProbability == 0) {
+      return;
+    }
+    if (stepProbability < 100 && static_cast<byte>(random(100)) >= stepProbability) {
+      return;
+    }
   }
 
   int freeGroupIndex = -1;
@@ -1642,7 +1729,7 @@ void previewSequencerStep(byte stepIndex) {
   if (stepIndex >= SEQUENCER_STEP_COUNT) {
     return;
   }
-  startSequencerPlaybackGroup(stepIndex, sequencerStepDurationMicros());
+  startSequencerPlaybackGroup(stepIndex, sequencerStepDurationMicros(), false);
 }
 
 void clearSelectedSequencerStep() {
@@ -1663,6 +1750,7 @@ void resetSequencerState() {
     clearSequencerNoteBuffer(sequencerStepMidiNotes[step], sequencerStepNoteCount[step]);
     sequencerStepGatePercent[step] = 100;
     sequencerStepVelocity[step] = SEQUENCER_DEFAULT_VELOCITY;
+    sequencerStepProbability[step] = SEQUENCER_DEFAULT_PROBABILITY;
   }
   memset(sequencerAuditionHeldNoteCounts, 0, sizeof(sequencerAuditionHeldNoteCounts));
   memset(sequencerPlaybackHeldNoteCounts, 0, sizeof(sequencerPlaybackHeldNoteCounts));
@@ -1691,6 +1779,8 @@ void resetSequencerState() {
   sequencerExactLengthReplaceOnNextDigit = true;
   sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
   sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
+  sequencerProbabilityDisplay = SEQUENCER_DEFAULT_PROBABILITY;
+  sequencerExactProbabilityOriginal = SEQUENCER_DEFAULT_PROBABILITY;
   hideSequencerOverlay();
   stopSequencerPlaybackNote();
 }
@@ -1791,6 +1881,12 @@ bool loadSequencerFromFlash() {
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 0 && velocityValue <= 127) {
         sequencerStepVelocity[stepNumber - 1] = static_cast<byte>(velocityValue);
       }
+    } else if (key.startsWith("prob")) {
+      int stepNumber = key.substring(4).toInt();
+      int probabilityValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && probabilityValue >= 0 && probabilityValue <= 100) {
+        sequencerStepProbability[stepNumber - 1] = static_cast<byte>(probabilityValue);
+      }
     }
   }
 
@@ -1870,6 +1966,12 @@ bool loadSequencerFromPath(const char* path) {
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && velocityValue >= 0 && velocityValue <= 127) {
         sequencerStepVelocity[stepNumber - 1] = static_cast<byte>(velocityValue);
       }
+    } else if (key.startsWith("prob")) {
+      int stepNumber = key.substring(4).toInt();
+      int probabilityValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && probabilityValue >= 0 && probabilityValue <= 100) {
+        sequencerStepProbability[stepNumber - 1] = static_cast<byte>(probabilityValue);
+      }
     }
   }
 
@@ -1926,6 +2028,10 @@ bool saveSequencerToPath(const char* path) {
     f.print(step + 1);
     f.print('=');
     f.println(sequencerStepVelocity[step]);
+    f.print("prob");
+    f.print(step + 1);
+    f.print('=');
+    f.println(sequencerStepProbability[step]);
   }
 
   f.close();
@@ -2606,6 +2712,10 @@ bool handleSequencerEncoderClick() {
   if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
     return true;
   }
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
+    exitSequencerExactProbabilityEdit(true);
+    return true;
+  }
   if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
     exitSequencerExactVelocityEdit(true);
     return true;
@@ -2704,6 +2814,13 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
+    if (!pressed) {
+      return;
+    }
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
     if (!pressed) {
       return;
     }
@@ -3008,26 +3125,61 @@ void drawSequencerOverlay() {
     return;
   }
 
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    char headerLabel[20];
+    char infoLine[32];
+    char valueLabel[8];
+    char noteLineOne[24];
+    char noteLineTwo[24];
+    snprintf(headerLabel, sizeof(headerLabel), "Prob #%02d", sequencerSelectedStep + 1);
+    snprintf(infoLine, sizeof(infoLine), "L %u%% V %u P %u%%",
+             static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]),
+             static_cast<unsigned>(sequencerStepVelocity[sequencerSelectedStep]),
+             static_cast<unsigned>(sequencerProbabilityDisplay));
+    snprintf(valueLabel, sizeof(valueLabel), "%u%%", static_cast<unsigned>(sequencerProbabilityDisplay));
+    fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(18, 14, headerLabel);
+    u8g2.drawStr(2, 30, infoLine);
+    u8g2.drawStr(12, 48, noteLineOne);
+    if (noteLineTwo[0] != '\0') {
+      u8g2.drawStr(12, 60, noteLineTwo);
+    }
+    u8g2.drawStr(40, 82, valueLabel);
+
+    u8g2.setFont(u8g2_font_5x8_tf);
+    u8g2.drawStr(8, 98, "Turn +/-5%");
+    u8g2.drawStr(8, 116, "Press encoder to save");
+    u8g2.sendBuffer();
+    return;
+  }
+
   if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
     sequencerOverlayVisible = true;
     sequencerOverlayDirty = false;
 
     char headerLabel[20];
-    char infoLine[24];
+    char infoLine[32];
     char valueLabel[8];
     char noteLineOne[24];
     char noteLineTwo[24];
     snprintf(headerLabel, sizeof(headerLabel), "Vel #%02d", sequencerSelectedStep + 1);
-    snprintf(infoLine, sizeof(infoLine), "L %u%%  V %u",
+    snprintf(infoLine, sizeof(infoLine), "L %u%% V %u P %u%%",
              static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]),
-             static_cast<unsigned>(sequencerVelocityDisplay));
+             static_cast<unsigned>(sequencerVelocityDisplay),
+             static_cast<unsigned>(sequencerStepProbability[sequencerSelectedStep]));
     snprintf(valueLabel, sizeof(valueLabel), "%u", static_cast<unsigned>(sequencerVelocityDisplay));
     fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
     u8g2.drawStr(24, 14, headerLabel);
-    u8g2.drawStr(8, 30, infoLine);
+    u8g2.drawStr(2, 30, infoLine);
     u8g2.drawStr(12, 48, noteLineOne);
     if (noteLineTwo[0] != '\0') {
       u8g2.drawStr(12, 60, noteLineTwo);
@@ -3046,19 +3198,20 @@ void drawSequencerOverlay() {
     sequencerOverlayDirty = false;
 
     char headerLabel[20];
-    char infoLine[24];
+    char infoLine[32];
     char noteLineOne[24];
     char noteLineTwo[24];
     snprintf(headerLabel, sizeof(headerLabel), "Tools #%02d", sequencerSelectedStep + 1);
-    snprintf(infoLine, sizeof(infoLine), "L %u%%  V %u",
+    snprintf(infoLine, sizeof(infoLine), "L %u%% V %u P %u%%",
              static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]),
-             static_cast<unsigned>(sequencerStepVelocity[sequencerSelectedStep]));
+             static_cast<unsigned>(sequencerStepVelocity[sequencerSelectedStep]),
+             static_cast<unsigned>(sequencerStepProbability[sequencerSelectedStep]));
     fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
     u8g2.drawStr(20, 14, headerLabel);
-    u8g2.drawStr(8, 30, infoLine);
+    u8g2.drawStr(2, 30, infoLine);
     u8g2.drawStr(12, 48, noteLineOne);
     if (noteLineTwo[0] != '\0') {
       u8g2.drawStr(12, 60, noteLineTwo);
@@ -3126,7 +3279,7 @@ void drawSequencerOverlay() {
   char stepLabel[16];
   char noteLineOne[24];
   char noteLineTwo[24];
-  char hintLineOne[24];
+  char hintLineOne[32];
   char hintLineTwo[24];
   stepLabel[0] = '\0';
   noteLineOne[0] = '\0';
@@ -3145,9 +3298,10 @@ void drawSequencerOverlay() {
 
   if (sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
     snprintf(headerLabel, sizeof(headerLabel), "Edit #%02d", sequencerSelectedStep + 1);
-    snprintf(hintLineOne, sizeof(hintLineOne), "L %u%%  V %u",
+    snprintf(hintLineOne, sizeof(hintLineOne), "L %u%% V %u P %u%%",
              static_cast<unsigned>(sequencerStepGatePercent[sequencerSelectedStep]),
-             static_cast<unsigned>(sequencerStepVelocity[sequencerSelectedStep]));
+             static_cast<unsigned>(sequencerStepVelocity[sequencerSelectedStep]),
+             static_cast<unsigned>(sequencerStepProbability[sequencerSelectedStep]));
     hintLineTwo[0] = '\0';
   } else if (sequencerOverlayMode == SequencerOverlayMode::LengthEdit) {
     snprintf(headerLabel, sizeof(headerLabel), "Step Length");
@@ -3195,7 +3349,7 @@ void drawSequencerOverlay() {
     u8g2.drawStr(36, stepLabelY, stepLabel);
   }
   if (hintLineOne[0] != '\0') {
-    u8g2.drawStr(8, hintLineOneY, hintLineOne);
+    u8g2.drawStr(2, hintLineOneY, hintLineOne);
   }
   if (hintLineTwo[0] != '\0') {
     u8g2.drawStr(8, hintLineTwoY, hintLineTwo);
@@ -3239,6 +3393,14 @@ void applySequencerLedOverrides() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
+    uint16_t ledCount = strip.numPixels();
+    for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
+      strip.setPixelColor(buttonIndex, 0);
+    }
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
     uint16_t ledCount = strip.numPixels();
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
