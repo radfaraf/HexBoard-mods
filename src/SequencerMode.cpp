@@ -3437,9 +3437,15 @@ void applySequencerLedOverrides() {
     SEQUENCER_FUNCTION_BUTTON_INDEX,
     getSequencerUnsetStepLedColor(sequencerOverlayMode == SequencerOverlayMode::FunctionPicker));
 
+  byte activeStepCount = sequencerActiveStepCount();
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
     int8_t buttonIndex = sequencerStepToButtonIndex(step);
     if (buttonIndex < 0) {
+      continue;
+    }
+
+    if (step >= activeStepCount) {
+      strip.setPixelColor(buttonIndex, 0);
       continue;
     }
 

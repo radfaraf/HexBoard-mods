@@ -105,6 +105,8 @@ Playback
 - Each step is a 16th note at the current tempo.
 - Hold Play/Stop for 2 seconds to show the performance monitor while held.
 - Steps sets the active playback range from 1 to 32.
+- Step lights beyond the active Steps count stay off, even if those steps still
+  contain notes.
 - Direction choices are:
   Forward, Backward, Ping-Pong, Random, Brownian, Drunk
 - Play Type chooses:

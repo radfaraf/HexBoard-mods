@@ -36,6 +36,8 @@ Sequencer mode shall provide 32 editable steps.
 Details:
 - The active playback length may be less than 32.
 - All 32 steps shall remain editable even if fewer steps are active in playback.
+- Step LEDs beyond the active playback length shall stay dark until those steps
+  are brought back into the active range.
 
 
 ID: SEQ-CORE-004

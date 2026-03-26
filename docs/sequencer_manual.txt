@@ -201,6 +201,8 @@ The Steps menu item decides how many steps are active in playback:
 - maximum 32
 
 All 32 steps still remain editable even if the active playback count is lower.
+Step LEDs beyond the active playback count stay dark, even if those later steps
+still contain notes.
 
 8.4 Direction
 

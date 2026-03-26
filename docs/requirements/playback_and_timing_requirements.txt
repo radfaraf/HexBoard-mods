@@ -33,6 +33,10 @@ Requirement:
 The Sequencer menu shall provide a Steps control that sets the active playback
 range from 1 to 32 steps.
 
+Details:
+- Step LEDs for steps beyond the active playback range shall remain off even if
+  those steps still contain notes.
+
 
 ID: SEQ-PLAY-004
 Title: Direction Modes
