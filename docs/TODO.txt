@@ -21,6 +21,8 @@ add step based input where it advanced through all the notes one by one as you e
 
 maker a performance mode that allows easily changing interesting settings in rapid speed with the keys
 
+Maybe a special menu with some kind of features when play is pressed?
+
 
 Make it into a drum machine with samples!?!?!
 

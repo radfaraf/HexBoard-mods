@@ -283,7 +283,7 @@ extern GEMItem menuItemSequencerUsbBackupStopPromptThree;
 extern GEMItem menuItemSequencerUsbBackupStopPromptFour;
 extern GEMItem menuItemSequencerUsbBackupStopYes;
 extern GEMItem menuItemSequencerUsbBackupStopNo;
-void setSequencerTransportState(byte newState);
+void setSequencerTransportState(byte newState, bool redrawMenu = true);
 void refreshSequencerUsbBackupMenu(bool redrawMenu = true);
 void usbBackupStatusMenuCallback();
 void startUsbBackupMenuCallback();
@@ -2637,7 +2637,7 @@ void showSequencerStatusMessage(const char* lineOne, const char* lineTwo) {
   sequencerOverlayDirty = true;
 }
 
-void setSequencerTransportState(byte newState) {
+void setSequencerTransportState(byte newState, bool redrawMenu) {
   byte normalizedState = (newState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_PLAY : SEQUENCER_TRANSPORT_STOP;
   sequencerTransportState = normalizedState;
   if (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) {
@@ -2651,11 +2651,13 @@ void setSequencerTransportState(byte newState) {
     sequencerNextStepAt = 0;
     sequencerCurrentStepStartedAt = 0;
   }
-  menu.drawMenu();
+  if (redrawMenu) {
+    menu.drawMenu();
+  }
 }
 
 void sequencerTransportMenuCallback(GEMCallbackData callbackData) {
-  setSequencerTransportState(callbackData.valByte);
+  setSequencerTransportState(callbackData.valByte, true);
 }
 
 void sequencerTempoMenuCallback(GEMCallbackData callbackData) {
@@ -2980,7 +2982,8 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
           hideSequencerOverlay();
         }
         setSequencerTransportState(
-          (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_STOP : SEQUENCER_TRANSPORT_PLAY);
+          (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_STOP : SEQUENCER_TRANSPORT_PLAY,
+          false);
       }
     }
     return;
@@ -3329,7 +3332,8 @@ void drawSequencerOverlay() {
     if (sequencerOverlayVisible) {
       sequencerOverlayVisible = false;
       sequencerOverlayDirty = false;
-      menu.drawMenu();
+      u8g2.clearBuffer();
+      u8g2.sendBuffer();
     }
     return;
   }
