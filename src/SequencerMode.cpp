@@ -1459,10 +1459,15 @@ void fillOverviewStepLine(byte stepIndex, char* lineOut, size_t lineOutSize) {
 }
 
 void hideSequencerOverlay() {
+  bool wasVisible = sequencerOverlayVisible;
   sequencerOverlayMode = SequencerOverlayMode::Hidden;
   sequencerOverlayUntil = 0;
   sequencerOverlayVisible = false;
   sequencerOverlayDirty = false;
+  if (wasVisible) {
+    u8g2.clearBuffer();
+    u8g2.sendBuffer();
+  }
 }
 
 void formatSequencerUsageLabel(uint64_t bytes, char* out, size_t outSize) {

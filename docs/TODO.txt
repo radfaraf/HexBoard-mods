@@ -7,11 +7,12 @@ Need to double check logic for Backup all and Restore Backup still.
 Check all modes in tool pickers, Oct+/Oct-, vel, prob, tie, etc..
 (Save/load after changing things), (Make sure onboard synth words and external - VST, hardware)
 
+Save button to make it easier to save, and undo right afterwards incase you accidentally press it? 
+
 MPE/microtonal support for sequencer and all related features including save load. Need to make sure user can't do something stupid like switch tunings in a way that breaks sequencer.
 
 
 Maybe use the 7 side buttons somehow as a quick way to adjust note velocity and/or length, and perhaps other features.
-
 
 keyboard section of sequencer needs to respect color option settings and animations etc..
 
