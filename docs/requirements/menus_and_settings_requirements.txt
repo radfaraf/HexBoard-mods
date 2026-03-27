@@ -18,7 +18,6 @@ Details:
 - Save New
 - Load
 - Revert
-- Play/Stop
 - Steps
 - Direction
 - Tempo

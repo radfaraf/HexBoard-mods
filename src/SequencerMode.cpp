@@ -2656,10 +2656,6 @@ void setSequencerTransportState(byte newState, bool redrawMenu) {
   }
 }
 
-void sequencerTransportMenuCallback(GEMCallbackData callbackData) {
-  setSequencerTransportState(callbackData.valByte, true);
-}
-
 void sequencerTempoMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   setSequencerDirtyState(true);
@@ -2697,8 +2693,6 @@ const GEMSpinnerBoundariesByte spinnerBoundariesSequencerTempo = { 1, 1, 255 };
 GEMSpinner spinnerSequencerStepPlayCount(spinnerBoundariesSequencerStepPlayCount, GEM_LOOP);
 GEMSpinner spinnerSequencerTempo(spinnerBoundariesSequencerTempo, GEM_LOOP);
 
-SelectOptionByte optionByteSequencerTransport[] = { { "Stop", 0 }, { "Play", 1 } };
-GEMSelect selectSequencerTransport(sizeof(optionByteSequencerTransport) / sizeof(SelectOptionByte), optionByteSequencerTransport);
 SelectOptionByte optionByteSequencerTapPreview[] = { { "Off", SEQUENCER_TAP_PREVIEW_OFF }, { "On", SEQUENCER_TAP_PREVIEW_ON } };
 GEMSelect selectSequencerTapPreview(sizeof(optionByteSequencerTapPreview) / sizeof(SelectOptionByte), optionByteSequencerTapPreview);
 SelectOptionByte optionByteSequencerPlayType[] = { { "MIDI", SEQUENCER_PLAY_TYPE_MIDI }, { "OB Synth", SEQUENCER_PLAY_TYPE_OB_SYNTH } };
@@ -2731,7 +2725,6 @@ GEMItem menuItemSequencerRenameFolder("Rename Folder", openSequencerRenameFolder
 GEMItem menuItemSequencerDeleteFile("Delete File", openSequencerDeleteFileBrowser);
 GEMItem menuItemSequencerDeleteFolder("Delete Folder", openSequencerDeleteFolderBrowser);
 GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
-GEMItem menuItemSequencerPlayStop("Play/Stop", sequencerTransportState, selectSequencerTransport, sequencerTransportMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerTapPreview("Tap Preview", sequencerTapPreview, selectSequencerTapPreview, sequencerTapPreviewMenuCallback);
 GEMItem menuItemSequencerPlayType("Play Type", sequencerPlayType, selectSequencerPlayType, sequencerPlayTypeMenuCallback);
@@ -3183,7 +3176,6 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerSaveNew);
   menuPageSequencer.addMenuItem(menuItemSequencerLoad);
   menuPageSequencer.addMenuItem(menuItemSequencerRevert);
-  menuPageSequencer.addMenuItem(menuItemSequencerPlayStop);
   menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
   menuPageSequencer.addMenuItem(menuItemSequencerDirection);
   menuPageSequencer.addMenuItem(menuItemSequencerTempo);

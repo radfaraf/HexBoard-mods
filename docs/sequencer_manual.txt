@@ -369,7 +369,6 @@ Main Sequencer menu:
 - Save New
 - Load
 - Revert
-- Play/Stop
 - Steps
 - Direction
 - Tempo
