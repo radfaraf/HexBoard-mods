@@ -14,8 +14,8 @@ Screen layout:
   A B C D E F G H
   I J K L M N O P
   Q R S T U V W X
-  Y Z SPC - 1 2 3
-  <-  CANCEL
+  Y Z SPC - 1 2 3 4 5
+  <- 6 7 8 9 0 CANCEL
 
 Notes:
 
@@ -25,7 +25,7 @@ Notes:
 - <- removes the previous character.
 - SPC inserts a blank space.
 - - inserts a hyphen.
-- 1 2 3 insert those digits.
+- 0 1 2 3 4 5 6 7 8 9 insert those digits.
 - The helper text stays compact, but the physical CANCEL key is placed lower on the board.
 
 LED behavior in naming mode:

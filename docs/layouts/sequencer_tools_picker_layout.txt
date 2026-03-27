@@ -14,7 +14,7 @@ Current OLED layout:
   L 150% V 96 P 75%
   C3 E3 G3
   Len Vel Oct+ Oct-
-  Prob Tie
+  Prob Tie Copy
   Cancel/Finished
 
 Current active tool keys:
@@ -25,6 +25,7 @@ Current active tool keys:
 - first row key 4: Oct-
 - second row key 1: Prob
 - second row key 2: Tie
+- second row key 3: Copy
 - lower CANCEL key: exits the picker
 
 Current behavior:
@@ -35,6 +36,8 @@ Current behavior:
 - Oct+ transposes the selected step up 1 octave and stays in the picker
 - Oct- transposes the selected step down 1 octave and stays in the picker
 - Tie currently shows a placeholder status message
+- Copy opens destination-step selection and copies notes, length, velocity,
+  and probability into the tapped destination step
 
 LED behavior while the picker is open:
 

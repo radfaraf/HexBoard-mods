@@ -35,7 +35,7 @@ Always-on special keys:
 - Third-row last button:
   Step tools picker
   - opens the key-driven step tools overlay for the selected step
-  - current tool entries: Len, Vel, Oct+, Oct-, Prob, Tie
+  - current tool entries: Len, Vel, Oct+, Oct-, Prob, Tie, Copy
   - stays lit white while idle
   - becomes brighter white while the tools picker is open
 

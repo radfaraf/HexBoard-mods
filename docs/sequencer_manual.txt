@@ -235,7 +235,7 @@ OB Synth uses the shared synth settings available from Synth Options.
 The blue action key on the far right of the second row has two jobs:
 
 - short press: undo the currently selected step back to the state it had when
-  you selected it
+  you selected it, including notes, length, velocity, and probability
 - hold for about 1 second: clear the selected step
 
 After a clear, the screen reminds you that the blue key can undo the erase.
@@ -253,6 +253,7 @@ Current tool choices:
 - Oct-
 - Prob
 - Tie
+- Copy
 - Cancel/Finished
 
 The picker screen shows:
@@ -261,7 +262,7 @@ The picker screen shows:
 - the selected step's compact `L ...% V ... P ...%` line
 - the selected step's current notes
 - Len Vel Oct+ Oct-
-- Prob Tie
+- Prob Tie Copy
 - Cancel/Finished
 
 Current behavior:
@@ -274,6 +275,9 @@ Current behavior:
 - Oct-: transposes all notes in the selected step down 12 semitones and stays
   in the picker so you can apply another tool immediately
 - Tie: placeholder for future tie behavior
+- Copy: opens destination selection, then copies notes, length, velocity, and
+  probability into the tapped destination step and leaves that destination step
+  selected for further editing
 - Cancel/Finished: exits the tool picker when you are done
 
 The picker is only meant for the currently selected step.
@@ -576,15 +580,15 @@ The on-screen keyboard layout is:
   A B C D E F G H
   I J K L M N O P
   Q R S T U V W X
-  Y Z SPC - 1 2 3
-  <- CANCEL
+  Y Z SPC - 1 2 3 4 5
+  <- 6 7 8 9 0 CANCEL
 
 16.2 Naming controls
 
 - letter and symbol keys insert characters
 - SPC inserts a blank space
 - - inserts a hyphen
-- 1, 2, 3 insert those digits
+- 0 through 9 insert those digits
 - <- deletes the previous character
 - CANCEL exits naming mode without saving
 - encoder press saves the name

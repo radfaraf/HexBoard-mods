@@ -104,7 +104,8 @@ enum class SequencerOverlayMode : uint8_t {
   PerformanceMonitor = 9,
   FunctionPicker = 10,
   ExactVelocityEdit = 11,
-  ExactProbabilityEdit = 12
+  ExactProbabilityEdit = 12,
+  CopyTargetSelect = 13
 };
 
 struct SequencerPlaybackGroup {
@@ -148,7 +149,8 @@ enum class SequencerToolAction : uint8_t {
   OctaveDown = 3,
   Probability = 4,
   Tie = 5,
-  Cancel = 6
+  Copy = 6,
+  Cancel = 7
 };
 
 struct SequencerBrowserEntry {
@@ -183,6 +185,9 @@ byte sequencerUndoMidiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
   SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
 };
 byte sequencerUndoNoteCount = 0;
+uint16_t sequencerUndoGatePercent = 100;
+byte sequencerUndoVelocity = SEQUENCER_DEFAULT_VELOCITY;
+byte sequencerUndoProbability = SEQUENCER_DEFAULT_PROBABILITY;
 byte sequencerAuditionHeldNoteCounts[128] = {};
 byte sequencerPlaybackHeldNoteCounts[128] = {};
 int8_t sequencerPlayingStep = -1;
@@ -203,6 +208,7 @@ byte sequencerTempo = 120;
 byte sequencerTransportState = 0;
 bool sequencerDirty = false;
 bool sequencerStorageInitialized = false;
+int8_t sequencerCopySourceStep = -1;
 uint16_t sequencerLengthPercentDisplay = 100;
 uint16_t sequencerExactLengthOriginal = 100;
 char sequencerExactLengthBuffer[5] = "100";
@@ -239,6 +245,7 @@ uint64_t sequencerPerformanceStorageTotalBytes = 0;
 bool sequencerPerformanceStorageValid = false;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
+void showSequencerPersistentStatusMessage(const char* lineOne, const char* lineTwo);
 bool rememberSequencerCurrentPath();
 void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
 void refreshSequencerMenuTitle();
@@ -250,6 +257,8 @@ void enterSequencerExactProbabilityEdit();
 void exitSequencerExactProbabilityEdit(bool saveChanges);
 void enterSequencerFunctionPicker();
 void exitSequencerFunctionPicker();
+void enterSequencerCopyTargetSelect();
+void exitSequencerCopyTargetSelect(bool returnToTools = true);
 void showSequencerPerformanceMonitor();
 void hideSequencerPerformanceMonitor();
 void refreshSequencerPerformanceStats(bool forceRefresh);
@@ -312,6 +321,8 @@ void clearSequencerNoteBuffer(byte* notes, byte& count);
 void sortSequencerNoteBuffer(byte* notes, byte count);
 byte findNoteInBuffer(const byte* notes, byte count, byte midiNote);
 void saveEditBufferToStep(byte stepIndex);
+void copySequencerStepData(byte sourceStep, byte destinationStep);
+void restoreSelectedSequencerStepFromUndo();
 void previewSequencerStep(byte stepIndex);
 byte sequencerSelectedStepVelocity();
 void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote);
@@ -352,7 +363,14 @@ const SequencerNamingKey sequencerNamingKeys[] = {
   { 34, SequencerNamingAction::InsertChar, '1' },
   { 35, SequencerNamingAction::InsertChar, '2' },
   { 36, SequencerNamingAction::InsertChar, '3' },
+  { 37, SequencerNamingAction::InsertChar, '4' },
+  { 38, SequencerNamingAction::InsertChar, '5' },
   { 41, SequencerNamingAction::Backspace, '\0' },
+  { 42, SequencerNamingAction::InsertChar, '6' },
+  { 43, SequencerNamingAction::InsertChar, '7' },
+  { 44, SequencerNamingAction::InsertChar, '8' },
+  { 45, SequencerNamingAction::InsertChar, '9' },
+  { 46, SequencerNamingAction::InsertChar, '0' },
   { 82, SequencerNamingAction::Cancel, '\0' }
 };
 
@@ -378,6 +396,7 @@ const SequencerToolKey sequencerToolKeys[] = {
   { 4, SequencerToolAction::OctaveDown },
   { 10, SequencerToolAction::Probability },
   { 11, SequencerToolAction::Tie },
+  { 12, SequencerToolAction::Copy },
   { SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX, SequencerToolAction::Cancel }
 };
 
@@ -961,6 +980,25 @@ void exitSequencerExactProbabilityEdit(bool saveChanges) {
   sequencerOverlayDirty = true;
 }
 
+void enterSequencerCopyTargetSelect() {
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+  sequencerCopySourceStep = sequencerSelectedStep;
+  sequencerOverlayMode = SequencerOverlayMode::CopyTargetSelect;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
+void exitSequencerCopyTargetSelect(bool returnToTools) {
+  sequencerCopySourceStep = -1;
+  sequencerOverlayMode = returnToTools ? SequencerOverlayMode::FunctionPicker : SequencerOverlayMode::Hidden;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
 void enterSequencerFunctionPicker() {
   if (sequencerSelectedStep < 0) {
     return;
@@ -972,6 +1010,7 @@ void enterSequencerFunctionPicker() {
 }
 
 void exitSequencerFunctionPicker() {
+  sequencerCopySourceStep = -1;
   if (sequencerSelectedStep >= 0) {
     sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
   } else {
@@ -1134,6 +1173,9 @@ void handleSequencerToolAction(SequencerToolAction action) {
       return;
     case SequencerToolAction::Tie:
       showSequencerStatusMessage("Tie", "Coming soon");
+      return;
+    case SequencerToolAction::Copy:
+      enterSequencerCopyTargetSelect();
       return;
     case SequencerToolAction::Cancel:
       exitSequencerFunctionPicker();
@@ -1362,6 +1404,9 @@ void snapshotUndoBufferFromStep(byte stepIndex) {
     sequencerUndoMidiNotes[i] = sequencerStepMidiNotes[stepIndex][i];
   }
   sequencerUndoNoteCount = count;
+  sequencerUndoGatePercent = sequencerStepGatePercent[stepIndex];
+  sequencerUndoVelocity = sequencerStepVelocity[stepIndex];
+  sequencerUndoProbability = sequencerStepProbability[stepIndex];
 }
 
 void saveEditBufferToStep(byte stepIndex) {
@@ -1371,6 +1416,38 @@ void saveEditBufferToStep(byte stepIndex) {
     sequencerStepMidiNotes[stepIndex][i] = sequencerEditMidiNotes[i];
   }
   sequencerStepNoteCount[stepIndex] = sequencerEditNoteCount;
+}
+
+void copySequencerStepData(byte sourceStep, byte destinationStep) {
+  clearSequencerNoteBuffer(sequencerStepMidiNotes[destinationStep], sequencerStepNoteCount[destinationStep]);
+  byte sourceCount = sequencerStepNoteCount[sourceStep];
+  for (byte i = 0; i < sourceCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
+    sequencerStepMidiNotes[destinationStep][i] = sequencerStepMidiNotes[sourceStep][i];
+  }
+  sequencerStepNoteCount[destinationStep] = sourceCount;
+  sequencerStepGatePercent[destinationStep] = sequencerStepGatePercent[sourceStep];
+  sequencerStepVelocity[destinationStep] = sequencerStepVelocity[sourceStep];
+  sequencerStepProbability[destinationStep] = sequencerStepProbability[sourceStep];
+}
+
+void restoreSelectedSequencerStepFromUndo() {
+  if (sequencerSelectedStep < 0) {
+    return;
+  }
+
+  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  for (byte i = 0; i < sequencerUndoNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
+    sequencerEditMidiNotes[i] = sequencerUndoMidiNotes[i];
+  }
+  sequencerEditNoteCount = sequencerUndoNoteCount;
+  saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+  sequencerStepGatePercent[sequencerSelectedStep] = sequencerUndoGatePercent;
+  sequencerStepVelocity[sequencerSelectedStep] = sequencerUndoVelocity;
+  sequencerStepProbability[sequencerSelectedStep] = sequencerUndoProbability;
+  sequencerLengthPercentDisplay = sequencerUndoGatePercent;
+  sequencerVelocityDisplay = sequencerUndoVelocity;
+  sequencerProbabilityDisplay = sequencerUndoProbability;
+  setSequencerDirtyState(true);
 }
 
 void toggleEditBufferNote(byte midiNote) {
@@ -1461,6 +1538,7 @@ void fillOverviewStepLine(byte stepIndex, char* lineOut, size_t lineOutSize) {
 
 void hideSequencerOverlay() {
   bool wasVisible = sequencerOverlayVisible;
+  sequencerCopySourceStep = -1;
   sequencerOverlayMode = SequencerOverlayMode::Hidden;
   sequencerOverlayUntil = 0;
   sequencerOverlayVisible = false;
@@ -1828,7 +1906,11 @@ void resetSequencerState() {
   }
   clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
   clearSequencerNoteBuffer(sequencerUndoMidiNotes, sequencerUndoNoteCount);
+  sequencerUndoGatePercent = 100;
+  sequencerUndoVelocity = SEQUENCER_DEFAULT_VELOCITY;
+  sequencerUndoProbability = SEQUENCER_DEFAULT_PROBABILITY;
   sequencerSelectedStep = -1;
+  sequencerCopySourceStep = -1;
   sequencerPlayingStep = -1;
   sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
   sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
@@ -2638,6 +2720,15 @@ void showSequencerStatusMessage(const char* lineOne, const char* lineTwo) {
   sequencerOverlayDirty = true;
 }
 
+void showSequencerPersistentStatusMessage(const char* lineOne, const char* lineTwo) {
+  snprintf(sequencerStatusLineOne, sizeof(sequencerStatusLineOne), "%s", lineOne);
+  snprintf(sequencerStatusLineTwo, sizeof(sequencerStatusLineTwo), "%s", lineTwo);
+  sequencerOverlayMode = SequencerOverlayMode::StatusMessage;
+  sequencerOverlayUntil = static_cast<uint64_t>(-1);
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
+}
+
 void setSequencerTransportState(byte newState, bool redrawMenu) {
   byte normalizedState = (newState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_PLAY : SEQUENCER_TRANSPORT_STOP;
   sequencerTransportState = normalizedState;
@@ -2868,6 +2959,10 @@ bool handleSequencerRotaryTurn(int8_t direction) {
     (void)direction;
     return true;
   }
+  if (sequencerOverlayMode == SequencerOverlayMode::CopyTargetSelect) {
+    (void)direction;
+    return true;
+  }
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
     (void)direction;
     return true;
@@ -2916,6 +3011,10 @@ bool handleSequencerRotaryTurn(int8_t direction) {
 
 bool handleSequencerEncoderClick() {
   if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
+    return true;
+  }
+  if (sequencerOverlayMode == SequencerOverlayMode::CopyTargetSelect) {
+    exitSequencerCopyTargetSelect(true);
     return true;
   }
   if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
@@ -3068,6 +3167,41 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     return;
   }
 
+  if (sequencerOverlayMode == SequencerOverlayMode::CopyTargetSelect) {
+    if (!pressed) {
+      return;
+    }
+
+    if (buttonIndex == SEQUENCER_FUNCTION_BUTTON_INDEX) {
+      exitSequencerCopyTargetSelect(true);
+      return;
+    }
+
+    int8_t destinationStep = buttonIndexToSequencerStep(buttonIndex);
+    if (destinationStep < 0 || sequencerCopySourceStep < 0) {
+      return;
+    }
+
+    byte sourceStep = static_cast<byte>(sequencerCopySourceStep);
+    byte targetStep = static_cast<byte>(destinationStep);
+    snapshotUndoBufferFromStep(targetStep);
+    copySequencerStepData(sourceStep, targetStep);
+    sequencerSelectedStep = destinationStep;
+    loadEditBufferFromStep(targetStep);
+    sequencerLengthPercentDisplay = sequencerStepGatePercent[targetStep];
+    sequencerVelocityDisplay = sequencerStepVelocity[targetStep];
+    sequencerProbabilityDisplay = sequencerStepProbability[targetStep];
+    sequencerExactLengthOriginal = sequencerLengthPercentDisplay;
+    sequencerExactVelocityOriginal = sequencerVelocityDisplay;
+    sequencerExactProbabilityOriginal = sequencerProbabilityDisplay;
+    setSequencerDirtyState(true);
+    exitSequencerCopyTargetSelect(false);
+    sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
+    sequencerOverlayVisible = false;
+    sequencerOverlayDirty = true;
+    return;
+  }
+
   if (!pressed) {
     if (buttonIndex == SEQUENCER_OVERVIEW_BUTTON_INDEX) {
       return;
@@ -3077,13 +3211,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     }
     if (buttonIndex == SEQUENCER_CONFIRM_BUTTON_INDEX) {
       if (sequencerSelectedStep >= 0 && sequencerConfirmHeld) {
-        clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
-        for (byte i = 0; i < sequencerUndoNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-          sequencerEditMidiNotes[i] = sequencerUndoMidiNotes[i];
-        }
-        sequencerEditNoteCount = sequencerUndoNoteCount;
-        saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
-        setSequencerDirtyState(true);
+        restoreSelectedSequencerStepFromUndo();
         sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
         sequencerOverlayDirty = true;
       }
@@ -3113,7 +3241,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
 
   if (buttonIndex == SEQUENCER_FUNCTION_BUTTON_INDEX) {
     if (sequencerSelectedStep < 0) {
-      showSequencerStatusMessage("Select step", "Then open tools");
+      showSequencerPersistentStatusMessage("Select step", "Then open tools");
       return;
     }
     enterSequencerFunctionPicker();
@@ -3267,8 +3395,8 @@ void drawSequencerOverlay() {
     u8g2.drawStr(4, 36, "A B C D E F G H");
     u8g2.drawStr(4, 50, "I J K L M N O P");
     u8g2.drawStr(4, 64, "Q R S T U V W X");
-    u8g2.drawStr(4, 78, "Y Z SPC - 1 2 3");
-    u8g2.drawStr(4, 96, "<-  CANCEL");
+    u8g2.drawStr(4, 78, "Y Z SPC - 1 2 3 4 5");
+    u8g2.drawStr(4, 96, "<- 6 7 8 9 0 CANCEL");
     u8g2.sendBuffer();
     return;
   }
@@ -3463,8 +3591,39 @@ void drawSequencerOverlay() {
       u8g2.drawStr(12, 60, noteLineTwo);
     }
     u8g2.drawStr(8, 80, "Len Vel Oct+ Oct-");
-    u8g2.drawStr(8, 92, "Prob Tie");
+    u8g2.drawStr(8, 92, "Prob Tie Copy");
     u8g2.drawStr(8, 104, "Cancel/Finished");
+    u8g2.sendBuffer();
+    return;
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::CopyTargetSelect &&
+      sequencerSelectedStep >= 0 &&
+      sequencerCopySourceStep >= 0) {
+    sequencerOverlayVisible = true;
+    sequencerOverlayDirty = false;
+
+    char headerLabel[20];
+    char infoLine[32];
+    char noteLineOne[24];
+    char noteLineTwo[24];
+    snprintf(headerLabel, sizeof(headerLabel), "Copy #%02d", sequencerCopySourceStep + 1);
+    snprintf(infoLine, sizeof(infoLine), "L %u%% V %u P %u%%",
+             static_cast<unsigned>(sequencerStepGatePercent[sequencerCopySourceStep]),
+             static_cast<unsigned>(sequencerStepVelocity[sequencerCopySourceStep]),
+             static_cast<unsigned>(sequencerStepProbability[sequencerCopySourceStep]));
+    fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
+
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(20, 14, headerLabel);
+    u8g2.drawStr(2, 30, infoLine);
+    u8g2.drawStr(12, 48, noteLineOne);
+    if (noteLineTwo[0] != '\0') {
+      u8g2.drawStr(12, 60, noteLineTwo);
+    }
+    u8g2.drawStr(8, 88, "Tap target step");
+    u8g2.drawStr(8, 100, "Tools/enc = exit");
     u8g2.sendBuffer();
     return;
   }
@@ -3622,6 +3781,10 @@ void drawSequencerOverlay() {
 }
 
 void applySequencerLedOverrides() {
+  bool toolsPromptActive = (sequencerOverlayMode == SequencerOverlayMode::StatusMessage &&
+                            strcmp(sequencerStatusLineOne, "Select step") == 0 &&
+                            strcmp(sequencerStatusLineTwo, "Then open tools") == 0);
+
   if (isUsbBackupActive()) {
     uint16_t ledCount = strip.numPixels();
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
@@ -3700,7 +3863,8 @@ void applySequencerLedOverrides() {
   strip.setPixelColor(SEQUENCER_CONFIRM_BUTTON_INDEX, getSequencerConfirmLedColor());
   strip.setPixelColor(
     SEQUENCER_FUNCTION_BUTTON_INDEX,
-    getSequencerUtilityLedColor(sequencerOverlayMode == SequencerOverlayMode::FunctionPicker));
+    getSequencerUtilityLedColor(sequencerOverlayMode == SequencerOverlayMode::FunctionPicker ||
+                                toolsPromptActive));
 
   byte activeStepCount = sequencerActiveStepCount();
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {

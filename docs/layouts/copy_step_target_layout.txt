@@ -1,0 +1,29 @@
+SEQUENCER COPY STEP TARGET SCREEN
+
+This screen appears after choosing Copy from the step tools picker.
+
+Purpose:
+
+- let the user choose a destination step for a full single-step copy
+
+Current OLED layout:
+
+  Copy #13
+  L 150% V 96 P 75%
+  C3 E3 G3
+  Tap target step
+  Tools/enc = exit
+
+Current behavior:
+
+- the screen shows the source step number and its current step data
+- tapping a step pad copies the source step's notes, length, velocity, and
+  probability into that destination step
+- the destination step becomes the selected step after the copy
+- the destination step then returns to the normal edit overlay
+- pressing the tools button exits back to the tools picker without copying
+- pressing the encoder also exits back to the tools picker without copying
+
+Display behavior:
+
+- this overlay keeps the display awake while it is open

@@ -25,7 +25,9 @@ Main Controls
 - Overview stays lit white while idle and becomes brighter white while the
   overview is open.
 - Blue action key: the far-right key on the second row does undo on short
-  press and clears the selected step on a 1-second hold.
+  press and restores the selected step to the state it had when selected,
+  including notes, length, velocity, and probability; it clears the selected
+  step on a 1-second hold.
 - Tools: the last button on the third row opens a step-tools picker for the
   selected step.
 - Tools stays lit white while idle and becomes brighter white while the tools
@@ -51,7 +53,7 @@ Step Tools Picker
 - The tools screen shows the selected step number, a compact
   `L ...% V ... P ...%` line, and the current notes.
 - Current tool choices are:
-  Len, Vel, Oct+, Oct-, Prob, Tie
+  Len, Vel, Oct+, Oct-, Prob, Tie, Copy
 - The tools screen also shows:
   Cancel/Finished
 - Len opens exact length entry for the selected step.
@@ -60,6 +62,8 @@ Step Tools Picker
 - Vel opens exact velocity entry for the selected step.
 - Prob opens exact probability entry for the selected step.
 - Tie is still a placeholder entry for now.
+- Copy opens target-step selection and copies the source step's notes, length,
+  velocity, and probability into the tapped destination step.
 - Cancel/Finished closes the picker when you are done.
 
 Step Velocity
@@ -210,13 +214,14 @@ When naming a file or folder, the board shows this entry layout:
   A B C D E F G H
   I J K L M N O P
   Q R S T U V W X
-  Y Z SPC - 1 2 3
-  <- CANCEL
+  Y Z SPC - 1 2 3 4 5
+  <- 6 7 8 9 0 CANCEL
 
 - Press keys to enter characters.
 - SPC adds a space.
 - <- deletes the previous character.
 - CANCEL exits naming without saving.
+- digits 0-9 are available directly on the bottom two rows.
 - Press the encoder to save the name.
 - the physical CANCEL key is placed lower on the board to reduce accidental exits
 

@@ -57,7 +57,7 @@ The second-row last button shall act as the blue action key.
 
 Details:
 - A short press shall undo the currently selected step back to the state it had
-  when selected.
+  when selected, including notes, length, velocity, and probability.
 - A hold of about 1 second shall clear the selected step.
 
 
@@ -150,7 +150,7 @@ Priority: High
 
 Requirement:
 The step tools picker shall provide the tools Len, Vel, Oct+, Oct-, Prob, Tie,
-and Cancel/Finished.
+Copy, and Cancel/Finished.
 
 Details:
 - Len opens exact length entry.
@@ -159,6 +159,8 @@ Details:
 - Oct+ transposes the selected step up one octave.
 - Oct- transposes the selected step down one octave.
 - Tie is a placeholder for future tie behavior.
+- Copy opens destination-step selection and copies notes, length, velocity, and
+  probability into the chosen destination step.
 - Cancel/Finished exits the tools picker.
 - Oct+ and Oct- shall leave the tools picker open after they apply.
 - If Oct+ or Oct- is chosen on an empty step, the step shall remain unchanged.

@@ -148,7 +148,7 @@ Priority: Medium
 
 Requirement:
 Naming mode shall support uppercase letters plus SPC, hyphen, and the digits
-1, 2, and 3.
+0 through 9.
 
 
 ID: SEQ-FILE-013
