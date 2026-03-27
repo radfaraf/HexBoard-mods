@@ -3581,6 +3581,8 @@ void drawSequencerOverlay() {
   int hintLineOneY = (stepLabel[0] != '\0') ? 54 : 40;
   int hintLineTwoY = (stepLabel[0] != '\0') ? 68 : 54;
   int hintLineTwoX = 8;
+  int noteLineOneX = 12;
+  int noteLineTwoX = 12;
   int noteLineOneY = (stepLabel[0] != '\0') ? 96 : 88;
   int noteLineTwoY = (stepLabel[0] != '\0') ? 112 : 104;
 
@@ -3596,6 +3598,7 @@ void drawSequencerOverlay() {
     hintLineOneY = 52;
     hintLineTwoY = 74;
     hintLineTwoX = 2;
+    noteLineOneX = 2;
     noteLineOneY = 88;
   } else if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage) {
     headerY = 18;
@@ -3613,10 +3616,10 @@ void drawSequencerOverlay() {
     u8g2.drawStr(hintLineTwoX, hintLineTwoY, hintLineTwo);
   }
   if (noteLineOne[0] != '\0') {
-    u8g2.drawStr(12, noteLineOneY, noteLineOne);
+    u8g2.drawStr(noteLineOneX, noteLineOneY, noteLineOne);
   }
   if (noteLineTwo[0] != '\0') {
-    u8g2.drawStr(12, noteLineTwoY, noteLineTwo);
+    u8g2.drawStr(noteLineTwoX, noteLineTwoY, noteLineTwo);
   }
   u8g2.sendBuffer();
 }
