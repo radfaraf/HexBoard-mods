@@ -3558,8 +3558,11 @@ void drawSequencerOverlay() {
     fillOverlayNoteLines(noteLineOne, sizeof(noteLineOne), noteLineTwo, sizeof(noteLineTwo));
   } else if (sequencerOverlayMode == SequencerOverlayMode::StepCleared) {
     snprintf(headerLabel, sizeof(headerLabel), "Erased #%02d", sequencerSelectedStep + 1);
-    snprintf(hintLineOne, sizeof(hintLineOne), "Press blue key");
-    snprintf(hintLineTwo, sizeof(hintLineTwo), "to undo");
+    snprintf(stepLabel, sizeof(stepLabel), "Press blue key");
+    snprintf(hintLineOne, sizeof(hintLineOne), "to undo.");
+    snprintf(hintLineTwo, sizeof(hintLineTwo), "Press blinking");
+    snprintf(noteLineOne, sizeof(noteLineOne), "key to exit.");
+    noteLineTwo[0] = '\0';
   } else if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage) {
     snprintf(headerLabel, sizeof(headerLabel), "%s", sequencerStatusLineOne);
     snprintf(hintLineOne, sizeof(hintLineOne), "%s", sequencerStatusLineTwo);
@@ -3574,8 +3577,10 @@ void drawSequencerOverlay() {
   u8g2.setFont(u8g2_font_6x13_tf);
   int headerY = 18;
   int stepLabelY = 36;
+  int stepLabelX = 36;
   int hintLineOneY = (stepLabel[0] != '\0') ? 54 : 40;
   int hintLineTwoY = (stepLabel[0] != '\0') ? 68 : 54;
+  int hintLineTwoX = 8;
   int noteLineOneY = (stepLabel[0] != '\0') ? 96 : 88;
   int noteLineTwoY = (stepLabel[0] != '\0') ? 112 : 104;
 
@@ -3586,8 +3591,12 @@ void drawSequencerOverlay() {
     noteLineTwoY = 60;
   } else if (sequencerOverlayMode == SequencerOverlayMode::StepCleared) {
     headerY = 18;
-    hintLineOneY = 40;
-    hintLineTwoY = 56;
+    stepLabelY = 38;
+    stepLabelX = 2;
+    hintLineOneY = 52;
+    hintLineTwoY = 74;
+    hintLineTwoX = 2;
+    noteLineOneY = 88;
   } else if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage) {
     headerY = 18;
     hintLineOneY = 42;
@@ -3595,13 +3604,13 @@ void drawSequencerOverlay() {
 
   u8g2.drawStr(20, headerY, headerLabel);
   if (stepLabel[0] != '\0') {
-    u8g2.drawStr(36, stepLabelY, stepLabel);
+    u8g2.drawStr(stepLabelX, stepLabelY, stepLabel);
   }
   if (hintLineOne[0] != '\0') {
     u8g2.drawStr(2, hintLineOneY, hintLineOne);
   }
   if (hintLineTwo[0] != '\0') {
-    u8g2.drawStr(8, hintLineTwoY, hintLineTwo);
+    u8g2.drawStr(hintLineTwoX, hintLineTwoY, hintLineTwo);
   }
   if (noteLineOne[0] != '\0') {
     u8g2.drawStr(12, noteLineOneY, noteLineOne);
