@@ -192,7 +192,7 @@ The performance monitor shows:
 
 8.2 Tempo
 
-Tempo is set in the Sequencer menu. The sequencer treats each step as a
+Tempo is set in Playback Settings. The sequencer treats each step as a
 16th-note step at the current BPM.
 
 8.3 Steps
@@ -363,18 +363,22 @@ behavior.
 Main Sequencer menu:
 
 - Keyboard
+- Playback Settings
 - Synth Options
 - File Management
 - Save
 - Save New
 - Load
 - Revert
+- Tap Preview
+- Update Firmware
+
+Playback Settings submenu:
+
 - Steps
 - Direction
 - Tempo
-- Tap Preview
 - Play Type
-- Update Firmware
 
 File Management submenu:
 
@@ -672,7 +676,8 @@ The current save file stores:
 4. Turn the encoder while the step is selected to set note length quickly.
 5. Repeat for other steps.
 6. Press the top-right key to start playback.
-7. Adjust Tempo, Steps, Direction, Tap Preview, or Play Type as needed.
+7. Adjust Tempo, Steps, Direction, or Play Type from Playback Settings, and
+   Tap Preview from the main Sequencer menu, as needed.
 8. Choose Save or Save New to store the sequence.
 
 

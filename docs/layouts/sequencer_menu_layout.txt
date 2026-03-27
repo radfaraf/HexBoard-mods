@@ -9,18 +9,22 @@ Title examples:
 Menu order:
 
   Keyboard
+  Playback Settings
   Synth Options
   File Management
   Save
   Save New
   Load
   Revert
+  Tap Preview
+  Update Firmware
+
+Playback Settings submenu:
+
   Steps
   Direction
   Tempo
-  Tap Preview
   Play Type
-  Update Firmware
 
 Notes:
 

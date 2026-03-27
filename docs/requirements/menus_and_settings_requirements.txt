@@ -12,17 +12,14 @@ and settings.
 
 Details:
 - Keyboard
+- Playback Settings
 - Synth Options
 - File Management
 - Save
 - Save New
 - Load
 - Revert
-- Steps
-- Direction
-- Tempo
 - Tap Preview
-- Play Type
 - Update Firmware
 
 
@@ -66,6 +63,23 @@ Sequencer menu.
 
 
 ID: SEQ-MENU-005
+Title: Playback Settings Submenu
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Sequencer menu shall provide a Playback Settings submenu for playback
+configuration items.
+
+Details:
+- Steps
+- Direction
+- Tempo
+- Play Type
+
+
+ID: SEQ-MENU-006
 Title: Steps Setting
 Status: Active
 Area: Menus
@@ -75,7 +89,7 @@ Requirement:
 The Steps menu item shall set the active playback step count.
 
 
-ID: SEQ-MENU-006
+ID: SEQ-MENU-007
 Title: Direction Setting
 Status: Active
 Area: Menus
@@ -85,7 +99,7 @@ Requirement:
 The Direction menu item shall set the current playback direction mode.
 
 
-ID: SEQ-MENU-007
+ID: SEQ-MENU-008
 Title: Tempo Setting
 Status: Active
 Area: Menus
@@ -95,7 +109,7 @@ Requirement:
 The Tempo menu item shall set the current BPM used by the sequencer step clock.
 
 
-ID: SEQ-MENU-008
+ID: SEQ-MENU-009
 Title: Tap Preview Setting
 Status: Active
 Area: Menus
@@ -106,7 +120,7 @@ The Tap Preview menu item shall control whether selecting a step also previews
 its stored notes.
 
 
-ID: SEQ-MENU-009
+ID: SEQ-MENU-010
 Title: Play Type Setting
 Status: Active
 Area: Menus
@@ -117,7 +131,7 @@ The Play Type menu item shall switch between MIDI playback and onboard synth
 playback.
 
 
-ID: SEQ-MENU-010
+ID: SEQ-MENU-011
 Title: Shared Menu Navigation Buttons
 Status: Active
 Area: Menus

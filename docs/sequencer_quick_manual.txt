@@ -105,7 +105,7 @@ Exact length screen:
 
 Playback
 
-- Tempo is the step clock.
+- Tempo is in Playback Settings and is the step clock.
 - Each step is a 16th note at the current tempo.
 - Hold Play/Stop for 2 seconds to show the performance monitor while held.
 - Steps sets the active playback range from 1 to 32.
@@ -125,14 +125,12 @@ Menu Items
 - Save New: saves as a new file in the selected folder.
 - Load: loads a saved sequence.
 - Revert: reloads the last saved version of the current sequence.
+- Playback Settings:
+  Steps, Direction, Tempo, Play Type
 - File Management:
   Rename File, Rename Folder, Create Folder, Delete File, Delete Folder,
   USB Backup
-- Steps: active playback length
-- Direction: playback order
-- Tempo: BPM
 - Tap Preview: audition step contents when a step is tapped
-- Play Type: MIDI or onboard synth
 - Synth Options: opens the shared synth settings page
 - Update Firmware: reboots to the firmware update bootloader
 

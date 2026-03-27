@@ -15,6 +15,7 @@ extern GEMPage menuPageSynthSequencer;
 extern GEMPage menuPageSequencer;
 extern GEMPage menuPageSequencerBrowser;
 extern GEMPage menuPageSequencerFiles;
+extern GEMPage menuPageSequencerPlayback;
 extern GEMPage menuPageSequencerUsbBackup;
 extern GEMPage menuPageSequencerUsbBackupExitConfirm;
 extern GEMPage menuPageSequencerUsbBackupStopConfirm;
@@ -2713,6 +2714,7 @@ SelectOptionByte optionByteSequencerDirection[] = {
 GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof(SelectOptionByte), optionByteSequencerDirection);
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
+GEMItem menuGotoSequencerPlayback("Playback Settings", menuPageSequencerPlayback);
 GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
 GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
 GEMItem menuGotoSequencerUsbBackup("USB Backup", menuPageSequencerUsbBackup);
@@ -2944,6 +2946,7 @@ bool handleSequencerEncoderClick() {
 
 GEMPage menuPageSequencer("Sequencer");
 GEMPage menuPageSequencerFiles("File Management", menuPageSequencer);
+GEMPage menuPageSequencerPlayback("Playback Settings", menuPageSequencer);
 GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
 GEMPage menuPageSequencerUsbBackup("USB Backup", menuPageSequencerFiles);
 GEMPage menuPageSequencerUsbBackupExitConfirm("Leave Backup?", menuPageSequencerUsbBackup);
@@ -3170,18 +3173,20 @@ void setupSequencerMenu() {
   }
 
   menuPageSequencer.addMenuItem(menuItemEnterKeyboard);
+  menuPageSequencer.addMenuItem(menuGotoSequencerPlayback);
   menuPageSequencer.addMenuItem(menuGotoSynthFromSequencer);
   menuPageSequencer.addMenuItem(menuGotoSequencerFiles);
   menuPageSequencer.addMenuItem(menuItemSequencerSave);
   menuPageSequencer.addMenuItem(menuItemSequencerSaveNew);
   menuPageSequencer.addMenuItem(menuItemSequencerLoad);
   menuPageSequencer.addMenuItem(menuItemSequencerRevert);
-  menuPageSequencer.addMenuItem(menuItemSequencerStepPlayCount);
-  menuPageSequencer.addMenuItem(menuItemSequencerDirection);
-  menuPageSequencer.addMenuItem(menuItemSequencerTempo);
   menuPageSequencer.addMenuItem(menuItemSequencerTapPreview);
-  menuPageSequencer.addMenuItem(menuItemSequencerPlayType);
   menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
+
+  menuPageSequencerPlayback.addMenuItem(menuItemSequencerStepPlayCount);
+  menuPageSequencerPlayback.addMenuItem(menuItemSequencerDirection);
+  menuPageSequencerPlayback.addMenuItem(menuItemSequencerTempo);
+  menuPageSequencerPlayback.addMenuItem(menuItemSequencerPlayType);
 
   menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFile);
   menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFolder);
