@@ -7,16 +7,29 @@ extern int sequencerConfirmHue;
 extern byte sequencerConfirmSaturation;
 extern byte sequencerConfirmValue;
 
-bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote);
+struct SequencerTunedNoteHandle {
+  bool active = false;
+  bool useSynth = false;
+  bool releaseMidiChannel = false;
+  int16_t pitchSteps = 0;
+  byte midiNote = 0;
+  byte midiChannel = 0;
+  int16_t synthSlot = -1;
+};
+
+bool getButtonPitchStepsForSequencer(byte buttonIndex, int16_t& pitchSteps);
 bool isBoardButtonPressed(byte buttonIndex);
-bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut);
-bool getBoardSelectedLedColorForMidiNote(byte midiNote, uint32_t& colorOut);
+bool getBoardLedColorForPitchSteps(int16_t pitchSteps, bool highlighted, uint32_t& colorOut);
+bool getBoardSelectedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut);
+byte getSequencerTuningCycleLength();
+int getSequencerCurrentTranspose();
+void formatBoardPitchStepsForSequencer(int16_t pitchSteps, char* out, size_t outSize);
 uint32_t getSequencerTransportLedColor(bool running);
 uint32_t getSequencerConfirmLedColor();
 uint32_t getSequencerUtilityLedColor(bool highlighted);
 uint32_t getSequencerUnsetStepLedColor(bool highlighted);
-void sendBoardPreviewMidiNote(byte midiNote, bool noteOn, byte velocity);
-void sendBoardPreviewSynthNote(byte midiNote, bool noteOn, byte velocity);
+bool startSequencerTunedNote(int16_t pitchSteps, bool useSynth, byte velocity, SequencerTunedNoteHandle& handle);
+void stopSequencerTunedNote(SequencerTunedNoteHandle& handle);
 void enterKeyboardMode();
 
 extern GEMPage menuPageSequencer;

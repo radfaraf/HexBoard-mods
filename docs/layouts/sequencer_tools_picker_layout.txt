@@ -33,11 +33,12 @@ Current behavior:
 - Len opens the exact length screen for the selected step
 - Vel opens the exact velocity screen for the selected step
 - Prob opens the exact probability screen for the selected step
-- Oct+ transposes the selected step up 1 octave and stays in the picker
-- Oct- transposes the selected step down 1 octave and stays in the picker
+- Oct+ transposes the selected step up 1 current tuning cycle and stays in the picker
+- Oct- transposes the selected step down 1 current tuning cycle and stays in the picker
 - Tie currently shows a placeholder status message
 - Copy opens destination-step selection and copies notes, length, velocity,
   and probability into the tapped destination step
+- Step note labels follow the current tuning naming style.
 
 LED behavior while the picker is open:
 

@@ -49,6 +49,10 @@ Priority: High
 Requirement:
 Each step shall store up to 4 notes.
 
+Details:
+- Stored notes shall use tuning-relative pitch-step values instead of raw MIDI
+  note numbers.
+
 
 ID: SEQ-CORE-005
 Title: Per-Step Length Storage

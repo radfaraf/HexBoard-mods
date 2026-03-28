@@ -14,6 +14,7 @@ split, so you can return to the normal board behavior at any time.
 - Step count available: 32 steps
 - Active playback length: 1 to 32 steps
 - Notes per step: up to 4
+- Note storage format: tuning-relative pitch steps
 - Length per step: stored per step
 - Velocity per step: stored per step
 - Probability per step: stored per step
@@ -101,10 +102,15 @@ With a step selected:
 - pressing the same note again removes it from the step
 - this step-edit workflow does not drive the `Now Playing` overlay
 
+Sequencer note entry uses the current Keyboard tuning and transpose rather than
+storing raw MIDI note numbers.
+
 6.2 Chords
 
 - Each step can hold up to 4 notes.
 - Notes are displayed in ascending order.
+- In 12 EDO, note labels use normal note names like `C3`.
+- In other tunings, note labels use `step.octave` labels like `7.4`.
 - Playback sends all notes in the step together.
 - Sequencer playback itself does not drive the `Now Playing` overlay.
 
@@ -233,6 +239,10 @@ Play Type controls where the sequencer sends notes:
 
 OB Synth uses the shared synth settings available from Synth Options.
 
+Sequencer playback resolves stored step pitches through the current Keyboard
+tuning and transpose at playback time, so the same saved pattern can follow
+different tunings later without changing the file format again.
+
 
 10. Undo, Clear, And Step Tools
 
@@ -276,9 +286,9 @@ Current behavior:
 - Len: opens exact length entry for the selected step
 - Vel: opens exact velocity entry for the selected step
 - Prob: opens exact probability entry for the selected step
-- Oct+: transposes all notes in the selected step up 12 semitones and stays in
+- Oct+: transposes all notes in the selected step up 1 current tuning cycle and stays in
   the picker so you can apply another tool immediately
-- Oct-: transposes all notes in the selected step down 12 semitones and stays
+- Oct-: transposes all notes in the selected step down 1 current tuning cycle and stays
   in the picker so you can apply another tool immediately
 - Tie: placeholder for future tie behavior
 - Copy: opens destination selection, then copies notes, length, velocity, and
@@ -662,10 +672,12 @@ The current save file stores:
 - tap preview state
 - play type
 - direction
-- the notes in each step
+- the tuning-relative pitch-step values in each step
 - the gate/length value for each step
 - the velocity value for each step
 - the probability value for each step
+
+Current sequence files are saved as `version=2` with `noteFormat=stepsFromC`.
 
 
 20. Current Limits

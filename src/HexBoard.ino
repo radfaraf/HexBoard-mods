@@ -183,6 +183,7 @@ byte mpeLowestChannel = 2;
 byte mpeHighestChannel = 16;
 bool mpeLowPriorityMode = false;
 byte ledRestBrightness = 255;
+extern const char* chromaticNames[12];
 byte ledDimBrightness = 255;
 
 void clampMPEChannelRange() {
@@ -1541,6 +1542,7 @@ void setupGrid() {
 
 constexpr byte BOARD_PREVIEW_SYNTH_SLOT_START = 141;
 constexpr int16_t BOARD_PREVIEW_SYNTH_SLOT_NONE = -1;
+constexpr byte BOARD_PREVIEW_SYNTH_CUSTOM_SENTINEL = 254;
 int16_t boardPreviewSynthSlotForMidi[128];
 byte boardPreviewSynthMidiForSlot[BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START];
 byte boardPreviewSynthVelocityForSlot[BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START];
@@ -1588,7 +1590,27 @@ void releaseBoardPreviewSynthSlot(byte midiNote) {
   boardPreviewSynthSlotForMidi[midiNote] = BOARD_PREVIEW_SYNTH_SLOT_NONE;
 }
 
-bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote) {
+int16_t allocateBoardPreviewSynthCustomSlot() {
+  for (byte i = 0; i < (BTN_COUNT - BOARD_PREVIEW_SYNTH_SLOT_START); i++) {
+    if (boardPreviewSynthMidiForSlot[i] != UNUSED_NOTE) {
+      continue;
+    }
+    int16_t slot = static_cast<int16_t>(BOARD_PREVIEW_SYNTH_SLOT_START + i);
+    boardPreviewSynthMidiForSlot[i] = BOARD_PREVIEW_SYNTH_CUSTOM_SENTINEL;
+    return slot;
+  }
+  return BOARD_PREVIEW_SYNTH_SLOT_NONE;
+}
+
+void releaseBoardPreviewSynthCustomSlot(int16_t slot) {
+  if (slot < BOARD_PREVIEW_SYNTH_SLOT_START || slot >= BTN_COUNT) {
+    return;
+  }
+  boardPreviewSynthMidiForSlot[slot - BOARD_PREVIEW_SYNTH_SLOT_START] = UNUSED_NOTE;
+  boardPreviewSynthVelocityForSlot[slot - BOARD_PREVIEW_SYNTH_SLOT_START] = 127;
+}
+
+bool getButtonPitchStepsForSequencer(byte buttonIndex, int16_t& pitchSteps) {
   if (buttonIndex >= LED_COUNT) {
     return false;
   }
@@ -1596,10 +1618,10 @@ bool getButtonMidiNoteForSequencer(byte buttonIndex, byte& midiNote) {
   if (row < 4 || row > 13) {
     return false;
   }
-  if (h[buttonIndex].isCmd || h[buttonIndex].note == UNUSED_NOTE) {
+  if (h[buttonIndex].isCmd || h[buttonIndex].note == UNUSED_NOTE || h[buttonIndex].frequency <= 0.0f) {
     return false;
   }
-  midiNote = h[buttonIndex].note;
+  pitchSteps = h[buttonIndex].stepsFromC;
   return true;
 }
 
@@ -1610,9 +1632,9 @@ bool isBoardButtonPressed(byte buttonIndex) {
   return h[buttonIndex].btnState == BTN_STATE_NEWPRESS || h[buttonIndex].btnState == BTN_STATE_HELD;
 }
 
-bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colorOut) {
+bool getBoardLedColorForPitchSteps(int16_t pitchSteps, bool highlighted, uint32_t& colorOut) {
   for (byte i = 0; i < LED_COUNT; i++) {
-    if (h[i].isCmd || h[i].note != midiNote) {
+    if (h[i].isCmd || h[i].stepsFromC != pitchSteps) {
       continue;
     }
 
@@ -1630,15 +1652,43 @@ bool getBoardLedColorForMidiNote(byte midiNote, bool highlighted, uint32_t& colo
   return false;
 }
 
-bool getBoardSelectedLedColorForMidiNote(byte midiNote, uint32_t& colorOut) {
+bool getBoardSelectedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut) {
   for (byte i = 0; i < LED_COUNT; i++) {
-    if (h[i].isCmd || h[i].note != midiNote) {
+    if (h[i].isCmd || h[i].stepsFromC != pitchSteps) {
       continue;
     }
     colorOut = h[i].LEDcodeSelected;
     return true;
   }
   return false;
+}
+
+byte getSequencerTuningCycleLength() {
+  return (current.tuning().cycleLength > 0) ? current.tuning().cycleLength : 12;
+}
+
+int getSequencerCurrentTranspose() {
+  return current.transpose;
+}
+
+void formatBoardPitchStepsForSequencer(int16_t pitchSteps, char* out, size_t outSize) {
+  if (out == nullptr || outSize == 0) {
+    return;
+  }
+
+  int displayedPitch = static_cast<int>(pitchSteps) + current.transpose;
+  if (current.tuningIndex == TUNING_12EDO) {
+    int midiNote = displayedPitch + 60;
+    const char* label = chromaticNames[positiveMod(midiNote, 12)];
+    int octave = (midiNote / 12) - 1;
+    snprintf(out, outSize, "%s%d", label, octave);
+    return;
+  }
+
+  int cycleLength = static_cast<int>(getSequencerTuningCycleLength());
+  int step = positiveMod(displayedPitch, cycleLength);
+  int octave = ((displayedPitch - step) / cycleLength) + 4;
+  snprintf(out, outSize, "%d.%d", step, octave);
 }
 
 uint32_t getSequencerTransportLedColor(bool running) {
@@ -2374,6 +2424,152 @@ void sendBoardPreviewSynthNote(byte midiNote, bool noteOn, byte velocity) {
     h[slot].frequency = 0.0f;
     releaseBoardPreviewSynthSlot(midiNote);
   }
+}
+
+float sequencerPitchStepsToMidi(int16_t pitchSteps) {
+  int32_t relativeSteps = current.pitchRelToA4(pitchSteps);
+  return freqToMIDI(CONCERT_A_HZ) + ((static_cast<float>(relativeSteps) * current.tuning().stepSize) / 100.0f);
+}
+
+bool resolveSequencerPitchToMidi(
+  int16_t pitchSteps,
+  byte& noteOut,
+  byte& channelOut,
+  int16_t& bendOut,
+  bool& releaseChannelOnStop) {
+  releaseChannelOnStop = false;
+  bendOut = 0;
+
+  int32_t relativeSteps = current.pitchRelToA4(pitchSteps);
+  float midiPitch = sequencerPitchStepsToMidi(pitchSteps);
+
+  if (standardMidiMicrotonalActive) {
+    int32_t midiIndex = relativeSteps + 69;
+    mapExtendedMidiNote(midiIndex, standardMidiBaseChannel, noteOut, channelOut);
+    return true;
+  }
+
+  if (midiPitch < 0.0f || midiPitch >= 128.0f) {
+    return false;
+  }
+
+  noteOut = static_cast<byte>((midiPitch >= 127.0f) ? 127 : roundf(midiPitch));
+
+  if (MPEpitchBendsNeeded == 1) {
+    channelOut = (defaultMidiChannel >= 1 && defaultMidiChannel <= 16) ? defaultMidiChannel : 1;
+    return true;
+  }
+
+  uint8_t availableChannels = mpePlayableChannelCount();
+  if (availableChannels == 0) {
+    return false;
+  }
+
+  if (mpeChannelQueueActive) {
+    channelOut = takeMPEChannel();
+    if (!channelOut) {
+      return false;
+    }
+    releaseChannelOnStop = true;
+  } else {
+    channelOut = static_cast<byte>(mpeLowestChannel + positiveMod(static_cast<int>(pitchSteps), availableChannels));
+  }
+
+  int32_t bendValue = static_cast<int32_t>(ldexp(midiPitch - static_cast<float>(noteOut), 13) / MPEpitchBendSemis);
+  if (bendValue > 8191) {
+    bendValue = 8191;
+  } else if (bendValue < -8192) {
+    bendValue = -8192;
+  }
+  bendOut = static_cast<int16_t>(bendValue);
+  return true;
+}
+
+bool startSequencerTunedNote(int16_t pitchSteps, bool useSynth, byte velocity, SequencerTunedNoteHandle& handle) {
+  handle = SequencerTunedNoteHandle{};
+  handle.pitchSteps = pitchSteps;
+  handle.useSynth = useSynth;
+
+  byte safeVelocity = (velocity == 0) ? 1 : velocity;
+  float midiPitch = sequencerPitchStepsToMidi(pitchSteps);
+
+  if (useSynth) {
+    int16_t slot = allocateBoardPreviewSynthCustomSlot();
+    if (slot < BOARD_PREVIEW_SYNTH_SLOT_START || slot >= BTN_COUNT) {
+      return false;
+    }
+
+    byte displayNote = 0;
+    if (midiPitch >= 127.0f) {
+      displayNote = 127;
+    } else if (midiPitch > 0.0f) {
+      displayNote = static_cast<byte>(roundf(midiPitch));
+    }
+
+    boardPreviewSynthVelocityForSlot[slot - BOARD_PREVIEW_SYNTH_SLOT_START] = safeVelocity;
+    h[slot].note = displayNote;
+    h[slot].frequency = MIDItoFreq(midiPitch);
+    h[slot].MIDIch = 1;
+    h[slot].mappedMidiChannel = defaultMidiChannel;
+    h[slot].jiRetune = 0;
+    h[slot].jiFrequencyMultiplier = 1.0f;
+    trySynthNoteOn(static_cast<byte>(slot));
+
+    handle.active = true;
+    handle.synthSlot = slot;
+    return true;
+  }
+
+  byte midiNote = 0;
+  byte midiChannel = 0;
+  int16_t bendValue = 0;
+  bool releaseChannelOnStop = false;
+  if (!resolveSequencerPitchToMidi(pitchSteps, midiNote, midiChannel, bendValue, releaseChannelOnStop)) {
+    return false;
+  }
+
+  if (MPEpitchBendsNeeded != 1) {
+    withMIDI([&](auto& M) { M.sendPitchBend(bendValue, midiChannel); });
+    if (extraMPE) {
+      withMIDI([&](auto& M) {
+        M.sendAfterTouch(velWheel.curValue, midiChannel);
+        M.sendControlChange(74, CC74value, midiChannel);
+      });
+    }
+  }
+
+  withMIDI([&](auto& M) { M.sendNoteOn(midiNote, safeVelocity, midiChannel); });
+  handle.active = true;
+  handle.releaseMidiChannel = releaseChannelOnStop;
+  handle.midiNote = midiNote;
+  handle.midiChannel = midiChannel;
+  return true;
+}
+
+void stopSequencerTunedNote(SequencerTunedNoteHandle& handle) {
+  if (!handle.active) {
+    return;
+  }
+
+  if (handle.useSynth) {
+    if (handle.synthSlot >= BOARD_PREVIEW_SYNTH_SLOT_START && handle.synthSlot < BTN_COUNT) {
+      trySynthNoteOff(static_cast<byte>(handle.synthSlot));
+      releaseBoardPreviewSynthCustomSlot(handle.synthSlot);
+    }
+  } else if (handle.midiChannel >= 1 && handle.midiChannel <= 16) {
+    withMIDI([&](auto& M) { M.sendNoteOff(handle.midiNote, 0, handle.midiChannel); });
+    if (handle.releaseMidiChannel) {
+      if (extraMPE) {
+        withMIDI([&](auto& M) {
+          M.sendAfterTouch(0, handle.midiChannel);
+          M.sendControlChange(74, CC74value, handle.midiChannel);
+        });
+      }
+      releaseMPEChannel(handle.midiChannel);
+    }
+  }
+
+  handle = SequencerTunedNoteHandle{};
 }
 
 void setPitchBendRange(byte Ch, byte semitones) {

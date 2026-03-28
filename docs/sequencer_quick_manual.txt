@@ -4,7 +4,7 @@ QUICK MANUAL
 Overview
 
 Sequencer mode is a separate mode from Keyboard mode. It is a single-track,
-32-step sequencer. Each step can hold up to 4 notes, its own note length,
+32-step sequencer. Each step can hold up to 4 tuning-aware notes, its own note length,
 its own velocity, its own probability, and can play through MIDI or the
 onboard synth.
 
@@ -45,6 +45,8 @@ Step Editing
 - The edit screen shows a compact info line for the selected step:
   `L ...% V ... P ...%`, then the notes.
 - Step notes are kept sorted from lowest to highest.
+- In 12 EDO, note labels use normal note names like `C3`.
+- In other tunings, note labels use `step.octave` style labels like `7.4`.
 - Tap Preview can make a tapped step audition its stored notes when selected.
 
 Step Tools Picker
@@ -57,8 +59,8 @@ Step Tools Picker
 - The tools screen also shows:
   Cancel/Finished
 - Len opens exact length entry for the selected step.
-- Oct+ transposes the selected step up 1 octave and stays in the tools screen.
-- Oct- transposes the selected step down 1 octave and stays in the tools screen.
+- Oct+ transposes the selected step up 1 tuning cycle and stays in the tools screen.
+- Oct- transposes the selected step down 1 tuning cycle and stays in the tools screen.
 - Vel opens exact velocity entry for the selected step.
 - Prob opens exact probability entry for the selected step.
 - Tie is still a placeholder entry for now.
@@ -119,6 +121,8 @@ Playback
   Forward, Backward, Ping-Pong, Random, Brownian, Drunk
 - Play Type chooses:
   MIDI or OB Synth
+- Sequencer note entry, preview, and playback follow the current Keyboard
+  tuning and transpose.
 
 Menu Items
 
@@ -141,6 +145,8 @@ Menu Items
 Saving And Files
 
 - Sequences are stored under /Sequences in onboard flash.
+- Sequence files store note pitches as tuning-relative step values instead of
+  raw MIDI note numbers.
 - On startup, the sequencer restores the last loaded sequence file when that
   remembered path is still valid.
 - File Management > USB Backup starts a dedicated USB serial backup session for

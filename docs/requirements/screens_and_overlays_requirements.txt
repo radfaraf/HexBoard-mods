@@ -13,6 +13,7 @@ Details:
 - The header shall use the form Edit #NN.
 - The overlay shall show a compact info line in the form L ...% V ... P ...%.
 - The overlay shall show the selected step notes in ascending order.
+- Step note labels shall follow the current tuning naming style.
 
 
 ID: SEQ-UI-002
@@ -52,6 +53,9 @@ Requirement:
 The step tools overlay shall show the selected step number, the compact length
 length, velocity, and probability line, the selected step notes, and the
 currently available tool labels.
+
+Details:
+- Step note labels shall follow the current tuning naming style.
 
 
 ID: SEQ-UI-005
@@ -118,6 +122,7 @@ pattern.
 
 Details:
 - Empty steps show underscores.
+- Note labels follow the current tuning naming style.
 
 
 ID: SEQ-UI-008
@@ -166,7 +171,7 @@ The sequencer shall use temporary status overlays for actions such as save,
 revert, erase, and tie placeholder actions.
 
 
-ID: SEQ-UI-012
+ID: SEQ-UI-013
 Title: Sequencer Now Playing Source
 Status: Active
 Area: UI

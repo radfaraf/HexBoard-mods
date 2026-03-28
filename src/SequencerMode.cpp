@@ -46,9 +46,10 @@ constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
 constexpr byte SEQUENCER_FUNCTION_BUTTON_INDEX = 29;
 constexpr byte SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX = 82;
 constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
+constexpr byte SEQUENCER_MAX_MANAGED_HELD_NOTES = 80;
 constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
-constexpr byte SEQUENCER_NO_NOTE = 255;
+constexpr int16_t SEQUENCER_NO_PITCH = INT16_MIN;
 constexpr byte SEQUENCER_DEFAULT_VELOCITY = 96;
 constexpr byte SEQUENCER_DEFAULT_PROBABILITY = 100;
 constexpr byte SEQUENCER_VELOCITY_CHOICE_COUNT = 27;
@@ -85,7 +86,7 @@ constexpr size_t SEQUENCER_BROWSER_TITLE_LENGTH = 28;
 constexpr size_t SEQUENCER_MENU_TITLE_LENGTH = 48;
 constexpr size_t SEQUENCER_NAME_EDIT_MAX_LENGTH = 20;
 
-byte sequencerStepMidiNotes[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
+int16_t sequencerStepPitchSteps[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
 uint16_t sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {};
 byte sequencerStepVelocity[SEQUENCER_STEP_COUNT] = {};
@@ -110,11 +111,19 @@ enum class SequencerOverlayMode : uint8_t {
 
 struct SequencerPlaybackGroup {
   bool active = false;
-  byte midiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
-    SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
+  int16_t pitchSteps[SEQUENCER_MAX_NOTES_PER_STEP] = {
+    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
   };
   byte noteCount = 0;
   uint64_t noteOffAt = 0;
+};
+
+struct SequencerManagedHeldNote {
+  bool active = false;
+  int16_t pitchSteps = SEQUENCER_NO_PITCH;
+  byte auditionCount = 0;
+  byte playbackCount = 0;
+  SequencerTunedNoteHandle handle = {};
 };
 
 enum class SequencerBrowserMode : uint8_t {
@@ -177,19 +186,18 @@ bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
 char sequencerStatusLineOne[24] = "";
 char sequencerStatusLineTwo[24] = "";
-byte sequencerEditMidiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
-  SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
+int16_t sequencerEditPitchSteps[SEQUENCER_MAX_NOTES_PER_STEP] = {
+  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
 };
 byte sequencerEditNoteCount = 0;
-byte sequencerUndoMidiNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
-  SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
+int16_t sequencerUndoPitchSteps[SEQUENCER_MAX_NOTES_PER_STEP] = {
+  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
 };
 byte sequencerUndoNoteCount = 0;
 uint16_t sequencerUndoGatePercent = 100;
 byte sequencerUndoVelocity = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerUndoProbability = SEQUENCER_DEFAULT_PROBABILITY;
-byte sequencerAuditionHeldNoteCounts[128] = {};
-byte sequencerPlaybackHeldNoteCounts[128] = {};
+SequencerManagedHeldNote sequencerManagedHeldNotes[SEQUENCER_MAX_MANAGED_HELD_NOTES] = {};
 int8_t sequencerPlayingStep = -1;
 SequencerPlaybackGroup sequencerPlaybackGroups[SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS] = {};
 uint64_t sequencerNextStepAt = 0;
@@ -306,10 +314,6 @@ void confirmUsbBackupStopMenuCallback();
 void cancelUsbBackupStopMenuCallback();
 bool guardSequencerStorageForUsbBackup(const char* actionLineTwo);
 
-const char* sequencerChromaticNames[12] = {
-  "C", "C#", "D", "Eb", "E", "F",
-  "F#", "G", "G#", "A", "Bb", "B"
-};
 const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
   0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000
 };
@@ -317,18 +321,18 @@ const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
 byte sequencerGateChoiceIndex(uint16_t gatePercent);
 void sortSequencerBrowserEntriesRange(byte startIndex, byte endExclusive);
 void startSequencerNaming(SequencerNamingTarget target, const char* initialText);
-void clearSequencerNoteBuffer(byte* notes, byte& count);
-void sortSequencerNoteBuffer(byte* notes, byte count);
-byte findNoteInBuffer(const byte* notes, byte count, byte midiNote);
+void clearSequencerNoteBuffer(int16_t* notes, byte& count);
+void sortSequencerNoteBuffer(int16_t* notes, byte count);
+byte findNoteInBuffer(const int16_t* notes, byte count, int16_t pitchSteps);
 void saveEditBufferToStep(byte stepIndex);
 void copySequencerStepData(byte sourceStep, byte destinationStep);
 void restoreSelectedSequencerStepFromUndo();
 void previewSequencerStep(byte stepIndex);
 byte sequencerSelectedStepVelocity();
-void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote);
+void sendSequencerManagedNoteOff(int16_t pitchSteps, bool playbackNote);
 int getVisibleBrowserEntryMenuIndex(bool firstVisible);
 const SequencerToolKey* getSequencerToolKey(byte buttonIndex);
-bool transposeSelectedSequencerStep(int8_t semitoneDelta);
+bool transposeSelectedSequencerStep(int16_t pitchStepDelta);
 void handleSequencerToolAction(SequencerToolAction action);
 
 const SequencerNamingKey sequencerNamingKeys[] = {
@@ -1082,28 +1086,28 @@ const SequencerToolKey* getSequencerToolKey(byte buttonIndex) {
   return nullptr;
 }
 
-bool transposeSelectedSequencerStep(int8_t semitoneDelta) {
+bool transposeSelectedSequencerStep(int16_t pitchStepDelta) {
   if (sequencerSelectedStep < 0 || sequencerEditNoteCount == 0) {
     return false;
   }
 
-  byte transposedNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
-    SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE, SEQUENCER_NO_NOTE
+  int16_t transposedNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
+    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
   };
   byte transposedCount = 0;
 
   for (byte i = 0; i < sequencerEditNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    int transposed = static_cast<int>(sequencerEditMidiNotes[i]) + semitoneDelta;
-    if (transposed < 0) {
-      transposed = 0;
-    } else if (transposed > 127) {
-      transposed = 127;
+    int32_t transposed = static_cast<int32_t>(sequencerEditPitchSteps[i]) + pitchStepDelta;
+    if (transposed < -32768) {
+      transposed = -32768;
+    } else if (transposed > 32767) {
+      transposed = 32767;
     }
 
-    byte midiNote = static_cast<byte>(transposed);
-    if (findNoteInBuffer(transposedNotes, transposedCount, midiNote) >= SEQUENCER_MAX_NOTES_PER_STEP &&
+    int16_t pitchSteps = static_cast<int16_t>(transposed);
+    if (findNoteInBuffer(transposedNotes, transposedCount, pitchSteps) >= SEQUENCER_MAX_NOTES_PER_STEP &&
         transposedCount < SEQUENCER_MAX_NOTES_PER_STEP) {
-      transposedNotes[transposedCount++] = midiNote;
+      transposedNotes[transposedCount++] = pitchSteps;
     }
   }
 
@@ -1112,7 +1116,7 @@ bool transposeSelectedSequencerStep(int8_t semitoneDelta) {
   bool changed = (transposedCount != sequencerEditNoteCount);
   if (!changed) {
     for (byte i = 0; i < transposedCount; i++) {
-      if (transposedNotes[i] != sequencerEditMidiNotes[i]) {
+      if (transposedNotes[i] != sequencerEditPitchSteps[i]) {
         changed = true;
         break;
       }
@@ -1123,9 +1127,9 @@ bool transposeSelectedSequencerStep(int8_t semitoneDelta) {
     return false;
   }
 
-  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
   for (byte i = 0; i < transposedCount; i++) {
-    sequencerEditMidiNotes[i] = transposedNotes[i];
+    sequencerEditPitchSteps[i] = transposedNotes[i];
   }
   sequencerEditNoteCount = transposedCount;
   saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
@@ -1147,7 +1151,7 @@ void handleSequencerToolAction(SequencerToolAction action) {
         showSequencerStatusMessage("Step empty", "Add notes first");
         return;
       }
-      if (transposeSelectedSequencerStep(12)) {
+      if (transposeSelectedSequencerStep(getSequencerTuningCycleLength())) {
         sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
         sequencerOverlayVisible = false;
         sequencerOverlayDirty = true;
@@ -1160,7 +1164,7 @@ void handleSequencerToolAction(SequencerToolAction action) {
         showSequencerStatusMessage("Step empty", "Add notes first");
         return;
       }
-      if (transposeSelectedSequencerStep(-12)) {
+      if (transposeSelectedSequencerStep(-static_cast<int16_t>(getSequencerTuningCycleLength()))) {
         sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
         sequencerOverlayVisible = false;
         sequencerOverlayDirty = true;
@@ -1345,24 +1349,22 @@ byte sequencerProbabilityChoiceIndex(byte probability) {
   return nearestIndex;
 }
 
-void formatSequencerStepNote(char* out, size_t outSize, byte midiNote) {
-  if (midiNote >= 128) {
+void formatSequencerStepNote(char* out, size_t outSize, int16_t pitchSteps) {
+  if (pitchSteps == SEQUENCER_NO_PITCH) {
     snprintf(out, outSize, "--");
     return;
   }
-  const char* label = sequencerChromaticNames[midiNote % 12];
-  int octave = (midiNote / 12) - 1;
-  snprintf(out, outSize, "%s%d", label, octave);
+  formatBoardPitchStepsForSequencer(pitchSteps, out, outSize);
 }
 
-void clearSequencerNoteBuffer(byte* notes, byte& count) {
+void clearSequencerNoteBuffer(int16_t* notes, byte& count) {
   count = 0;
   for (byte i = 0; i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    notes[i] = SEQUENCER_NO_NOTE;
+    notes[i] = SEQUENCER_NO_PITCH;
   }
 }
 
-void sortSequencerNoteBuffer(byte* notes, byte count) {
+void sortSequencerNoteBuffer(int16_t* notes, byte count) {
   if (count < 2) {
     return;
   }
@@ -1370,7 +1372,7 @@ void sortSequencerNoteBuffer(byte* notes, byte count) {
   for (byte i = 0; i + 1 < count; i++) {
     for (byte j = static_cast<byte>(i + 1); j < count; j++) {
       if (notes[j] < notes[i]) {
-        byte temp = notes[i];
+        int16_t temp = notes[i];
         notes[i] = notes[j];
         notes[j] = temp;
       }
@@ -1378,9 +1380,9 @@ void sortSequencerNoteBuffer(byte* notes, byte count) {
   }
 }
 
-byte findNoteInBuffer(const byte* notes, byte count, byte midiNote) {
+byte findNoteInBuffer(const int16_t* notes, byte count, int16_t pitchSteps) {
   for (byte i = 0; i < count; i++) {
-    if (notes[i] == midiNote) {
+    if (notes[i] == pitchSteps) {
       return i;
     }
   }
@@ -1388,20 +1390,20 @@ byte findNoteInBuffer(const byte* notes, byte count, byte midiNote) {
 }
 
 void loadEditBufferFromStep(byte stepIndex) {
-  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
   byte count = sequencerStepNoteCount[stepIndex];
   for (byte i = 0; i < count && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    sequencerEditMidiNotes[i] = sequencerStepMidiNotes[stepIndex][i];
+    sequencerEditPitchSteps[i] = sequencerStepPitchSteps[stepIndex][i];
   }
   sequencerEditNoteCount = count;
-  sortSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  sortSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
 }
 
 void snapshotUndoBufferFromStep(byte stepIndex) {
-  clearSequencerNoteBuffer(sequencerUndoMidiNotes, sequencerUndoNoteCount);
+  clearSequencerNoteBuffer(sequencerUndoPitchSteps, sequencerUndoNoteCount);
   byte count = sequencerStepNoteCount[stepIndex];
   for (byte i = 0; i < count && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    sequencerUndoMidiNotes[i] = sequencerStepMidiNotes[stepIndex][i];
+    sequencerUndoPitchSteps[i] = sequencerStepPitchSteps[stepIndex][i];
   }
   sequencerUndoNoteCount = count;
   sequencerUndoGatePercent = sequencerStepGatePercent[stepIndex];
@@ -1410,19 +1412,19 @@ void snapshotUndoBufferFromStep(byte stepIndex) {
 }
 
 void saveEditBufferToStep(byte stepIndex) {
-  sortSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
-  clearSequencerNoteBuffer(sequencerStepMidiNotes[stepIndex], sequencerStepNoteCount[stepIndex]);
+  sortSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
+  clearSequencerNoteBuffer(sequencerStepPitchSteps[stepIndex], sequencerStepNoteCount[stepIndex]);
   for (byte i = 0; i < sequencerEditNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    sequencerStepMidiNotes[stepIndex][i] = sequencerEditMidiNotes[i];
+    sequencerStepPitchSteps[stepIndex][i] = sequencerEditPitchSteps[i];
   }
   sequencerStepNoteCount[stepIndex] = sequencerEditNoteCount;
 }
 
 void copySequencerStepData(byte sourceStep, byte destinationStep) {
-  clearSequencerNoteBuffer(sequencerStepMidiNotes[destinationStep], sequencerStepNoteCount[destinationStep]);
+  clearSequencerNoteBuffer(sequencerStepPitchSteps[destinationStep], sequencerStepNoteCount[destinationStep]);
   byte sourceCount = sequencerStepNoteCount[sourceStep];
   for (byte i = 0; i < sourceCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    sequencerStepMidiNotes[destinationStep][i] = sequencerStepMidiNotes[sourceStep][i];
+    sequencerStepPitchSteps[destinationStep][i] = sequencerStepPitchSteps[sourceStep][i];
   }
   sequencerStepNoteCount[destinationStep] = sourceCount;
   sequencerStepGatePercent[destinationStep] = sequencerStepGatePercent[sourceStep];
@@ -1435,9 +1437,9 @@ void restoreSelectedSequencerStepFromUndo() {
     return;
   }
 
-  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
   for (byte i = 0; i < sequencerUndoNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
-    sequencerEditMidiNotes[i] = sequencerUndoMidiNotes[i];
+    sequencerEditPitchSteps[i] = sequencerUndoPitchSteps[i];
   }
   sequencerEditNoteCount = sequencerUndoNoteCount;
   saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
@@ -1450,33 +1452,33 @@ void restoreSelectedSequencerStepFromUndo() {
   setSequencerDirtyState(true);
 }
 
-void toggleEditBufferNote(byte midiNote) {
-  byte index = findNoteInBuffer(sequencerEditMidiNotes, sequencerEditNoteCount, midiNote);
+void toggleEditBufferNote(int16_t pitchSteps) {
+  byte index = findNoteInBuffer(sequencerEditPitchSteps, sequencerEditNoteCount, pitchSteps);
   if (index < SEQUENCER_MAX_NOTES_PER_STEP) {
     for (byte i = index; i + 1 < sequencerEditNoteCount; i++) {
-      sequencerEditMidiNotes[i] = sequencerEditMidiNotes[i + 1];
+      sequencerEditPitchSteps[i] = sequencerEditPitchSteps[i + 1];
     }
     if (sequencerEditNoteCount > 0) {
       sequencerEditNoteCount--;
-      sequencerEditMidiNotes[sequencerEditNoteCount] = SEQUENCER_NO_NOTE;
+      sequencerEditPitchSteps[sequencerEditNoteCount] = SEQUENCER_NO_PITCH;
     }
     return;
   }
 
   if (sequencerEditNoteCount < SEQUENCER_MAX_NOTES_PER_STEP) {
-    sequencerEditMidiNotes[sequencerEditNoteCount++] = midiNote;
+    sequencerEditPitchSteps[sequencerEditNoteCount++] = pitchSteps;
   }
-  sortSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  sortSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
 }
 
-byte sequencerPrimaryMidiNote(byte stepIndex) {
+int16_t sequencerPrimaryPitchSteps(byte stepIndex) {
   if (stepIndex >= SEQUENCER_STEP_COUNT) {
-    return SEQUENCER_NO_NOTE;
+    return SEQUENCER_NO_PITCH;
   }
   if (sequencerSelectedStep == stepIndex && sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
-    return (sequencerEditNoteCount > 0) ? sequencerEditMidiNotes[0] : SEQUENCER_NO_NOTE;
+    return (sequencerEditNoteCount > 0) ? sequencerEditPitchSteps[0] : SEQUENCER_NO_PITCH;
   }
-  return (sequencerStepNoteCount[stepIndex] > 0) ? sequencerStepMidiNotes[stepIndex][0] : SEQUENCER_NO_NOTE;
+  return (sequencerStepNoteCount[stepIndex] > 0) ? sequencerStepPitchSteps[stepIndex][0] : SEQUENCER_NO_PITCH;
 }
 
 bool isSequencerSelectionLit() {
@@ -1491,10 +1493,10 @@ void fillOverlayNoteLines(char* lineOne, size_t lineOneSize, char* lineTwo, size
   lineOne[0] = '\0';
   lineTwo[0] = '\0';
 
-  const byte* sourceNotes = sequencerEditMidiNotes;
+  const int16_t* sourceNotes = sequencerEditPitchSteps;
   byte sourceCount = sequencerEditNoteCount;
   if (sequencerOverlayMode == SequencerOverlayMode::NoteAssigned && sequencerSelectedStep >= 0) {
-    sourceNotes = sequencerStepMidiNotes[sequencerSelectedStep];
+    sourceNotes = sequencerStepPitchSteps[sequencerSelectedStep];
     sourceCount = sequencerStepNoteCount[sequencerSelectedStep];
   }
 
@@ -1528,7 +1530,7 @@ void fillOverviewStepLine(byte stepIndex, char* lineOut, size_t lineOutSize) {
   char noteLabel[8];
   for (byte noteIndex = 0; noteIndex < sequencerStepNoteCount[stepIndex] &&
                            noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
-    formatSequencerStepNote(noteLabel, sizeof(noteLabel), sequencerStepMidiNotes[stepIndex][noteIndex]);
+    formatSequencerStepNote(noteLabel, sizeof(noteLabel), sequencerStepPitchSteps[stepIndex][noteIndex]);
     if (noteIndex > 0) {
       strncat(lineOut, " ", lineOutSize - strlen(lineOut) - 1);
     }
@@ -1661,45 +1663,85 @@ byte sequencerSelectedStepVelocity() {
   return SEQUENCER_DEFAULT_VELOCITY;
 }
 
-void sendSequencerManagedNoteOn(byte midiNote, bool playbackNote, byte velocity) {
-  if (midiNote >= 128) {
-    return;
-  }
-  byte& heldCount = playbackNote ? sequencerPlaybackHeldNoteCounts[midiNote] : sequencerAuditionHeldNoteCounts[midiNote];
-  if (heldCount == 0 && sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
-    if (sequencerPlayType == SEQUENCER_PLAY_TYPE_OB_SYNTH) {
-      sendBoardPreviewSynthNote(midiNote, true, velocity);
-    } else {
-      sendBoardPreviewMidiNote(midiNote, true, velocity);
+int findSequencerManagedHeldNote(int16_t pitchSteps) {
+  for (byte i = 0; i < SEQUENCER_MAX_MANAGED_HELD_NOTES; i++) {
+    if (sequencerManagedHeldNotes[i].active && sequencerManagedHeldNotes[i].pitchSteps == pitchSteps) {
+      return i;
     }
   }
+  return -1;
+}
+
+int allocateSequencerManagedHeldNote(int16_t pitchSteps) {
+  for (byte i = 0; i < SEQUENCER_MAX_MANAGED_HELD_NOTES; i++) {
+    if (!sequencerManagedHeldNotes[i].active) {
+      sequencerManagedHeldNotes[i] = SequencerManagedHeldNote{};
+      sequencerManagedHeldNotes[i].active = true;
+      sequencerManagedHeldNotes[i].pitchSteps = pitchSteps;
+      return i;
+    }
+  }
+  return -1;
+}
+
+void sendSequencerManagedNoteOn(int16_t pitchSteps, bool playbackNote, byte velocity) {
+  if (pitchSteps == SEQUENCER_NO_PITCH) {
+    return;
+  }
+
+  int slotIndex = findSequencerManagedHeldNote(pitchSteps);
+  if (slotIndex < 0) {
+    slotIndex = allocateSequencerManagedHeldNote(pitchSteps);
+    if (slotIndex < 0) {
+      return;
+    }
+  }
+
+  SequencerManagedHeldNote& heldNote = sequencerManagedHeldNotes[slotIndex];
+  if (heldNote.auditionCount == 0 && heldNote.playbackCount == 0) {
+    if (!startSequencerTunedNote(
+          pitchSteps,
+          sequencerPlayType == SEQUENCER_PLAY_TYPE_OB_SYNTH,
+          velocity,
+          heldNote.handle)) {
+      heldNote = SequencerManagedHeldNote{};
+      return;
+    }
+  }
+
+  byte& heldCount = playbackNote ? heldNote.playbackCount : heldNote.auditionCount;
   if (heldCount < 255) {
     heldCount++;
   }
 }
 
 void stopSequencerAuditionNotes() {
-  for (int midiNote = 0; midiNote < 128; midiNote++) {
-    while (sequencerAuditionHeldNoteCounts[midiNote] > 0) {
-      sendSequencerManagedNoteOff(static_cast<byte>(midiNote), false);
+  for (byte i = 0; i < SEQUENCER_MAX_MANAGED_HELD_NOTES; i++) {
+    while (sequencerManagedHeldNotes[i].active && sequencerManagedHeldNotes[i].auditionCount > 0) {
+      sendSequencerManagedNoteOff(sequencerManagedHeldNotes[i].pitchSteps, false);
     }
   }
 }
 
-void sendSequencerManagedNoteOff(byte midiNote, bool playbackNote) {
-  if (midiNote >= 128) {
+void sendSequencerManagedNoteOff(int16_t pitchSteps, bool playbackNote) {
+  if (pitchSteps == SEQUENCER_NO_PITCH) {
     return;
   }
-  byte& heldCount = playbackNote ? sequencerPlaybackHeldNoteCounts[midiNote] : sequencerAuditionHeldNoteCounts[midiNote];
+
+  int slotIndex = findSequencerManagedHeldNote(pitchSteps);
+  if (slotIndex < 0) {
+    return;
+  }
+
+  SequencerManagedHeldNote& heldNote = sequencerManagedHeldNotes[slotIndex];
+  byte& heldCount = playbackNote ? heldNote.playbackCount : heldNote.auditionCount;
   if (heldCount > 0) {
     heldCount--;
   }
-  if (sequencerPlaybackHeldNoteCounts[midiNote] == 0 && sequencerAuditionHeldNoteCounts[midiNote] == 0) {
-    if (sequencerPlayType == SEQUENCER_PLAY_TYPE_OB_SYNTH) {
-      sendBoardPreviewSynthNote(midiNote, false, 0);
-    } else {
-      sendBoardPreviewMidiNote(midiNote, false, 0);
-    }
+
+  if (heldNote.playbackCount == 0 && heldNote.auditionCount == 0) {
+    stopSequencerTunedNote(heldNote.handle);
+    heldNote = SequencerManagedHeldNote{};
   }
 }
 
@@ -1785,10 +1827,10 @@ void stopSequencerPlaybackNote() {
       continue;
     }
     for (byte noteIndex = 0; noteIndex < group.noteCount; noteIndex++) {
-      if (group.midiNotes[noteIndex] < 128) {
-        sendSequencerManagedNoteOff(group.midiNotes[noteIndex], true);
+      if (group.pitchSteps[noteIndex] != SEQUENCER_NO_PITCH) {
+        sendSequencerManagedNoteOff(group.pitchSteps[noteIndex], true);
       }
-      group.midiNotes[noteIndex] = SEQUENCER_NO_NOTE;
+      group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
     }
     group.noteCount = 0;
     group.noteOffAt = 0;
@@ -1803,10 +1845,10 @@ void serviceSequencerPlaybackGroups() {
       continue;
     }
     for (byte noteIndex = 0; noteIndex < group.noteCount; noteIndex++) {
-      if (group.midiNotes[noteIndex] < 128) {
-        sendSequencerManagedNoteOff(group.midiNotes[noteIndex], true);
+      if (group.pitchSteps[noteIndex] != SEQUENCER_NO_PITCH) {
+        sendSequencerManagedNoteOff(group.pitchSteps[noteIndex], true);
       }
-      group.midiNotes[noteIndex] = SEQUENCER_NO_NOTE;
+      group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
     }
     group.noteCount = 0;
     group.noteOffAt = 0;
@@ -1847,8 +1889,8 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
     }
     SequencerPlaybackGroup& oldestGroup = sequencerPlaybackGroups[freeGroupIndex];
     for (byte noteIndex = 0; noteIndex < oldestGroup.noteCount; noteIndex++) {
-      if (oldestGroup.midiNotes[noteIndex] < 128) {
-        sendSequencerManagedNoteOff(oldestGroup.midiNotes[noteIndex], true);
+      if (oldestGroup.pitchSteps[noteIndex] != SEQUENCER_NO_PITCH) {
+        sendSequencerManagedNoteOff(oldestGroup.pitchSteps[noteIndex], true);
       }
     }
   }
@@ -1859,16 +1901,16 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
   uint64_t playbackStartedAt = runTime;
   group.noteOffAt = playbackStartedAt + ((stepDuration * gatePercent) / 100ULL);
   for (byte noteIndex = 0; noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
-    group.midiNotes[noteIndex] = SEQUENCER_NO_NOTE;
+    group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
   }
 
   for (byte noteIndex = 0; noteIndex < noteCount && noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
-    byte midiNote = sequencerStepMidiNotes[stepIndex][noteIndex];
-    if (midiNote >= 128) {
+    int16_t pitchSteps = sequencerStepPitchSteps[stepIndex][noteIndex];
+    if (pitchSteps == SEQUENCER_NO_PITCH) {
       continue;
     }
-    sendSequencerManagedNoteOn(midiNote, true, stepVelocity);
-    group.midiNotes[group.noteCount++] = midiNote;
+    sendSequencerManagedNoteOn(pitchSteps, true, stepVelocity);
+    group.pitchSteps[group.noteCount++] = pitchSteps;
   }
 }
 
@@ -1883,7 +1925,7 @@ void clearSelectedSequencerStep() {
   if (sequencerSelectedStep < 0) {
     return;
   }
-  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
+  clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
   saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
   setSequencerDirtyState(true);
   sequencerOverlayMode = SequencerOverlayMode::StepCleared;
@@ -1893,19 +1935,23 @@ void clearSelectedSequencerStep() {
 }
 
 void resetSequencerState() {
+  stopSequencerAuditionNotes();
+  stopSequencerPlaybackNote();
+
   for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
-    clearSequencerNoteBuffer(sequencerStepMidiNotes[step], sequencerStepNoteCount[step]);
+    clearSequencerNoteBuffer(sequencerStepPitchSteps[step], sequencerStepNoteCount[step]);
     sequencerStepGatePercent[step] = 100;
     sequencerStepVelocity[step] = SEQUENCER_DEFAULT_VELOCITY;
     sequencerStepProbability[step] = SEQUENCER_DEFAULT_PROBABILITY;
   }
-  memset(sequencerAuditionHeldNoteCounts, 0, sizeof(sequencerAuditionHeldNoteCounts));
-  memset(sequencerPlaybackHeldNoteCounts, 0, sizeof(sequencerPlaybackHeldNoteCounts));
+  for (byte heldIndex = 0; heldIndex < SEQUENCER_MAX_MANAGED_HELD_NOTES; heldIndex++) {
+    sequencerManagedHeldNotes[heldIndex] = SequencerManagedHeldNote{};
+  }
   for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
     sequencerPlaybackGroups[groupIndex] = SequencerPlaybackGroup{};
   }
-  clearSequencerNoteBuffer(sequencerEditMidiNotes, sequencerEditNoteCount);
-  clearSequencerNoteBuffer(sequencerUndoMidiNotes, sequencerUndoNoteCount);
+  clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
+  clearSequencerNoteBuffer(sequencerUndoPitchSteps, sequencerUndoNoteCount);
   sequencerUndoGatePercent = 100;
   sequencerUndoVelocity = SEQUENCER_DEFAULT_VELOCITY;
   sequencerUndoProbability = SEQUENCER_DEFAULT_PROBABILITY;
@@ -1933,11 +1979,10 @@ void resetSequencerState() {
   sequencerProbabilityDisplay = SEQUENCER_DEFAULT_PROBABILITY;
   sequencerExactProbabilityOriginal = SEQUENCER_DEFAULT_PROBABILITY;
   hideSequencerOverlay();
-  stopSequencerPlaybackNote();
 }
 
-void parseSequencerStepNotes(byte stepIndex, const String& value) {
-  clearSequencerNoteBuffer(sequencerStepMidiNotes[stepIndex], sequencerStepNoteCount[stepIndex]);
+void parseSequencerStepNotes(byte stepIndex, const String& value, bool valuesArePitchSteps) {
+  clearSequencerNoteBuffer(sequencerStepPitchSteps[stepIndex], sequencerStepNoteCount[stepIndex]);
   if (value.length() == 0) {
     return;
   }
@@ -1949,8 +1994,13 @@ void parseSequencerStepNotes(byte stepIndex, const String& value) {
     token.trim();
     if (token.length() > 0) {
       int noteValue = token.toInt();
-      if (noteValue >= 0 && noteValue < 128) {
-        sequencerStepMidiNotes[stepIndex][sequencerStepNoteCount[stepIndex]++] = static_cast<byte>(noteValue);
+      if (valuesArePitchSteps) {
+        if (noteValue >= -32768 && noteValue <= 32767) {
+          sequencerStepPitchSteps[stepIndex][sequencerStepNoteCount[stepIndex]++] = static_cast<int16_t>(noteValue);
+        }
+      } else if (noteValue >= 0 && noteValue < 128) {
+        sequencerStepPitchSteps[stepIndex][sequencerStepNoteCount[stepIndex]++] =
+          static_cast<int16_t>(noteValue - 60 - getSequencerCurrentTranspose());
       }
     }
     if (commaIndex < 0) {
@@ -1958,7 +2008,7 @@ void parseSequencerStepNotes(byte stepIndex, const String& value) {
     }
     start = commaIndex + 1;
   }
-  sortSequencerNoteBuffer(sequencerStepMidiNotes[stepIndex], sequencerStepNoteCount[stepIndex]);
+  sortSequencerNoteBuffer(sequencerStepPitchSteps[stepIndex], sequencerStepNoteCount[stepIndex]);
 }
 
 bool loadSequencerFromFlash() {
@@ -1975,6 +2025,8 @@ bool loadSequencerFromFlash() {
   }
 
   bool sawFormat = false;
+  uint16_t fileVersion = 1;
+  bool noteFormatIsPitchSteps = false;
   while (f.available()) {
     String line = f.readStringUntil('\n');
     line.trim();
@@ -1994,6 +2046,13 @@ bool loadSequencerFromFlash() {
 
     if (key == "format") {
       sawFormat = (value == "HBSEQ");
+    } else if (key == "version") {
+      int parsedVersion = value.toInt();
+      if (parsedVersion >= 1) {
+        fileVersion = static_cast<uint16_t>(parsedVersion);
+      }
+    } else if (key == "noteFormat") {
+      noteFormatIsPitchSteps = (value == "stepsFromC");
     } else if (key == "tempo") {
       int tempoValue = value.toInt();
       if (tempoValue >= 1 && tempoValue <= 255) {
@@ -2018,7 +2077,10 @@ bool loadSequencerFromFlash() {
     } else if (key.startsWith("step")) {
       int stepNumber = key.substring(4).toInt();
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT) {
-        parseSequencerStepNotes(static_cast<byte>(stepNumber - 1), value);
+        parseSequencerStepNotes(
+          static_cast<byte>(stepNumber - 1),
+          value,
+          noteFormatIsPitchSteps || fileVersion >= 2);
       }
     } else if (key.startsWith("gate")) {
       int stepNumber = key.substring(4).toInt();
@@ -2060,6 +2122,8 @@ bool loadSequencerFromPath(const char* path) {
   }
 
   bool sawFormat = false;
+  uint16_t fileVersion = 1;
+  bool noteFormatIsPitchSteps = false;
   while (f.available()) {
     String line = f.readStringUntil('\n');
     line.trim();
@@ -2079,6 +2143,13 @@ bool loadSequencerFromPath(const char* path) {
 
     if (key == "format") {
       sawFormat = (value == "HBSEQ");
+    } else if (key == "version") {
+      int parsedVersion = value.toInt();
+      if (parsedVersion >= 1) {
+        fileVersion = static_cast<uint16_t>(parsedVersion);
+      }
+    } else if (key == "noteFormat") {
+      noteFormatIsPitchSteps = (value == "stepsFromC");
     } else if (key == "tempo") {
       int tempoValue = value.toInt();
       if (tempoValue >= 1 && tempoValue <= 255) {
@@ -2103,7 +2174,10 @@ bool loadSequencerFromPath(const char* path) {
     } else if (key.startsWith("step")) {
       int stepNumber = key.substring(4).toInt();
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT) {
-        parseSequencerStepNotes(static_cast<byte>(stepNumber - 1), value);
+        parseSequencerStepNotes(
+          static_cast<byte>(stepNumber - 1),
+          value,
+          noteFormatIsPitchSteps || fileVersion >= 2);
       }
     } else if (key.startsWith("gate")) {
       int stepNumber = key.substring(4).toInt();
@@ -2148,7 +2222,8 @@ bool saveSequencerToPath(const char* path) {
   }
 
   f.println("format=HBSEQ");
-  f.println("version=1");
+  f.println("version=2");
+  f.println("noteFormat=stepsFromC");
   f.print("tempo=");
   f.println(sequencerTempo);
   f.print("steps=");
@@ -2168,7 +2243,7 @@ bool saveSequencerToPath(const char* path) {
       if (noteIndex > 0) {
         f.print(',');
       }
-      f.print(sequencerStepMidiNotes[step][noteIndex]);
+      f.print(sequencerStepPitchSteps[step][noteIndex]);
     }
     f.println();
     f.print("gate");
@@ -3014,8 +3089,8 @@ bool shouldShowSequencerPlayedNotesOverlay() {
     return false;
   }
 
-  for (int midiNote = 0; midiNote < 128; midiNote++) {
-    if (sequencerAuditionHeldNoteCounts[midiNote] > 0) {
+  for (byte i = 0; i < SEQUENCER_MAX_MANAGED_HELD_NOTES; i++) {
+    if (sequencerManagedHeldNotes[i].active && sequencerManagedHeldNotes[i].auditionCount > 0) {
       return true;
     }
   }
@@ -3036,13 +3111,23 @@ byte rebuildSequencerDisplayedNotes(int16_t* notes, byte maxCount) {
   }
 
   byte out = 0;
-  for (int midiNote = 0; midiNote < 128 && out < maxCount; midiNote++) {
-    if (sequencerAuditionHeldNoteCounts[midiNote] == 0) {
+  for (byte i = 0; i < SEQUENCER_MAX_MANAGED_HELD_NOTES && out < maxCount; i++) {
+    if (!sequencerManagedHeldNotes[i].active || sequencerManagedHeldNotes[i].auditionCount == 0) {
       continue;
     }
+    notes[out++] = static_cast<int16_t>(sequencerManagedHeldNotes[i].pitchSteps + getSequencerCurrentTranspose());
+  }
 
-    // Match the keyboard overlay's 12-EDO display convention where C4 is 0.
-    notes[out++] = static_cast<int16_t>(midiNote - 60);
+  if (out > 1) {
+    for (byte i = 0; i + 1 < out; i++) {
+      for (byte j = static_cast<byte>(i + 1); j < out; j++) {
+        if (notes[j] < notes[i]) {
+          int16_t temp = notes[i];
+          notes[i] = notes[j];
+          notes[j] = temp;
+        }
+      }
+    }
   }
   return out;
 }
@@ -3258,9 +3343,9 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
       return;
     }
 
-    byte releasedMidiNote = 0;
-    if (getButtonMidiNoteForSequencer(buttonIndex, releasedMidiNote) && releasedMidiNote < 128) {
-      sendSequencerManagedNoteOff(releasedMidiNote, false);
+    int16_t releasedPitchSteps = SEQUENCER_NO_PITCH;
+    if (getButtonPitchStepsForSequencer(buttonIndex, releasedPitchSteps)) {
+      sendSequencerManagedNoteOff(releasedPitchSteps, false);
     }
     return;
   }
@@ -3315,13 +3400,11 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     return;
   }
 
-  byte midiNote = 0;
-  if (getButtonMidiNoteForSequencer(buttonIndex, midiNote)) {
-    if (midiNote < 128) {
-      sendSequencerManagedNoteOn(midiNote, false, sequencerSelectedStepVelocity());
-    }
+  int16_t pitchSteps = SEQUENCER_NO_PITCH;
+  if (getButtonPitchStepsForSequencer(buttonIndex, pitchSteps)) {
+    sendSequencerManagedNoteOn(pitchSteps, false, sequencerSelectedStepVelocity());
     if (sequencerSelectedStep >= 0) {
-      toggleEditBufferNote(midiNote);
+      toggleEditBufferNote(pitchSteps);
       saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
       setSequencerDirtyState(true);
       sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
@@ -3920,18 +4003,18 @@ void applySequencerLedOverrides() {
     bool selected = (sequencerSelectedStep == step);
     bool playing = (sequencerPlayingStep == step);
     bool selectionLit = !selected || isSequencerSelectionLit();
-    byte primaryMidiNote = sequencerPrimaryMidiNote(step);
+    int16_t primaryPitchSteps = sequencerPrimaryPitchSteps(step);
 
     if (!selectionLit) {
       strip.setPixelColor(buttonIndex, 0);
       continue;
     }
 
-    if (primaryMidiNote >= 128) {
+    if (primaryPitchSteps == SEQUENCER_NO_PITCH) {
       strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing));
-    } else if (selected && !playing && getBoardSelectedLedColorForMidiNote(primaryMidiNote, colorCode)) {
+    } else if (selected && !playing && getBoardSelectedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
-    } else if (getBoardLedColorForMidiNote(primaryMidiNote, playing, colorCode)) {
+    } else if (getBoardLedColorForPitchSteps(primaryPitchSteps, playing, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
     }
   }

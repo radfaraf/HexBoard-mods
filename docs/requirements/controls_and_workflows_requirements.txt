@@ -156,8 +156,8 @@ Details:
 - Len opens exact length entry.
 - Vel opens exact velocity entry.
 - Prob opens exact probability entry.
-- Oct+ transposes the selected step up one octave.
-- Oct- transposes the selected step down one octave.
+- Oct+ transposes the selected step up one current tuning cycle.
+- Oct- transposes the selected step down one current tuning cycle.
 - Tie is a placeholder for future tie behavior.
 - Copy opens destination-step selection and copies notes, length, velocity, and
   probability into the chosen destination step.
