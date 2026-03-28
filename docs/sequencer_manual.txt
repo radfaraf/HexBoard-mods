@@ -55,6 +55,8 @@ The lower part of the board remains playable in Sequencer mode. These keys:
 
 - audition notes at any time
 - assign or remove notes from the selected step when a step is selected
+- if the shared `DisplayNotes` setting is enabled, they can also drive the
+  `Now Playing` overlay when no step is selected
 
 
 5. Selecting And Editing Steps
@@ -89,18 +91,22 @@ When a step is selected:
 With no step selected:
 
 - pressing lower keyboard notes auditions them only
+- if the shared `DisplayNotes` setting is enabled, these manually played notes
+  can appear in the `Now Playing` overlay
 
 With a step selected:
 
 - pressing a note key auditions that note
 - the note is also added to the step if it was not already there
 - pressing the same note again removes it from the step
+- this step-edit workflow does not drive the `Now Playing` overlay
 
 6.2 Chords
 
 - Each step can hold up to 4 notes.
 - Notes are displayed in ascending order.
 - Playback sends all notes in the step together.
+- Sequencer playback itself does not drive the `Now Playing` overlay.
 
 6.3 Tap Preview
 

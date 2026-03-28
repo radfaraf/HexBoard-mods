@@ -5458,7 +5458,10 @@ void onToggleDisplayPlayedNotes() {
 }
 
 void drawPlayedNotesOverlay() {
-  if (!isKeyboardMode()) {
+  bool keyboardMode = isKeyboardMode();
+  bool sequencerModeOverlay = !keyboardMode && shouldShowSequencerPlayedNotesOverlay();
+
+  if (!keyboardMode && !sequencerModeOverlay) {
     if (noteOverlayVisible) {
       noteOverlayVisible = false;
       noteOverlayDirty = false;
@@ -5482,7 +5485,9 @@ void drawPlayedNotesOverlay() {
   }
 
   int16_t activeDisplayedNotes[DISPLAYED_NOTES_MAX];
-  byte activeCount = rebuildDisplayedNotes(activeDisplayedNotes);
+  byte activeCount = keyboardMode
+                       ? rebuildDisplayedNotes(activeDisplayedNotes)
+                       : rebuildSequencerDisplayedNotes(activeDisplayedNotes, DISPLAYED_NOTES_MAX);
   byte countBefore = displayedNoteCount(displayedNotes);
   bool snapshotChanged = false;
 

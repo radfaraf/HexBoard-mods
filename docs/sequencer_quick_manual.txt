@@ -230,6 +230,8 @@ Status And Display
 - The selected step blinks.
 - The overview screen shows 8 steps at a time.
 - Empty steps are dark when idle.
+- If `DisplayNotes` is enabled, the lower playable keyboard in Sequencer mode
+  can show `Now Playing` only when no step is selected.
 - The performance monitor shows:
   AudioEng, Mem, FS, MIDI Q, Drop, and Late while the Play/Stop key is held.
 - Active sequencer overlays stay awake while you are using them.

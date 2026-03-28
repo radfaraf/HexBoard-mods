@@ -3009,6 +3009,44 @@ bool handleSequencerRotaryTurn(int8_t direction) {
   return handleSequencerRotaryTurnInternal(direction);
 }
 
+bool shouldShowSequencerPlayedNotesOverlay() {
+  if (sequencerSelectedStep >= 0) {
+    return false;
+  }
+
+  for (int midiNote = 0; midiNote < 128; midiNote++) {
+    if (sequencerAuditionHeldNoteCounts[midiNote] > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+byte rebuildSequencerDisplayedNotes(int16_t* notes, byte maxCount) {
+  if (notes == nullptr || maxCount == 0) {
+    return 0;
+  }
+
+  for (byte i = 0; i < maxCount; i++) {
+    notes[i] = INT16_MIN;
+  }
+
+  if (sequencerSelectedStep >= 0) {
+    return 0;
+  }
+
+  byte out = 0;
+  for (int midiNote = 0; midiNote < 128 && out < maxCount; midiNote++) {
+    if (sequencerAuditionHeldNoteCounts[midiNote] == 0) {
+      continue;
+    }
+
+    // Match the keyboard overlay's 12-EDO display convention where C4 is 0.
+    notes[out++] = static_cast<int16_t>(midiNote - 60);
+  }
+  return out;
+}
+
 bool handleSequencerEncoderClick() {
   if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {
     return true;

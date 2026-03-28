@@ -164,3 +164,20 @@ Priority: Medium
 Requirement:
 The sequencer shall use temporary status overlays for actions such as save,
 revert, erase, and tie placeholder actions.
+
+
+ID: SEQ-UI-012
+Title: Sequencer Now Playing Source
+Status: Active
+Area: UI
+Priority: Medium
+
+Requirement:
+When the shared DisplayNotes setting is enabled, the board's Now Playing
+overlay shall work in Sequencer mode only for manual lower-keyboard playing
+when no step is selected.
+
+Details:
+- Step editing shall not drive the Now Playing overlay.
+- Sequencer playback notes shall not drive the Now Playing overlay.
+- The sequencer shall use the same note naming style as the keyboard overlay.

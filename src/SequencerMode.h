@@ -28,3 +28,5 @@ void applySequencerLedOverrides();
 bool handleSequencerRotaryTurn(int8_t direction);
 bool handleSequencerEncoderClick();
 void updateSequencerTransport();
+bool shouldShowSequencerPlayedNotesOverlay();
+byte rebuildSequencerDisplayedNotes(int16_t* notes, byte maxCount);
