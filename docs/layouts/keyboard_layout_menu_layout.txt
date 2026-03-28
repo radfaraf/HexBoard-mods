@@ -27,3 +27,33 @@ Layout
 Notes:
 - The `* ` marker applies only to actual layout choices that are visible for the current tuning.
 - Mirror and rotation settings do not use the current-choice marker.
+
+Default layout behavior:
+- When the tuning changes, the current layout resets to that tuning's default
+  layout.
+- The default layout is the first layout listed for that tuning in the
+  firmware's layout definitions.
+
+Current defaults:
+- 12 EDO (Normal) -> Wicki-Hayden
+- 12 TET 34 ZPI -> Wicki-Hayden
+- 17 EDO -> Compressed Janko
+- 19 EDO -> Wicki-Hayden
+- 22 EDO -> Compressed Janko
+- 24 EDO -> Janko
+- 31 EDO -> Compressed Janko
+- 31 TET 127 ZPI -> Compressed Janko
+- 41 EDO -> Compressed Janko
+- 43 EDO -> Janko
+- 46 EDO -> Janko
+- 53 EDO -> Janko
+- 58 EDO -> Janko
+- 58 EDO 289 ZPI -> Janko
+- 72 EDO -> Harmonic Table
+- 72 EDO 380 ZPI -> Harmonic Table
+- 80 EDO -> Janko
+- 87 EDO -> Harmonic Table
+- Bohlen-Pierce -> Standard
+- Carlos Alpha -> Harmonic Table
+- Carlos Beta -> Wicki-Hayden
+- Carlos Gamma -> Harmonic Table
