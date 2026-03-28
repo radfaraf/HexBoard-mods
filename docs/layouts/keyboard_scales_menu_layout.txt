@@ -1,0 +1,33 @@
+KEYBOARD SCALES MENU LAYOUT
+
+Purpose:
+- Shows the available scales for the current tuning.
+- Clearly marks the currently selected scale.
+
+Current behavior:
+- Opening `Keyboard > Scales` places the menu cursor on the current visible scale.
+- The current scale row is prefixed with `* `.
+- Non-selected scales are prefixed with two spaces.
+- Scales that do not belong to the current tuning remain hidden, except for
+  all-tuning scales such as `None`.
+- The `Key` row and `Scale Lock` row keep their normal labels and are not
+  marked with `* `.
+
+Example:
+
+```text
+Scales
+
+Key
+Scale Lock
+* None
+  Diatonic
+  Pentatonic
+  Orwell
+  Porcupine
+  Pajara
+```
+
+Notes:
+- The `* ` marker applies only to actual scale choices.
+- The visible list of scales depends on the current tuning.

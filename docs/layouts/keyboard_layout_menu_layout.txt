@@ -1,0 +1,29 @@
+KEYBOARD LAYOUT MENU LAYOUT
+
+Purpose:
+- Shows the available keyboard layouts for the current tuning.
+- Clearly marks the currently selected layout.
+
+Current behavior:
+- Opening `Keyboard > Layout` places the menu cursor on the current layout.
+- The current layout row is prefixed with `* `.
+- Non-selected layouts are prefixed with two spaces.
+- Layouts that do not belong to the current tuning remain hidden.
+- The rows below the layout list keep their normal labels and are not marked with `* `.
+
+Example:
+
+```text
+Layout
+
+* Wicki
+  Janko
+  Bosanquet
+  Mirror Ver.
+  Mirror Hor.
+  Rotate:
+```
+
+Notes:
+- The `* ` marker applies only to actual layout choices that are visible for the current tuning.
+- Mirror and rotation settings do not use the current-choice marker.

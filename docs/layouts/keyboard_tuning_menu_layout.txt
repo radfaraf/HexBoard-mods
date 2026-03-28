@@ -1,0 +1,29 @@
+KEYBOARD TUNING MENU LAYOUT
+
+Purpose:
+- Shows the available keyboard tunings.
+- Clearly marks the currently selected tuning.
+
+Current behavior:
+- Opening `Keyboard > Tuning` places the menu cursor on the current tuning.
+- The current tuning row is prefixed with `* `.
+- Non-selected tunings are prefixed with two spaces.
+- The rows below the tuning list keep their normal labels and are not marked with `* `.
+
+Example:
+
+```text
+Tuning
+
+* 12 EDO
+  19 EDO
+  24 EDO
+  Bohlen-Pierce
+  Dynamic JI
+  JI BPM Lock
+  JI BPM
+```
+
+Notes:
+- The `* ` marker applies only to actual tuning choices.
+- Other settings on the page do not use the current-choice marker.

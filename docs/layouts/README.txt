@@ -1,6 +1,6 @@
-HEXBOARD SEQUENCER LAYOUT REFERENCES
+HEXBOARD LAYOUT REFERENCES
 
-These text files are reference sketches of important Sequencer mode screens.
+These text files are reference sketches of important HexBoard screens and menus.
 
 They are documentation only.
 
@@ -10,6 +10,9 @@ They are documentation only.
 
 Current files:
 
+- keyboard_tuning_menu_layout.txt
+- keyboard_layout_menu_layout.txt
+- keyboard_scales_menu_layout.txt
 - sequencer_menu_layout.txt
 - file_management_menu_layout.txt
 - usb_backup_menu_layout.txt

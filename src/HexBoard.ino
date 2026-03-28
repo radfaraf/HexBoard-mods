@@ -5777,15 +5777,19 @@ void drawPlayedNotesOverlay() {
 void enterKeyboardMode();
 void enterSequencerMode();
 void switchBoardMode(BoardMode newMode);
+void openTuningMenu();
+void openLayoutMenu();
+void openScalesMenu();
+void showOnlyValidLayoutChoices();
 
 GEMPage menuPageMain("Keyboard");
 GEMItem menuItemEnterSequencer("Sequencer", enterSequencerMode);
 GEMPage menuPageTuning("Tuning", menuPageMain);
-GEMItem menuGotoTuning("Tuning", menuPageTuning);
+GEMItem menuGotoTuning("Tuning", openTuningMenu);
 GEMPage menuPageLayout("Layout", menuPageMain);
-GEMItem menuGotoLayout("Layout", menuPageLayout);
+GEMItem menuGotoLayout("Layout", openLayoutMenu);
 GEMPage menuPageScales("Scales", menuPageMain);
-GEMItem menuGotoScales("Scales", menuPageScales);
+GEMItem menuGotoScales("Scales", openScalesMenu);
 GEMPage menuPageColors("Color Options", menuPageMain);
 GEMItem menuGotoColors("Color Options", menuPageColors);
 GEMPage menuPageSynth("Synth Options", menuPageMain);
@@ -5945,6 +5949,9 @@ GEMItem* menuItemSaveProfile[PROFILE_COUNT];
 GEMItem* menuItemLoadProfile[PROFILE_COUNT];
 char saveProfileLabels[PROFILE_COUNT][24];
 char loadProfileLabels[PROFILE_COUNT][24];
+char tuningMenuLabels[TUNINGCOUNT][32];
+char layoutMenuLabels[layoutCount][32];
+char scaleMenuLabels[scaleCount][32];
 /*
     We are now creating some GEMItems that let you
     1) select a value from a list of options,
@@ -7206,6 +7213,106 @@ void menuHome() {
   menu.drawMenu();
 }
 
+// Keep the Tuning menu labels in sync with the current selection marker.
+void refreshTuningMenuLabels() {
+  for (byte tuningIndex = 0; tuningIndex < TUNINGCOUNT; tuningIndex++) {
+    snprintf(
+      tuningMenuLabels[tuningIndex],
+      sizeof(tuningMenuLabels[tuningIndex]),
+      "%s%s",
+      (tuningIndex == current.tuningIndex) ? "* " : "  ",
+      tuningOptions[tuningIndex].name.c_str()
+    );
+    menuItemTuning[tuningIndex]->setTitle(tuningMenuLabels[tuningIndex]);
+  }
+}
+
+// Keep the Layout menu labels in sync with the current selection marker.
+void refreshLayoutMenuLabels() {
+  for (byte layoutIndex = 0; layoutIndex < layoutCount; layoutIndex++) {
+    snprintf(
+      layoutMenuLabels[layoutIndex],
+      sizeof(layoutMenuLabels[layoutIndex]),
+      "%s%s",
+      (layoutIndex == current.layoutIndex) ? "* " : "  ",
+      layoutOptions[layoutIndex].name.c_str()
+    );
+    menuItemLayout[layoutIndex]->setTitle(layoutMenuLabels[layoutIndex]);
+  }
+}
+
+// Keep the Scale menu labels in sync with the current selection marker.
+void refreshScaleMenuLabels() {
+  for (int scaleIndex = 0; scaleIndex < scaleCount; scaleIndex++) {
+    snprintf(
+      scaleMenuLabels[scaleIndex],
+      sizeof(scaleMenuLabels[scaleIndex]),
+      "%s%s",
+      (scaleIndex == current.scaleIndex) ? "* " : "  ",
+      scaleOptions[scaleIndex].name.c_str()
+    );
+    menuItemScales[scaleIndex]->setTitle(scaleMenuLabels[scaleIndex]);
+  }
+}
+
+// Convert the active layout into its visible GEM row index for the current tuning.
+byte getCurrentLayoutMenuItemIndex() {
+  byte visibleIndex = 1;  // account for GEM back item
+  for (byte layoutIndex = 0; layoutIndex < layoutCount; layoutIndex++) {
+    if (layoutOptions[layoutIndex].tuning != current.tuningIndex) {
+      continue;
+    }
+    if (layoutIndex == current.layoutIndex) {
+      return visibleIndex;
+    }
+    visibleIndex++;
+  }
+  return 1;
+}
+
+// Convert the active scale into its visible GEM row index on the Scales page.
+byte getCurrentScaleMenuItemIndex() {
+  byte visibleIndex = 3;  // back item + current tuning's Key row + Scale Lock
+  for (int scaleIndex = 0; scaleIndex < scaleCount; scaleIndex++) {
+    bool visibleForTuning = (scaleOptions[scaleIndex].tuning == current.tuningIndex) ||
+                            (scaleOptions[scaleIndex].tuning == ALL_TUNINGS);
+    if (!visibleForTuning) {
+      continue;
+    }
+    if (scaleIndex == current.scaleIndex) {
+      return visibleIndex;
+    }
+    visibleIndex++;
+  }
+  return 3;
+}
+
+// Open the Tuning page with the current tuning already highlighted and selected.
+void openTuningMenu() {
+  refreshTuningMenuLabels();
+  menuPageTuning.setCurrentMenuItemIndex(static_cast<byte>(current.tuningIndex + 1));
+  menu.setMenuPageCurrent(menuPageTuning);
+  menu.drawMenu();
+}
+
+// Open the Layout page with the current visible layout already highlighted and selected.
+void openLayoutMenu() {
+  refreshLayoutMenuLabels();
+  showOnlyValidLayoutChoices();
+  menuPageLayout.setCurrentMenuItemIndex(getCurrentLayoutMenuItemIndex());
+  menu.setMenuPageCurrent(menuPageLayout);
+  menu.drawMenu();
+}
+
+// Open the Scales page with the current visible scale already highlighted and selected.
+void openScalesMenu() {
+  refreshScaleMenuLabels();
+  showOnlyValidScaleChoices();
+  menuPageScales.setCurrentMenuItemIndex(getCurrentScaleMenuItemIndex());
+  menu.setMenuPageCurrent(menuPageScales);
+  menu.drawMenu();
+}
+
 void switchBoardMode(BoardMode newMode) {
   if (activeBoardMode != newMode) {
     activeBoardMode = newMode;
@@ -7246,6 +7353,7 @@ void showOnlyValidLayoutChoices() {
   for (byte L = 0; L < layoutCount; L++) {
     menuItemLayout[L]->hide((layoutOptions[L].tuning != current.tuningIndex));
   }
+  refreshLayoutMenuLabels();
   sendToLog("menu: Layout choices were updated.");
 }
 /*
@@ -7260,6 +7368,7 @@ void showOnlyValidScaleChoices() {
   for (int S = 0; S < scaleCount; S++) {
     menuItemScales[S]->hide((scaleOptions[S].tuning != current.tuningIndex) && (scaleOptions[S].tuning != ALL_TUNINGS));
   }
+  refreshScaleMenuLabels();
   sendToLog("menu: Scale choices were updated.");
 }
 /*
@@ -7296,6 +7405,7 @@ void changeLayout(GEMCallbackData callbackData) {
     markSettingsDirty();
     updateLayoutAndRotate();
   }
+  refreshLayoutMenuLabels();
   menuHome();
 }
 /*
@@ -7312,6 +7422,7 @@ void changeScale(GEMCallbackData callbackData) {  // when you change the scale v
     settings[static_cast<uint8_t>(SettingKey::CurrentScale)] = selection;
     applyScale();
   }
+  refreshScaleMenuLabels();
   menuHome();
 }
 /*
@@ -7377,6 +7488,9 @@ void changeTuning(GEMCallbackData callbackData) {
     refreshMidiRouting();                                 // clear out MIDI queue and rebuild mapping
     resetSynthFreqs();
   }
+  refreshTuningMenuLabels();
+  refreshLayoutMenuLabels();
+  refreshScaleMenuLabels();
   menuHome();
 }
 /*
@@ -7401,6 +7515,7 @@ void createTuningMenuItems() {
     menuItemTuning[T] = new GEMItem(tuningOptions[T].name.c_str(), changeTuning, T);
     menuPageTuning.addMenuItem(*menuItemTuning[T]);
   }
+  refreshTuningMenuLabels();
 }
 void createLayoutMenuItems() {
   for (byte L = 0; L < layoutCount; L++) {  // create pointers to all layouts
@@ -7408,6 +7523,7 @@ void createLayoutMenuItems() {
     menuPageLayout.addMenuItem(*menuItemLayout[L]);
   }
   showOnlyValidLayoutChoices();
+  refreshLayoutMenuLabels();
 }
 void previewKey(GEMPreviewCallbackData previewData);
 void createKeyMenuItems() {
@@ -7429,6 +7545,7 @@ void createScaleMenuItems() {
     menuPageScales.addMenuItem(*menuItemScales[S]);
   }
   showOnlyValidScaleChoices();
+  refreshScaleMenuLabels();
 }
 
 void createProfileMenuItems() {

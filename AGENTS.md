@@ -10,6 +10,15 @@ These are standing instructions for work on the Sequencer for Codex to follow.
 - Prefer keeping Sequencer-related logic in `src/SequencerMode.cpp` and `src/SequencerMode.h`.
 - Only leave bridge/helper code in `src/HexBoard.ino` when it is truly needed for shared board access or integration.
 
+## Code Commenting Preference
+
+- Add short comments to new or changed code when the purpose is not obvious.
+- Prefer comments above functions and important blocks over lots of inline comments.
+- Focus comments on intent, reason, assumptions, hardware/UI mapping, or library quirks.
+- Do not comment obvious line-by-line behavior when the code already reads clearly.
+- Keep comments brief and useful, usually one line and sometimes a few short lines when context matters.
+- When changing tricky code, update or remove nearby comments so they stay accurate.
+
 ## Sequencer Manual Maintenance
 
 Whenever Sequencer mode behavior, controls, menus, file management, naming, playback, or editing workflow changes, update the sequencer manuals to match the current behavior. Or any other Sequencer related features.
