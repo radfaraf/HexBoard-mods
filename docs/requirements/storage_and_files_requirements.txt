@@ -197,6 +197,8 @@ Details:
 - Sequence files also store per-step probability.
 - Tap Preview, Clock Source, Send Clock, and Send Transport are general
   sequencer settings and are not stored per sequence file.
+- Those general sequencer settings shall be stored in the board profile
+  settings and follow the Auto-Save profile workflow.
 
 
 ID: SEQ-FILE-017

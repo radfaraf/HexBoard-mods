@@ -161,9 +161,10 @@ Saving And Files
   Tempo, Steps, Play Type, Direction, per-step notes, per-step length,
   per-step velocity, and per-step probability.
 - Tap Preview is a general sequencer setting and is not stored per sequence
-  file.
+  file. It is saved with the board profile and Auto-Save settings system.
 - Clock Source, Send Clock, and Send Transport are general sequencer settings
-  and are not stored per sequence file.
+  and are not stored per sequence file. They are saved with the board profile
+  and Auto-Save settings system.
 - On startup, the sequencer restores the last loaded sequence file when that
   remembered path is still valid.
 - File Management > USB Backup starts a dedicated USB serial backup session for

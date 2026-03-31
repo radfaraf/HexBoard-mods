@@ -120,6 +120,10 @@ Requirement:
 The Tap Preview menu item shall control whether selecting a step also previews
 its stored notes.
 
+Details:
+- Tap Preview shall be stored in the board profile settings rather than in the
+  current sequence file.
+
 
 ID: SEQ-MENU-010
 Title: Play Type Setting
@@ -153,6 +157,11 @@ Requirement:
 The MIDI Sync submenu shall provide a Clock Source setting with Internal and
 External MIDI choices.
 
+Details:
+- Clock Source shall be stored in the board profile settings rather than in the
+  current sequence file.
+- The default Clock Source shall be Internal.
+
 
 ID: SEQ-MENU-014
 Title: Send Clock Setting
@@ -164,6 +173,11 @@ Requirement:
 The MIDI Sync submenu shall provide a Send Clock setting with Off and On
 choices.
 
+Details:
+- Send Clock shall be stored in the board profile settings rather than in the
+  current sequence file.
+- The default Send Clock state shall be Off.
+
 
 ID: SEQ-MENU-015
 Title: Send Transport Setting
@@ -174,6 +188,11 @@ Priority: Medium
 Requirement:
 The MIDI Sync submenu shall provide a Send Transport setting with Off and On
 choices.
+
+Details:
+- Send Transport shall be stored in the board profile settings rather than in
+  the current sequence file.
+- The default Send Transport state shall be Off.
 
 
 ID: SEQ-MENU-011

@@ -5228,7 +5228,7 @@ struct SettingsHeader {
   uint8_t defaultProfileIndex;
 };
 
-constexpr uint8_t CURRENT_SETTINGS_VERSION = 1;
+constexpr uint8_t CURRENT_SETTINGS_VERSION = 2;
 constexpr uint8_t PROFILE_COUNT = 9;
 constexpr uint8_t DEFAULT_PROFILE_INDEX = 0;
 
@@ -5287,9 +5287,15 @@ enum class SettingKey : uint8_t {
   EnvelopeReleaseIndex,
   Delegated,
   DisplayPlayedNotes,
+  SequencerTapPreview,
+  SequencerClockSource,
+  SequencerSendClock,
+  SequencerSendTransport,
   // This must remain last – it gives the total number of settings.
   NumSettings
 };
+
+constexpr uint8_t SETTINGS_COUNT_V1 = static_cast<uint8_t>(SettingKey::SequencerTapPreview);
 
 // Use a constexpr to get the total number of settings.
 constexpr uint8_t NUM_SETTINGS = static_cast<uint8_t>(SettingKey::NumSettings);
@@ -5356,6 +5362,10 @@ const uint8_t factoryDefaults[NUM_SETTINGS] = {
   /* EnvelopeReleaseIndex         */ 3,
   /* Delegated                    */ 0,
   /* Display played notes         */ 0,
+  /* SequencerTapPreview          */ 1,
+  /* SequencerClockSource         */ 0,
+  /* SequencerSendClock           */ 0,
+  /* SequencerSendTransport       */ 0,
 };
 
 // ==================================================
@@ -5422,8 +5432,8 @@ bool load_settings() {
     save_settings();
     return false;
   }
-  if (header.version != CURRENT_SETTINGS_VERSION) {
-    sendToLog("Settings version mismatch. File version: " + std::to_string(header.version) + "; Expected version: " + std::to_string(CURRENT_SETTINGS_VERSION));
+  if (header.version == 0 || header.version > CURRENT_SETTINGS_VERSION) {
+    sendToLog("Settings version mismatch. File version: " + std::to_string(header.version) + "; Expected at most version: " + std::to_string(CURRENT_SETTINGS_VERSION));
     f.close();
     applyFactoryDefaultsToSettings();
     save_settings();
@@ -5431,7 +5441,12 @@ bool load_settings() {
   }
   // Always boot from profile 1 even if an older file recorded a different default.
   defaultProfileIndex = DEFAULT_PROFILE_INDEX;
-  size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * NUM_SETTINGS;
+  bool needsRewrite = (header.version != CURRENT_SETTINGS_VERSION);
+  if (header.version == 1) {
+    applyFactoryDefaultsToSettings();
+  }
+  size_t storedSettingCount = (header.version >= 2) ? NUM_SETTINGS : SETTINGS_COUNT_V1;
+  size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * storedSettingCount;
   size_t bytesRead = f.read((uint8_t*)settingsProfiles, expectedSize);
   f.close();
   if (bytesRead != expectedSize) {
@@ -5444,6 +5459,9 @@ bool load_settings() {
   settings = settingsProfiles[activeProfileIndex];
   settingsDirty = false;
   sendToLog("Settings loaded successfully.");
+  if (needsRewrite) {
+    save_settings();
+  }
   return true;
 }
 
@@ -5519,6 +5537,16 @@ void copyCurrentSettingsToProfile(uint8_t profileIndex) {
   if (profileIndex != activeProfileIndex) {
     memcpy(settingsProfiles[profileIndex], settings, NUM_SETTINGS);
   }
+}
+
+// Save the sequencer's general profile-backed preferences into the active settings profile.
+void persistSequencerGeneralSettingsToProfile() {
+  SequencerPersistentSettings sequencerSettings = getSequencerPersistentSettings();
+  settings[static_cast<uint8_t>(SettingKey::SequencerTapPreview)] = sequencerSettings.tapPreview;
+  settings[static_cast<uint8_t>(SettingKey::SequencerClockSource)] = sequencerSettings.clockSource;
+  settings[static_cast<uint8_t>(SettingKey::SequencerSendClock)] = sequencerSettings.sendClock;
+  settings[static_cast<uint8_t>(SettingKey::SequencerSendTransport)] = sequencerSettings.sendTransport;
+  markSettingsDirty();
 }
 
 void saveProfileToSlot(uint8_t profileIndex) {
@@ -7217,6 +7245,12 @@ void syncSettingsToRuntime() {
   envelopeSustainLevel = settings[static_cast<uint8_t>(SettingKey::EnvelopeSustainLevel)];
   envelopeReleaseIndex = settings[static_cast<uint8_t>(SettingKey::EnvelopeReleaseIndex)];
   displayPlayedNotes = (settings[static_cast<uint8_t>(SettingKey::DisplayPlayedNotes)] !=0);
+  SequencerPersistentSettings sequencerSettings;
+  sequencerSettings.tapPreview = settings[static_cast<uint8_t>(SettingKey::SequencerTapPreview)];
+  sequencerSettings.clockSource = settings[static_cast<uint8_t>(SettingKey::SequencerClockSource)];
+  sequencerSettings.sendClock = settings[static_cast<uint8_t>(SettingKey::SequencerSendClock)];
+  sequencerSettings.sendTransport = settings[static_cast<uint8_t>(SettingKey::SequencerSendTransport)];
+  applySequencerPersistentSettings(sequencerSettings);
   updateEnvelopeParamsFromSettings();
   updateArpeggiatorTiming();
 

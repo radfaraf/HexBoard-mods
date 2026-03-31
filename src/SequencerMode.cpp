@@ -2933,7 +2933,7 @@ void sequencerStepPlayCountMenuCallback(GEMCallbackData callbackData) {
 
 void sequencerTapPreviewMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
-  setSequencerDirtyState(true);
+  persistSequencerGeneralSettingsToProfile();
 }
 
 void sequencerPlayTypeMenuCallback(GEMCallbackData callbackData) {
@@ -2951,17 +2951,17 @@ void sequencerClockSourceMenuCallback(GEMCallbackData callbackData) {
       sequencerNextMidiClockAt = runTime;
     }
   }
-  setSequencerDirtyState(true);
+  persistSequencerGeneralSettingsToProfile();
 }
 
 void sequencerSendClockMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
-  setSequencerDirtyState(true);
+  persistSequencerGeneralSettingsToProfile();
 }
 
 void sequencerSendTransportMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
-  setSequencerDirtyState(true);
+  persistSequencerGeneralSettingsToProfile();
 }
 
 void sequencerDirectionMenuCallback(GEMCallbackData callbackData) {
@@ -3163,6 +3163,34 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 }
 
 }  // namespace
+
+SequencerPersistentSettings getSequencerPersistentSettings() {
+  SequencerPersistentSettings values;
+  values.tapPreview = sequencerTapPreview;
+  values.clockSource = sequencerClockSource;
+  values.sendClock = sequencerSendClock;
+  values.sendTransport = sequencerSendTransport;
+  return values;
+}
+
+// Apply profile-backed sequencer preferences without touching per-sequence musical data.
+void applySequencerPersistentSettings(const SequencerPersistentSettings& values) {
+  sequencerTapPreview = (values.tapPreview == SEQUENCER_TAP_PREVIEW_OFF) ? SEQUENCER_TAP_PREVIEW_OFF : SEQUENCER_TAP_PREVIEW_ON;
+  sequencerClockSource =
+    (values.clockSource == SEQUENCER_CLOCK_SOURCE_EXTERNAL_MIDI) ? SEQUENCER_CLOCK_SOURCE_EXTERNAL_MIDI : SEQUENCER_CLOCK_SOURCE_INTERNAL;
+  sequencerSendClock = (values.sendClock == SEQUENCER_SEND_CLOCK_ON) ? SEQUENCER_SEND_CLOCK_ON : SEQUENCER_SEND_CLOCK_OFF;
+  sequencerSendTransport =
+    (values.sendTransport == SEQUENCER_SEND_TRANSPORT_ON) ? SEQUENCER_SEND_TRANSPORT_ON : SEQUENCER_SEND_TRANSPORT_OFF;
+
+  resetSequencerClockSyncState();
+  if (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY && !sequencerUsesExternalClock()) {
+    sequencerNextStepAt = runTime;
+    sequencerCurrentStepStartedAt = runTime;
+    if (sequencerShouldSendMidiClock()) {
+      sequencerNextMidiClockAt = runTime;
+    }
+  }
+}
 
 bool handleSequencerRotaryTurn(int8_t direction) {
   if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor) {

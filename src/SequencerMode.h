@@ -17,6 +17,13 @@ struct SequencerTunedNoteHandle {
   int16_t synthSlot = -1;
 };
 
+struct SequencerPersistentSettings {
+  byte tapPreview = 0;
+  byte clockSource = 0;
+  byte sendClock = 0;
+  byte sendTransport = 0;
+};
+
 bool getButtonPitchStepsForSequencer(byte buttonIndex, int16_t& pitchSteps);
 bool isBoardButtonPressed(byte buttonIndex);
 bool getBoardLedColorForPitchSteps(int16_t pitchSteps, bool highlighted, uint32_t& colorOut);
@@ -31,6 +38,9 @@ uint32_t getSequencerUnsetStepLedColor(bool highlighted);
 void sendSequencerMidiClockPulse();
 void sendSequencerMidiTransportStart();
 void sendSequencerMidiTransportStop();
+SequencerPersistentSettings getSequencerPersistentSettings();
+void applySequencerPersistentSettings(const SequencerPersistentSettings& values);
+void persistSequencerGeneralSettingsToProfile();
 bool startSequencerTunedNote(int16_t pitchSteps, bool useSynth, byte velocity, SequencerTunedNoteHandle& handle);
 void stopSequencerTunedNote(SequencerTunedNoteHandle& handle);
 void enterKeyboardMode();

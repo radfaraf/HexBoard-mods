@@ -712,10 +712,11 @@ The current save file stores:
 - the probability value for each step
 
 Tap Preview is a general sequencer setting and is not stored per sequence
-file.
+file. It is saved with the board profile and Auto-Save settings system.
 
 Clock Source, Send Clock, and Send Transport are general sequencer settings and
-are not stored per sequence file.
+are not stored per sequence file. They are saved with the board profile and
+Auto-Save settings system.
 
 Current sequence files are saved as `version=2` with `noteFormat=stepsFromC`.
 
