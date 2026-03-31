@@ -262,3 +262,51 @@ Details:
 - In 12 EDO, stored notes behave like normal chromatic pitches.
 - In other tunings, stored notes shall continue to use the active tuning
   mapping without requiring a different sequence file format.
+
+
+ID: SEQ-PLAY-021
+Title: Clock Source Behavior
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+The sequencer shall support Internal and External MIDI clock sources.
+
+Details:
+- Internal uses the local Tempo setting as the active step clock.
+- External MIDI ignores the local step timer and advances playback from
+  incoming MIDI clock pulses.
+
+
+ID: SEQ-PLAY-022
+Title: Internal MIDI Clock Send
+Status: Active
+Area: Playback
+Priority: Medium
+
+Requirement:
+When Clock Source is Internal and Send Clock is On, the sequencer shall send
+MIDI clock while transport is playing.
+
+
+ID: SEQ-PLAY-023
+Title: MIDI Transport Send
+Status: Active
+Area: Playback
+Priority: Medium
+
+Requirement:
+When Clock Source is Internal and Send Transport is On, the sequencer shall
+send MIDI Start and Stop messages when local transport starts and stops.
+
+
+ID: SEQ-PLAY-024
+Title: External MIDI Transport Receive
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+When Clock Source is External MIDI, incoming MIDI Start and Stop messages
+shall control sequencer transport.

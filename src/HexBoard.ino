@@ -2395,6 +2395,18 @@ void sendBoardPreviewMidiNote(byte midiNote, bool noteOn, byte velocity) {
   }
 }
 
+void sendSequencerMidiClockPulse() {
+  withMIDI([&](auto& M) { M.sendRealTime(MIDI_NAMESPACE::Clock); });
+}
+
+void sendSequencerMidiTransportStart() {
+  withMIDI([&](auto& M) { M.sendRealTime(MIDI_NAMESPACE::Start); });
+}
+
+void sendSequencerMidiTransportStop() {
+  withMIDI([&](auto& M) { M.sendRealTime(MIDI_NAMESPACE::Stop); });
+}
+
 void sendBoardPreviewSynthNote(byte midiNote, bool noteOn, byte velocity) {
   if (midiNote >= 128) {
     return;
@@ -4962,32 +4974,46 @@ void processIncomingSysEx(const uint8_t* data, const unsigned int len) {
 }
 
 void processIncomingMIDI() {
-  if (delegatedControl || !isKeyboardMode()) {
+  if (delegatedControl) {
     return;
-  } else {
-    withMIDI([&](auto& M) {
-      while (M.read()) {
-        const auto type = M.getType();
-        if (type == MIDI_NAMESPACE::SystemExclusive) {
-          const uint8_t* sysex = M.getSysExArray();
-          const unsigned int len = M.getSysExArrayLength();
-          processIncomingSysEx(sysex, len);
-          continue;
-        }
-
-        const byte n    = M.getData1();  // note
-        const byte v    = M.getData2();  // velocity
-
-        if (type == MIDI_NAMESPACE::NoteOn) {
-          // treat NoteOn vel==0 as NoteOff
-          applyExternalMidiToHex(n, v != 0);
-        } else if (type == MIDI_NAMESPACE::NoteOff
-                   || (type == MIDI_NAMESPACE::NoteOn && v == 0)) {
-          applyExternalMidiToHex(n, false);
-        }
-      }
-    });
   }
+
+  withMIDI([&](auto& M) {
+    while (M.read()) {
+      const auto type = M.getType();
+
+      if (!isKeyboardMode()) {
+        if (type == MIDI_NAMESPACE::Clock) {
+          handleSequencerExternalMidiClock();
+        } else if (type == MIDI_NAMESPACE::Start) {
+          handleSequencerExternalMidiStart();
+        } else if (type == MIDI_NAMESPACE::Stop) {
+          handleSequencerExternalMidiStop();
+        } else if (type == MIDI_NAMESPACE::Continue) {
+          handleSequencerExternalMidiContinue();
+        }
+        continue;
+      }
+
+      if (type == MIDI_NAMESPACE::SystemExclusive) {
+        const uint8_t* sysex = M.getSysExArray();
+        const unsigned int len = M.getSysExArrayLength();
+        processIncomingSysEx(sysex, len);
+        continue;
+      }
+
+      const byte n = M.getData1();
+      const byte v = M.getData2();
+
+      if (type == MIDI_NAMESPACE::NoteOn) {
+        // treat NoteOn vel==0 as NoteOff
+        applyExternalMidiToHex(n, v != 0);
+      } else if (type == MIDI_NAMESPACE::NoteOff
+                 || (type == MIDI_NAMESPACE::NoteOn && v == 0)) {
+        applyExternalMidiToHex(n, false);
+      }
+    }
+  });
 }
 
 void animateLEDs() {

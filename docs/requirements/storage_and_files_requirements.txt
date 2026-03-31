@@ -187,14 +187,16 @@ Area: Files
 Priority: High
 
 Requirement:
-A saved sequence file shall store the current tempo, active step count, tap
-preview state, play type, direction, tuning-relative pitch steps per step, gate
-or length per step,
-and velocity per step.
+A saved sequence file shall store the current tempo, active step count, play
+type, direction, tuning-relative pitch steps per step, gate or length per
+step, and velocity per step.
 
 Details:
 - Current files are written as version 2.
 - Current files declare noteFormat=stepsFromC.
+- Sequence files also store per-step probability.
+- Tap Preview, Clock Source, Send Clock, and Send Transport are general
+  sequencer settings and are not stored per sequence file.
 
 
 ID: SEQ-FILE-017

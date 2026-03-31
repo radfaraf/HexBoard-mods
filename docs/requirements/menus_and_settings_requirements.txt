@@ -77,6 +77,7 @@ Details:
 - Direction
 - Tempo
 - Play Type
+- MIDI Sync
 
 
 ID: SEQ-MENU-006
@@ -129,6 +130,50 @@ Priority: High
 Requirement:
 The Play Type menu item shall switch between MIDI playback and onboard synth
 playback.
+
+
+ID: SEQ-MENU-012
+Title: MIDI Sync Submenu
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Playback Settings submenu shall provide a MIDI Sync submenu for clock and
+transport sync settings.
+
+
+ID: SEQ-MENU-013
+Title: Clock Source Setting
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The MIDI Sync submenu shall provide a Clock Source setting with Internal and
+External MIDI choices.
+
+
+ID: SEQ-MENU-014
+Title: Send Clock Setting
+Status: Active
+Area: Menus
+Priority: Medium
+
+Requirement:
+The MIDI Sync submenu shall provide a Send Clock setting with Off and On
+choices.
+
+
+ID: SEQ-MENU-015
+Title: Send Transport Setting
+Status: Active
+Area: Menus
+Priority: Medium
+
+Requirement:
+The MIDI Sync submenu shall provide a Send Transport setting with Off and On
+choices.
 
 
 ID: SEQ-MENU-011

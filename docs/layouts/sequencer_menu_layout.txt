@@ -25,6 +25,13 @@ Playback Settings submenu:
   Direction
   Tempo
   Play Type
+  MIDI Sync
+
+MIDI Sync submenu:
+
+  Clock Source
+  Send Clock
+  Send Transport
 
 Notes:
 

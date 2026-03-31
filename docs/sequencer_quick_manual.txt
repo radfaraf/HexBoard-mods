@@ -111,8 +111,16 @@ Exact length screen:
 
 Playback
 
-- Tempo is in Playback Settings and is the step clock.
+- Tempo is in Playback Settings and is the internal step clock.
 - Each step is a 16th note at the current tempo.
+- MIDI Sync is in Playback Settings.
+- Clock Source chooses:
+  Internal or External MIDI
+- With Clock Source set to External MIDI, incoming MIDI clock drives the step
+  timing and incoming MIDI Start/Stop controls transport.
+- Send Clock can send MIDI clock while the sequencer is playing in Internal mode.
+- Send Transport can send MIDI Start/Stop when local transport is used in
+  Internal mode.
 - Hold Play/Stop for 2 seconds to show the performance monitor while held.
 - Steps sets the active playback range from 1 to 32.
 - Step lights beyond the active Steps count stay off, even if those steps still
@@ -134,7 +142,9 @@ Menu Items
 - Load: loads a saved sequence.
 - Revert: reloads the last saved version of the current sequence.
 - Playback Settings:
-  Steps, Direction, Tempo, Play Type
+  Steps, Direction, Tempo, Play Type, MIDI Sync
+- Playback Settings > MIDI Sync:
+  Clock Source, Send Clock, Send Transport
 - File Management:
   Rename File, Rename Folder, Create Folder, Delete File, Delete Folder,
   USB Backup
@@ -147,6 +157,13 @@ Saving And Files
 - Sequences are stored under /Sequences in onboard flash.
 - Sequence files store note pitches as tuning-relative step values instead of
   raw MIDI note numbers.
+- Sequence files also store:
+  Tempo, Steps, Play Type, Direction, per-step notes, per-step length,
+  per-step velocity, and per-step probability.
+- Tap Preview is a general sequencer setting and is not stored per sequence
+  file.
+- Clock Source, Send Clock, and Send Transport are general sequencer settings
+  and are not stored per sequence file.
 - On startup, the sequencer restores the last loaded sequence file when that
   remembered path is still valid.
 - File Management > USB Backup starts a dedicated USB serial backup session for

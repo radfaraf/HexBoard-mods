@@ -204,10 +204,38 @@ The performance monitor shows:
 
 8.2 Tempo
 
-Tempo is set in Playback Settings. The sequencer treats each step as a
-16th-note step at the current BPM.
+Tempo is set in Playback Settings. When Clock Source is Internal, the sequencer
+treats each step as a 16th-note step at the current BPM.
 
-8.3 Steps
+8.3 Clock Source
+
+Clock Source is in Playback Settings > MIDI Sync.
+
+- Internal: the sequencer uses its own Tempo setting as the active step clock
+- External MIDI: incoming MIDI clock drives the sequencer timing
+
+When Clock Source is External MIDI:
+
+- incoming MIDI Start starts the sequencer from the beginning
+- incoming MIDI Stop stops the sequencer
+- local tempo remains stored, but external MIDI clock is the active timing
+  source while running
+
+8.4 Clock Send And Transport Send
+
+Playback Settings > MIDI Sync also includes:
+
+- Send Clock
+- Send Transport
+
+Current behavior:
+
+- Send Clock only applies when Clock Source is Internal
+- when Send Clock is On, the sequencer sends MIDI clock while transport plays
+- Send Transport only applies when Clock Source is Internal
+- when Send Transport is On, local Play/Stop sends MIDI Start and Stop
+
+8.5 Steps
 
 The Steps menu item decides how many steps are active in playback:
 
@@ -215,10 +243,10 @@ The Steps menu item decides how many steps are active in playback:
 - maximum 32
 
 All 32 steps still remain editable even if the active playback count is lower.
-Step LEDs beyond the active playback count stay dark, even if those later steps
-still contain notes.
+Step LEDs beyond the active playback count stay dark, even if those later
+steps still contain notes.
 
-8.4 Direction
+8.6 Direction
 
 Available direction modes:
 
@@ -399,6 +427,13 @@ Playback Settings submenu:
 - Direction
 - Tempo
 - Play Type
+- MIDI Sync
+
+MIDI Sync submenu:
+
+- Clock Source
+- Send Clock
+- Send Transport
 
 File Management submenu:
 
@@ -669,13 +704,18 @@ The current save file stores:
 
 - tempo
 - active step count
-- tap preview state
 - play type
 - direction
 - the tuning-relative pitch-step values in each step
 - the gate/length value for each step
 - the velocity value for each step
 - the probability value for each step
+
+Tap Preview is a general sequencer setting and is not stored per sequence
+file.
+
+Clock Source, Send Clock, and Send Transport are general sequencer settings and
+are not stored per sequence file.
 
 Current sequence files are saved as `version=2` with `noteFormat=stepsFromC`.
 

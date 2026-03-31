@@ -16,6 +16,7 @@ extern GEMPage menuPageSequencer;
 extern GEMPage menuPageSequencerBrowser;
 extern GEMPage menuPageSequencerFiles;
 extern GEMPage menuPageSequencerPlayback;
+extern GEMPage menuPageSequencerMidiSync;
 extern GEMPage menuPageSequencerUsbBackup;
 extern GEMPage menuPageSequencerUsbBackupExitConfirm;
 extern GEMPage menuPageSequencerUsbBackupStopConfirm;
@@ -67,6 +68,13 @@ constexpr byte SEQUENCER_TAP_PREVIEW_OFF = 0;
 constexpr byte SEQUENCER_TAP_PREVIEW_ON = 1;
 constexpr byte SEQUENCER_PLAY_TYPE_MIDI = 0;
 constexpr byte SEQUENCER_PLAY_TYPE_OB_SYNTH = 1;
+constexpr byte SEQUENCER_CLOCK_SOURCE_INTERNAL = 0;
+constexpr byte SEQUENCER_CLOCK_SOURCE_EXTERNAL_MIDI = 1;
+constexpr byte SEQUENCER_SEND_CLOCK_OFF = 0;
+constexpr byte SEQUENCER_SEND_CLOCK_ON = 1;
+constexpr byte SEQUENCER_SEND_TRANSPORT_OFF = 0;
+constexpr byte SEQUENCER_SEND_TRANSPORT_ON = 1;
+constexpr byte SEQUENCER_MIDI_CLOCKS_PER_STEP = 6;
 constexpr byte SEQUENCER_DIRECTION_FORWARD = 0;
 constexpr byte SEQUENCER_DIRECTION_BACKWARD = 1;
 constexpr byte SEQUENCER_DIRECTION_PING_PONG = 2;
@@ -210,6 +218,9 @@ SequencerOverlayMode sequencerOverlayBeforePerformance = SequencerOverlayMode::H
 byte sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
 byte sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
 byte sequencerPlayType = SEQUENCER_PLAY_TYPE_MIDI;
+byte sequencerClockSource = SEQUENCER_CLOCK_SOURCE_INTERNAL;
+byte sequencerSendClock = SEQUENCER_SEND_CLOCK_OFF;
+byte sequencerSendTransport = SEQUENCER_SEND_TRANSPORT_OFF;
 byte sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
 int8_t sequencerPingPongDelta = 1;
 byte sequencerTempo = 120;
@@ -251,12 +262,23 @@ uint32_t sequencerPerformanceHeapTotalBytes = 0;
 uint64_t sequencerPerformanceStorageUsedBytes = 0;
 uint64_t sequencerPerformanceStorageTotalBytes = 0;
 bool sequencerPerformanceStorageValid = false;
+byte sequencerExternalClockCount = 0;
+uint64_t sequencerExternalClockLastAt = 0;
+uint64_t sequencerExternalStepDuration = 0;
+uint64_t sequencerNextMidiClockAt = 0;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
 void showSequencerPersistentStatusMessage(const char* lineOne, const char* lineTwo);
 bool rememberSequencerCurrentPath();
 void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
 void refreshSequencerMenuTitle();
+void resetSequencerClockSyncState();
+bool sequencerUsesExternalClock();
+bool sequencerShouldSendMidiClock();
+bool sequencerShouldSendMidiTransport();
+uint64_t sequencerCurrentStepDurationMicros();
+void advanceSequencerPlaybackStep(uint64_t stepDuration, bool applyProbability = true);
+void serviceSequencerInternalMidiClock();
 void enterSequencerExactLengthEdit();
 void exitSequencerExactLengthEdit(bool saveChanges);
 void enterSequencerExactVelocityEdit();
@@ -301,7 +323,7 @@ extern GEMItem menuItemSequencerUsbBackupStopPromptThree;
 extern GEMItem menuItemSequencerUsbBackupStopPromptFour;
 extern GEMItem menuItemSequencerUsbBackupStopYes;
 extern GEMItem menuItemSequencerUsbBackupStopNo;
-void setSequencerTransportState(byte newState, bool redrawMenu = true);
+void setSequencerTransportState(byte newState, bool redrawMenu = true, bool sendMidi = true);
 void refreshSequencerUsbBackupMenu(bool redrawMenu = true);
 void usbBackupStatusMenuCallback();
 void startUsbBackupMenuCallback();
@@ -328,6 +350,7 @@ void saveEditBufferToStep(byte stepIndex);
 void copySequencerStepData(byte sourceStep, byte destinationStep);
 void restoreSelectedSequencerStepFromUndo();
 void previewSequencerStep(byte stepIndex);
+void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability = true);
 byte sequencerSelectedStepVelocity();
 void sendSequencerManagedNoteOff(int16_t pitchSteps, bool playbackNote);
 int getVisibleBrowserEntryMenuIndex(bool firstVisible);
@@ -1656,6 +1679,32 @@ uint64_t sequencerStepDurationMicros() {
   return 60000000ULL / static_cast<uint64_t>(tempo) / 4ULL;
 }
 
+void resetSequencerClockSyncState() {
+  sequencerExternalClockCount = 0;
+  sequencerExternalClockLastAt = 0;
+  sequencerExternalStepDuration = 0;
+  sequencerNextMidiClockAt = 0;
+}
+
+bool sequencerUsesExternalClock() {
+  return sequencerClockSource == SEQUENCER_CLOCK_SOURCE_EXTERNAL_MIDI;
+}
+
+bool sequencerShouldSendMidiClock() {
+  return !sequencerUsesExternalClock() && sequencerSendClock == SEQUENCER_SEND_CLOCK_ON;
+}
+
+bool sequencerShouldSendMidiTransport() {
+  return !sequencerUsesExternalClock() && sequencerSendTransport == SEQUENCER_SEND_TRANSPORT_ON;
+}
+
+uint64_t sequencerCurrentStepDurationMicros() {
+  if (sequencerUsesExternalClock() && sequencerExternalStepDuration > 0) {
+    return sequencerExternalStepDuration;
+  }
+  return sequencerStepDurationMicros();
+}
+
 byte sequencerSelectedStepVelocity() {
   if (sequencerSelectedStep >= 0) {
     return sequencerStepVelocity[sequencerSelectedStep];
@@ -1856,7 +1905,39 @@ void serviceSequencerPlaybackGroups() {
   }
 }
 
-void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability = true) {
+void advanceSequencerPlaybackStep(uint64_t stepDuration, bool applyProbability) {
+  byte activeStepCount = sequencerActiveStepCount();
+  sequencerPlayingStep = nextSequencerStep(activeStepCount);
+
+  byte noteCount = sequencerStepNoteCount[sequencerPlayingStep];
+  if (noteCount == 0) {
+    return;
+  }
+
+  startSequencerPlaybackGroup(static_cast<byte>(sequencerPlayingStep), stepDuration, applyProbability);
+}
+
+void serviceSequencerInternalMidiClock() {
+  if (!sequencerShouldSendMidiClock() || sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
+    return;
+  }
+
+  uint64_t clockPulseDuration = sequencerStepDurationMicros() / SEQUENCER_MIDI_CLOCKS_PER_STEP;
+  if (clockPulseDuration == 0) {
+    clockPulseDuration = 1;
+  }
+
+  if (sequencerNextMidiClockAt == 0) {
+    sequencerNextMidiClockAt = runTime;
+  }
+
+  while (runTime >= sequencerNextMidiClockAt) {
+    sendSequencerMidiClockPulse();
+    sequencerNextMidiClockAt += clockPulseDuration;
+  }
+}
+
+void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability) {
   uint16_t gatePercent = sequencerStepGatePercent[stepIndex];
   byte noteCount = sequencerStepNoteCount[stepIndex];
   byte stepVelocity = sequencerStepVelocity[stepIndex];
@@ -1935,6 +2016,10 @@ void clearSelectedSequencerStep() {
 }
 
 void resetSequencerState() {
+  byte preservedTapPreview = sequencerTapPreview;
+  byte preservedClockSource = sequencerClockSource;
+  byte preservedSendClock = sequencerSendClock;
+  byte preservedSendTransport = sequencerSendTransport;
   stopSequencerAuditionNotes();
   stopSequencerPlaybackNote();
 
@@ -1959,8 +2044,11 @@ void resetSequencerState() {
   sequencerCopySourceStep = -1;
   sequencerPlayingStep = -1;
   sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
-  sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
+  sequencerTapPreview = preservedTapPreview;
   sequencerPlayType = SEQUENCER_PLAY_TYPE_MIDI;
+  sequencerClockSource = preservedClockSource;
+  sequencerSendClock = preservedSendClock;
+  sequencerSendTransport = preservedSendTransport;
   sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
   sequencerPingPongDelta = 1;
   sequencerTempo = 120;
@@ -1978,6 +2066,7 @@ void resetSequencerState() {
   sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
   sequencerProbabilityDisplay = SEQUENCER_DEFAULT_PROBABILITY;
   sequencerExactProbabilityOriginal = SEQUENCER_DEFAULT_PROBABILITY;
+  resetSequencerClockSyncState();
   hideSequencerOverlay();
 }
 
@@ -2063,9 +2152,6 @@ bool loadSequencerFromFlash() {
       if (stepCount >= 1 && stepCount <= SEQUENCER_STEP_COUNT) {
         sequencerStepPlayCount = static_cast<byte>(stepCount);
       }
-    } else if (key == "tapPreview") {
-      int tapPreviewValue = value.toInt();
-      sequencerTapPreview = (tapPreviewValue == SEQUENCER_TAP_PREVIEW_ON) ? SEQUENCER_TAP_PREVIEW_ON : SEQUENCER_TAP_PREVIEW_OFF;
     } else if (key == "playType") {
       int playTypeValue = value.toInt();
       sequencerPlayType = (playTypeValue == SEQUENCER_PLAY_TYPE_OB_SYNTH) ? SEQUENCER_PLAY_TYPE_OB_SYNTH : SEQUENCER_PLAY_TYPE_MIDI;
@@ -2104,6 +2190,7 @@ bool loadSequencerFromFlash() {
   }
 
   f.close();
+  resetSequencerClockSyncState();
   setSequencerDirtyState(false);
   return sawFormat;
 }
@@ -2160,9 +2247,6 @@ bool loadSequencerFromPath(const char* path) {
       if (stepCount >= 1 && stepCount <= SEQUENCER_STEP_COUNT) {
         sequencerStepPlayCount = static_cast<byte>(stepCount);
       }
-    } else if (key == "tapPreview") {
-      int tapPreviewValue = value.toInt();
-      sequencerTapPreview = (tapPreviewValue == SEQUENCER_TAP_PREVIEW_ON) ? SEQUENCER_TAP_PREVIEW_ON : SEQUENCER_TAP_PREVIEW_OFF;
     } else if (key == "playType") {
       int playTypeValue = value.toInt();
       sequencerPlayType = (playTypeValue == SEQUENCER_PLAY_TYPE_OB_SYNTH) ? SEQUENCER_PLAY_TYPE_OB_SYNTH : SEQUENCER_PLAY_TYPE_MIDI;
@@ -2201,6 +2285,7 @@ bool loadSequencerFromPath(const char* path) {
   }
 
   f.close();
+  resetSequencerClockSyncState();
   setSequencerDirtyState(false);
   return sawFormat;
 }
@@ -2228,8 +2313,6 @@ bool saveSequencerToPath(const char* path) {
   f.println(sequencerTempo);
   f.print("steps=");
   f.println(sequencerStepPlayCount);
-  f.print("tapPreview=");
-  f.println(sequencerTapPreview);
   f.print("playType=");
   f.println(sequencerPlayType);
   f.print("direction=");
@@ -2804,19 +2887,29 @@ void showSequencerPersistentStatusMessage(const char* lineOne, const char* lineT
   sequencerOverlayDirty = true;
 }
 
-void setSequencerTransportState(byte newState, bool redrawMenu) {
+void setSequencerTransportState(byte newState, bool redrawMenu, bool sendMidi) {
   byte normalizedState = (newState == SEQUENCER_TRANSPORT_PLAY) ? SEQUENCER_TRANSPORT_PLAY : SEQUENCER_TRANSPORT_STOP;
   sequencerTransportState = normalizedState;
+  resetSequencerClockSyncState();
   if (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY) {
     sequencerPlayingStep = -1;
     sequencerPingPongDelta = 1;
     sequencerNextStepAt = runTime;
     sequencerCurrentStepStartedAt = runTime;
+    if (sequencerShouldSendMidiTransport() && sendMidi) {
+      sendSequencerMidiTransportStart();
+    }
+    if (sequencerShouldSendMidiClock()) {
+      sequencerNextMidiClockAt = runTime;
+    }
   } else {
     stopSequencerPlaybackNote();
     sequencerPlayingStep = -1;
     sequencerNextStepAt = 0;
     sequencerCurrentStepStartedAt = 0;
+    if (sequencerShouldSendMidiTransport() && sendMidi) {
+      sendSequencerMidiTransportStop();
+    }
   }
   if (redrawMenu) {
     menu.drawMenu();
@@ -2848,6 +2941,29 @@ void sequencerPlayTypeMenuCallback(GEMCallbackData callbackData) {
   setSequencerDirtyState(true);
 }
 
+void sequencerClockSourceMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  resetSequencerClockSyncState();
+  if (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY && !sequencerUsesExternalClock()) {
+    sequencerNextStepAt = runTime;
+    sequencerCurrentStepStartedAt = runTime;
+    if (sequencerShouldSendMidiClock()) {
+      sequencerNextMidiClockAt = runTime;
+    }
+  }
+  setSequencerDirtyState(true);
+}
+
+void sequencerSendClockMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  setSequencerDirtyState(true);
+}
+
+void sequencerSendTransportMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  setSequencerDirtyState(true);
+}
+
 void sequencerDirectionMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   sequencerPingPongDelta = 1;
@@ -2864,6 +2980,21 @@ SelectOptionByte optionByteSequencerTapPreview[] = { { "Off", SEQUENCER_TAP_PREV
 GEMSelect selectSequencerTapPreview(sizeof(optionByteSequencerTapPreview) / sizeof(SelectOptionByte), optionByteSequencerTapPreview);
 SelectOptionByte optionByteSequencerPlayType[] = { { "MIDI", SEQUENCER_PLAY_TYPE_MIDI }, { "OB Synth", SEQUENCER_PLAY_TYPE_OB_SYNTH } };
 GEMSelect selectSequencerPlayType(sizeof(optionByteSequencerPlayType) / sizeof(SelectOptionByte), optionByteSequencerPlayType);
+SelectOptionByte optionByteSequencerClockSource[] = {
+  { "Internal", SEQUENCER_CLOCK_SOURCE_INTERNAL },
+  { "External MIDI", SEQUENCER_CLOCK_SOURCE_EXTERNAL_MIDI }
+};
+GEMSelect selectSequencerClockSource(sizeof(optionByteSequencerClockSource) / sizeof(SelectOptionByte), optionByteSequencerClockSource);
+SelectOptionByte optionByteSequencerSendClock[] = {
+  { "Off", SEQUENCER_SEND_CLOCK_OFF },
+  { "On", SEQUENCER_SEND_CLOCK_ON }
+};
+GEMSelect selectSequencerSendClock(sizeof(optionByteSequencerSendClock) / sizeof(SelectOptionByte), optionByteSequencerSendClock);
+SelectOptionByte optionByteSequencerSendTransport[] = {
+  { "Off", SEQUENCER_SEND_TRANSPORT_OFF },
+  { "On", SEQUENCER_SEND_TRANSPORT_ON }
+};
+GEMSelect selectSequencerSendTransport(sizeof(optionByteSequencerSendTransport) / sizeof(SelectOptionByte), optionByteSequencerSendTransport);
 
 SelectOptionByte optionByteSequencerDirection[] = {
   { "Forward", SEQUENCER_DIRECTION_FORWARD },
@@ -2881,6 +3012,7 @@ GEMSelect selectSequencerDirection(sizeof(optionByteSequencerDirection) / sizeof
 
 GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuGotoSequencerPlayback("Playback Settings", menuPageSequencerPlayback);
+GEMItem menuGotoSequencerMidiSync("MIDI Sync", menuPageSequencerMidiSync);
 GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
 GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
 GEMItem menuGotoSequencerUsbBackup("USB Backup", menuPageSequencerUsbBackup);
@@ -2896,6 +3028,9 @@ GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerTapPreview("Tap Preview", sequencerTapPreview, selectSequencerTapPreview, sequencerTapPreviewMenuCallback);
 GEMItem menuItemSequencerPlayType("Play Type", sequencerPlayType, selectSequencerPlayType, sequencerPlayTypeMenuCallback);
+GEMItem menuItemSequencerClockSource("Clock Source", sequencerClockSource, selectSequencerClockSource, sequencerClockSourceMenuCallback);
+GEMItem menuItemSequencerSendClock("Send Clock", sequencerSendClock, selectSequencerSendClock, sequencerSendClockMenuCallback);
+GEMItem menuItemSequencerSendTransport("Send Transport", sequencerSendTransport, selectSequencerSendTransport, sequencerSendTransportMenuCallback);
 GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequencerDirection, sequencerDirectionMenuCallback);
 GEMItem menuItemSequencerTempo("Tempo", sequencerTempo, spinnerSequencerTempo, sequencerTempoMenuCallback);
 GEMItem menuItemSequencerFirmwareUpdate("Update Firmware", rebootToBootloader);
@@ -3169,6 +3304,7 @@ bool handleSequencerEncoderClick() {
 GEMPage menuPageSequencer("Sequencer");
 GEMPage menuPageSequencerFiles("File Management", menuPageSequencer);
 GEMPage menuPageSequencerPlayback("Playback Settings", menuPageSequencer);
+GEMPage menuPageSequencerMidiSync("MIDI Sync", menuPageSequencerPlayback);
 GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
 GEMPage menuPageSequencerUsbBackup("USB Backup", menuPageSequencerFiles);
 GEMPage menuPageSequencerUsbBackupExitConfirm("Leave Backup?", menuPageSequencerUsbBackup);
@@ -3436,6 +3572,12 @@ void setupSequencerMenu() {
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerDirection);
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerTempo);
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerPlayType);
+  menuPageSequencerPlayback.addMenuItem(menuGotoSequencerMidiSync);
+
+  // Keep MIDI sync in its own submenu so these general settings are clearly separate from per-sequence playback data.
+  menuPageSequencerMidiSync.addMenuItem(menuItemSequencerClockSource);
+  menuPageSequencerMidiSync.addMenuItem(menuItemSequencerSendClock);
+  menuPageSequencerMidiSync.addMenuItem(menuItemSequencerSendTransport);
 
   menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFile);
   menuPageSequencerFiles.addMenuItem(menuItemSequencerRenameFolder);
@@ -4038,8 +4180,13 @@ void updateSequencerTransport() {
   }
 
   serviceSequencerPlaybackGroups();
+  serviceSequencerInternalMidiClock();
 
   if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
+    return;
+  }
+
+  if (sequencerUsesExternalClock()) {
     return;
   }
 
@@ -4050,13 +4197,59 @@ void updateSequencerTransport() {
   uint64_t stepDuration = sequencerStepDurationMicros();
   sequencerCurrentStepStartedAt = sequencerNextStepAt;
   sequencerNextStepAt += stepDuration;
-  byte activeStepCount = sequencerActiveStepCount();
-  sequencerPlayingStep = nextSequencerStep(activeStepCount);
+  advanceSequencerPlaybackStep(stepDuration);
+}
 
-  byte noteCount = sequencerStepNoteCount[sequencerPlayingStep];
-  if (noteCount == 0) {
+void handleSequencerExternalMidiClock() {
+  if (!sequencerUsesExternalClock()) {
     return;
   }
 
-  startSequencerPlaybackGroup(static_cast<byte>(sequencerPlayingStep), stepDuration);
+  if (sequencerExternalClockLastAt != 0 && runTime > sequencerExternalClockLastAt) {
+    uint64_t pulseDuration = runTime - sequencerExternalClockLastAt;
+    uint64_t stepDuration = pulseDuration * SEQUENCER_MIDI_CLOCKS_PER_STEP;
+    if (stepDuration > 0) {
+      sequencerExternalStepDuration = stepDuration;
+    }
+  }
+  sequencerExternalClockLastAt = runTime;
+
+  if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
+    return;
+  }
+
+  sequencerExternalClockCount = static_cast<byte>((sequencerExternalClockCount + 1) % SEQUENCER_MIDI_CLOCKS_PER_STEP);
+  if (sequencerExternalClockCount != 0) {
+    return;
+  }
+
+  uint64_t stepDuration = sequencerCurrentStepDurationMicros();
+  sequencerCurrentStepStartedAt = runTime;
+  advanceSequencerPlaybackStep(stepDuration);
+}
+
+void handleSequencerExternalMidiStart() {
+  if (!sequencerUsesExternalClock()) {
+    return;
+  }
+
+  setSequencerTransportState(SEQUENCER_TRANSPORT_PLAY, false, false);
+  sequencerCurrentStepStartedAt = runTime;
+  advanceSequencerPlaybackStep(sequencerCurrentStepDurationMicros());
+}
+
+void handleSequencerExternalMidiStop() {
+  if (!sequencerUsesExternalClock()) {
+    return;
+  }
+
+  setSequencerTransportState(SEQUENCER_TRANSPORT_STOP, false, false);
+}
+
+void handleSequencerExternalMidiContinue() {
+  if (!sequencerUsesExternalClock()) {
+    return;
+  }
+
+  setSequencerTransportState(SEQUENCER_TRANSPORT_PLAY, false, false);
 }
