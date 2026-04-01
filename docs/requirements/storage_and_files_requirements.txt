@@ -66,8 +66,9 @@ Requirement:
 Save shall write the current sequence back to the currently loaded file.
 
 Details:
-- If no current file exists, Save shall open sequence naming and save after the
-  user enters a name.
+- If no current file exists, Save shall open folder selection first, then
+  sequence naming, and save after the user chooses a location and enters a
+  name.
 
 
 ID: SEQ-FILE-007

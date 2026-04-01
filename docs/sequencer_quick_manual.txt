@@ -138,7 +138,7 @@ Menu Items
   temporarily make the top two command buttons act like one encoder step up or
   down. Releasing that bottom button returns them to normal behavior.
 - New: clears to a blank untitled sequence.
-- Save: saves to the current file, or opens naming if the sequence is untitled.
+- Save: saves to the current file, or opens folder selection and naming if the sequence is untitled.
 - Save New: saves as a new file in the selected folder.
 - Load: loads a saved sequence.
 - Revert: reloads the last saved version of the current sequence.

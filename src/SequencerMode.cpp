@@ -335,6 +335,7 @@ void usbBackupStopPromptMenuCallback();
 void confirmUsbBackupStopMenuCallback();
 void cancelUsbBackupStopMenuCallback();
 bool guardSequencerStorageForUsbBackup(const char* actionLineTwo);
+void openSequencerSaveNewBrowser();
 
 const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
   0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000
@@ -2541,12 +2542,7 @@ void saveSequencerMenuCallback() {
     return;
   }
   if (sequencerCurrentSequencePath[0] == '\0') {
-    if (!fileSystemExists || !ensureSequencerStorageRoot()) {
-      showSequencerStatusMessage("Error Saving", "FS unavailable");
-      return;
-    }
-    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), SEQUENCER_STORAGE_ROOT);
-    startSequencerNaming(SequencerNamingTarget::Sequence, "");
+    openSequencerSaveNewBrowser();
     return;
   }
   if (saveSequencerToCurrentPath()) {

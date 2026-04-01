@@ -459,8 +459,8 @@ Sequencer until you save the new sequence.
 
 Save writes the current sequence back to the currently loaded file.
 
-If no current file exists yet, Save opens sequence naming first and saves after
-you enter a name.
+If no current file exists yet, Save opens folder selection first, then
+sequence naming, and saves after you choose a location and enter a name.
 
 13.3 Save New
 
