@@ -12,6 +12,7 @@ Menu order:
   Playback Settings
   Synth Options
   File Management
+  New
   Save
   Save New
   Load

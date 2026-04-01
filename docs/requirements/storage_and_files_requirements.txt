@@ -43,6 +43,20 @@ extension.
 
 
 ID: SEQ-FILE-005
+Title: New Blank Sequence
+Status: Active
+Area: Files
+Priority: High
+
+Requirement:
+New shall clear the sequencer to a blank untitled sequence.
+
+Details:
+- New shall clear the current loaded file path.
+- New shall leave the blank sequence in a clean non-dirty state.
+
+
+ID: SEQ-FILE-006
 Title: Save Current Sequence
 Status: Active
 Area: Files
@@ -52,10 +66,11 @@ Requirement:
 Save shall write the current sequence back to the currently loaded file.
 
 Details:
-- If no current file exists, Save shall create a new file in /Sequences.
+- If no current file exists, Save shall open sequence naming and save after the
+  user enters a name.
 
 
-ID: SEQ-FILE-006
+ID: SEQ-FILE-007
 Title: Save New Sequence
 Status: Active
 Area: Files
@@ -66,7 +81,7 @@ Save New shall let the user choose a folder, enter a new sequence name, and
 save a new sequence file there.
 
 
-ID: SEQ-FILE-007
+ID: SEQ-FILE-008
 Title: Load Sequence
 Status: Active
 Area: Files
@@ -76,7 +91,7 @@ Requirement:
 Load shall open the sequence browser and load a selected sequence file.
 
 
-ID: SEQ-FILE-008
+ID: SEQ-FILE-009
 Title: Revert Sequence
 Status: Active
 Area: Files
@@ -93,7 +108,7 @@ Details:
   sequence state.
 
 
-ID: SEQ-FILE-009
+ID: SEQ-FILE-010
 Title: File Browser Paging
 Status: Active
 Area: Files
@@ -108,7 +123,7 @@ Details:
 - Turning past the first or last real file row changes page.
 
 
-ID: SEQ-FILE-010
+ID: SEQ-FILE-011
 Title: Startup Sequence Restore
 Status: Active
 Area: Files
@@ -119,7 +134,7 @@ On startup, the sequencer shall attempt to restore the last remembered current
 sequence path before falling back to the legacy sequence file.
 
 
-ID: SEQ-FILE-011
+ID: SEQ-FILE-012
 Title: File Management Actions
 Status: Active
 Area: Files
@@ -130,7 +145,7 @@ The system shall support Rename File, Rename Folder, Create Folder, Delete File,
 Delete Folder, and USB Backup actions through the file management workflow.
 
 
-ID: SEQ-FILE-012
+ID: SEQ-FILE-013
 Title: Recursive Folder Deletion
 Status: Active
 Area: Files
@@ -140,7 +155,7 @@ Requirement:
 Deleting a folder shall remove that folder and its contents recursively.
 
 
-ID: SEQ-FILE-013
+ID: SEQ-FILE-014
 Title: Naming Mode Character Set
 Status: Active
 Area: Files
@@ -151,7 +166,7 @@ Naming mode shall support uppercase letters plus SPC, hyphen, and the digits
 0 through 9.
 
 
-ID: SEQ-FILE-014
+ID: SEQ-FILE-015
 Title: Naming Mode Save And Cancel
 Status: Active
 Area: Files
@@ -162,7 +177,7 @@ Naming mode shall save on encoder press and cancel without saving when the
 Cancel key is pressed.
 
 
-ID: SEQ-FILE-015
+ID: SEQ-FILE-016
 Title: Dirty Title Indicator
 Status: Active
 Area: Files
@@ -180,7 +195,7 @@ Details:
 - Editing notes, length, velocity, or sequencer settings sets the dirty state.
 
 
-ID: SEQ-FILE-016
+ID: SEQ-FILE-017
 Title: Sequence File Contents
 Status: Active
 Area: Files
@@ -201,7 +216,7 @@ Details:
   settings and follow the Auto-Save profile workflow.
 
 
-ID: SEQ-FILE-017
+ID: SEQ-FILE-018
 Title: USB Serial Backup Session
 Status: Active
 Area: Files
@@ -228,7 +243,7 @@ Details:
   workflows shall be blocked until the session is stopped.
 
 
-ID: SEQ-FILE-018
+ID: SEQ-FILE-019
 Title: Host Backup Tool Operations
 Status: Active
 Area: Files

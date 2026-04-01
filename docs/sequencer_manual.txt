@@ -414,6 +414,7 @@ Main Sequencer menu:
 - Playback Settings
 - Synth Options
 - File Management
+- New
 - Save
 - Save New
 - Load
@@ -445,24 +446,32 @@ File Management submenu:
 - USB Backup
 
 
-13. Saving, Loading, And Reverting
+13. New, Saving, Loading, And Reverting
 
-13.1 Save
+13.1 New
+
+New clears the sequencer to a blank untitled sequence.
+
+It also clears the current loaded file path, so the title returns to
+Sequencer until you save the new sequence.
+
+13.2 Save
 
 Save writes the current sequence back to the currently loaded file.
 
-If no current file exists yet, Save creates a new file in /Sequences.
+If no current file exists yet, Save opens sequence naming first and saves after
+you enter a name.
 
-13.2 Save New
+13.3 Save New
 
 Save New opens the sequence browser so you can choose a folder, then name a
 new sequence file in that location.
 
-13.3 Load
+13.4 Load
 
 Load opens the browser and loads a saved sequence file.
 
-13.4 Revert
+13.5 Revert
 
 Revert discards unsaved edits and reloads the last saved version of the
 current file.

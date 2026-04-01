@@ -2540,11 +2540,30 @@ void saveSequencerMenuCallback() {
   if (!guardSequencerStorageForUsbBackup("Stop session first")) {
     return;
   }
+  if (sequencerCurrentSequencePath[0] == '\0') {
+    if (!fileSystemExists || !ensureSequencerStorageRoot()) {
+      showSequencerStatusMessage("Error Saving", "FS unavailable");
+      return;
+    }
+    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), SEQUENCER_STORAGE_ROOT);
+    startSequencerNaming(SequencerNamingTarget::Sequence, "");
+    return;
+  }
   if (saveSequencerToCurrentPath()) {
     showSequencerPathStatusMessage("Saved", sequencerCurrentSequencePath);
   } else {
     showSequencerStatusMessage("Error Saving", "Flash write failed");
   }
+}
+
+void newSequencerMenuCallback() {
+  if (!guardSequencerStorageForUsbBackup("Stop session first")) {
+    return;
+  }
+  resetSequencerState();
+  clearSequencerCurrentPath();
+  setSequencerDirtyState(false);
+  showSequencerStatusMessage("New", "Blank sequence");
 }
 
 void revertSequencerMenuCallback() {
@@ -3016,6 +3035,7 @@ GEMItem menuGotoSequencerMidiSync("MIDI Sync", menuPageSequencerMidiSync);
 GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
 GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
 GEMItem menuGotoSequencerUsbBackup("USB Backup", menuPageSequencerUsbBackup);
+GEMItem menuItemSequencerNew("New", newSequencerMenuCallback);
 GEMItem menuItemSequencerSave("Save", saveSequencerMenuCallback);
 GEMItem menuItemSequencerSaveNew("Save New", openSequencerSaveNewBrowser);
 GEMItem menuItemSequencerLoad("Load", openSequencerLoadBrowser);
@@ -3589,6 +3609,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuGotoSequencerPlayback);
   menuPageSequencer.addMenuItem(menuGotoSynthFromSequencer);
   menuPageSequencer.addMenuItem(menuGotoSequencerFiles);
+  menuPageSequencer.addMenuItem(menuItemSequencerNew);
   menuPageSequencer.addMenuItem(menuItemSequencerSave);
   menuPageSequencer.addMenuItem(menuItemSequencerSaveNew);
   menuPageSequencer.addMenuItem(menuItemSequencerLoad);
