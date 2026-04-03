@@ -136,17 +136,14 @@ When needed:
 
 ## Commit Message Preference
 
-- When any changes are made and there are uncommitted changes available, always suggest a commit message for the current uncommitted work.
-- Base commit message suggestions on what is currently uncommitted now, not on older work that may already have been committed.
-- If earlier changes are still uncommitted, suggest one combined commit message that covers all currently uncommitted changes together.
-- Commit message suggestions must always cover all currently uncommitted changes, not just the most recent change from the current turn.
-- This applies to all affected files, including `AGENTS.md`, manuals, layout docs, requirements, scripts, and code.
-- Only stop including earlier work in the suggested message after it has actually been committed.
-- After the user commits those changes, future commit message suggestions should cover only the remaining new uncommitted changes.
-- Do not keep mentioning already committed work in later commit message suggestions.
+- When there are uncommitted changes, always suggest one commit message that covers everything currently uncommitted, not just the latest turn's work.
+- If earlier changes are still uncommitted, keep including them in the suggested message until they are actually committed.
+- Phrase the message around the main resulting change as a whole. If the uncommitted work is "add feature X" plus follow-up fixes to finish feature X before commit, the message should usually be about adding feature X, not about the latest fix in isolation.
+- Once some changes have been committed, stop mentioning them and base future suggestions only on what is still uncommitted.
+- This applies across all affected files, including `AGENTS.md`, manuals, layout docs, requirements, scripts, and code.
 - Keep commit message suggestions simple, clear, and easy to use.
 - Format commit suggestions like this so they are easy to spot:
-  `COMMIT MESSAGE SUGGEST:`
+  `COMMIT MESSAGE SUGGESTION:`
   `message here`
 
 ## Personal Notes File
