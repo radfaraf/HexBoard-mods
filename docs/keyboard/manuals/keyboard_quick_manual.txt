@@ -48,7 +48,8 @@ Main Menu
 - `Layout`: choose the current layout for the tuning and adjust mirror/rotate.
 - `Scales`: choose `Key`, `Scale Lock`, and the current scale.
 - `Color Options`: set color mode, brightness, animation, rest brightness, and
-  dim brightness.
+  dim brightness. `Dim Bright` affects out-of-scale note LEDs only when
+  `Scale Lock` is Off.
 - `Synth Options`: set synth mode, waveform, envelope, arpeggiator settings,
   and on hardware v1.2 the audio output destination.
 - `MIDI Options`: set MIDI channel, MPE behavior, CC 74 value, and preset

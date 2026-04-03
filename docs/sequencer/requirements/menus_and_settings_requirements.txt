@@ -69,6 +69,9 @@ Details:
   Keyboard Color Options menu.
 - Changing a Color Options setting from Keyboard mode or Sequencer mode shall
   update the same shared value.
+- Rest Bright shall control normal in-scale resting note brightness.
+- Dim Bright shall control out-of-scale note brightness only while Scale Lock
+  is Off.
 
 
 ID: SEQ-MENU-004

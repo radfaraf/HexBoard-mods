@@ -254,8 +254,12 @@ Current `Animation` choices:
 Brightness controls:
 
 - `Brightness` is the global LED output level
-- `Rest Bright` sets the resting note-key brightness level
-- `Dim Bright` sets the dimmed-note brightness level
+- `Rest Bright` sets the brightness of normal in-scale resting note keys
+- `Dim Bright` sets the brightness of out-of-scale note keys when `Scale Lock`
+  is Off
+- When `Scale Lock` is On, out-of-scale notes are turned off instead of using
+  the dim state
+- `Dim Bright` does not affect currently played notes
 
 6.2 Screen saver
 

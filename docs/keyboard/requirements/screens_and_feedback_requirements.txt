@@ -41,6 +41,11 @@ Details:
   `Dim Bright`.
 - Previewing those values shall immediately refresh LED presentation where the
   current code supports preview callbacks.
+- `Rest Bright` shall control the brightness of normal in-scale resting note
+  LEDs.
+- `Dim Bright` shall control the brightness of out-of-scale note LEDs only
+  while `Scale Lock` is Off.
+- When `Scale Lock` is On, out-of-scale notes shall be off instead of dimmed.
 
 Related:
 - KB-MENU-030

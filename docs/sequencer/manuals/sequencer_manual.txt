@@ -454,6 +454,12 @@ Color Options submenu:
 - Rest Bright
 - Dim Bright
 
+These are the same shared color settings used in Keyboard mode.
+
+- Rest Bright controls normal in-scale resting note brightness.
+- Dim Bright controls out-of-scale note brightness only while Scale Lock is Off.
+- When Scale Lock is On, out-of-scale notes are off instead of dimmed.
+
 
 13. New, Saving, Loading, And Reverting
 

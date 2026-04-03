@@ -169,6 +169,8 @@ Saving And Files
   and Auto-Save settings system.
 - Color Options settings are shared with Keyboard mode and use the same board
   profile and Auto-Save settings system.
+- In those shared settings, `Dim Bright` affects out-of-scale note LEDs only
+  when `Scale Lock` is Off.
 - On startup, the sequencer restores the last loaded sequence file when that
   remembered path is still valid.
 - File Management > USB Backup starts a dedicated USB serial backup session for
