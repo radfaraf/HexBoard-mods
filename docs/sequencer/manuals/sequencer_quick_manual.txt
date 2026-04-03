@@ -145,7 +145,7 @@ Menu Items
 - Load: loads a saved sequence.
 - Revert: reloads the last saved version of the current sequence.
 - Seq Lights:
-  Accent Every, Accent Shift, Step Color, Step Hue
+  Accent Every, Step Color, Step Hue
 - Color Options: opens the shared LED color settings page
 - Playback Settings:
   Steps, Direction, Tempo, Play Type, MIDI Sync
@@ -163,32 +163,27 @@ Seq Lights
 - Accent Every emphasizes every Nth step, starting from step 1.
 - Choices are:
   Off, 2, 3, 4, 5, 6, 7, 8
+- Accent Every uses brightness changes only and does not change hue.
 - Default Accent Every is 4.
-- Accent Shift controls how far accented programmed steps shift in hue.
-- Accent Shift choices are:
-  15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70
-- Default Accent Shift is 20.
-- Accent Shift is shown only when Accent Every is not Off.
-- Accent Shift previews live while you scroll through its choices.
-- White-ish note accents and accented empty steps try to choose a nearby hue
-  that stays at least 20 degrees away from conflicting sequencer hues.
 - Step Color choices are:
   Note, Regular
 - Default Step Color is Regular.
-- In Note mode, programmed steps use note-based colors and empty steps stay
-  white.
-- In Note mode, accented programmed steps use a stable accent variant of the
-  note hue.
-- Accented empty steps use a visible light-blue to cyan accent so Accent Every
-  remains easy to see on white steps too.
-- White and white-ish accent paths are kept one brightness level lower than the
-  other step accents while still following shared Color Options brightness.
-- If an accented note-mode step is selected, it stays in that accented hue and
-  gets brighter.
-- In Regular mode, programmed steps use the selected Step Hue and empty steps
-  stay white.
-- In Regular mode, an accented selected step keeps its accent hue and gets
-  brighter.
+- Sequencer step lights use this brightness ladder:
+  off, low, medium, high, highest
+- The current step mapping is:
+  empty step without accent = off
+  empty step with accent = medium
+  step with note = medium
+  accented step with note = highest
+  selected step with note = highest
+  playing step with note = highest
+- In Note mode, programmed steps use note-based colors with that brightness
+  ladder.
+- In Regular mode, programmed steps use the selected Step Hue with that
+  brightness ladder.
+- Empty unselected steps without accent stay off in both modes.
+- A selected or playing empty step lights at the highest level so selection and
+  playback are still visible.
 - Step Hue is available only in Regular mode.
 - Step Hue choices are:
   Red, Orange, Yellow, Lime, Green, Teal, Cyan, Lt Blue, Blue, Indigo,

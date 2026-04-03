@@ -1352,13 +1352,12 @@ public:
   uint32_t LEDcodePlay = 0;  // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeRest = 0;  // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeSelected = 0;  // sequencer-selected color that preserves the note hue while standing out more
-  uint32_t LEDcodeAccent = 0;  // sequencer accent color that preserves the note hue without using the play tint
-  uint32_t LEDcodeAccentSelected = 0;  // sequencer-selected accent color that keeps the accent hue family and raises brightness
+  uint32_t LEDcodeAccent = 0;  // sequencer accent color that keeps the note hue and raises brightness
+  uint32_t LEDcodeAccentSelected = 0;  // sequencer-selected accent color that uses the same hue and raises brightness further
   uint32_t LEDcodeOff = 0;   // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeDim = 0;   // calculate it once and store value, to make LED playback snappier
-  float baseLedHue = 0.0f;   // base note hue before rest/selected/accent variants are derived
-  byte baseLedSat = 0;       // base note saturation before rest/selected/accent variants are derived
-  byte baseLedVal = 0;       // base note value before rest/selected/accent variants are derived
+  float baseLedHue = 0.0f;   // cached base hue so Sequencer note lights can choose their own brightness ladder
+  byte baseLedSat = 0;       // cached base saturation for Sequencer note lights
   bool animate = 0;          // hex is flagged as part of the animation in this frame, helps make animations smoother
   int16_t stepsFromC = 0;    // number of steps from C4 (semitones in 12EDO; microtones if >12EDO)
   bool isCmd = 0;            // 0 if it's a MIDI note; 1 if it's a MIDI control cmd
@@ -1694,14 +1693,13 @@ bool getBoardAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOu
   return false;
 }
 
-bool getBoardBaseLedColorForPitchSteps(int16_t pitchSteps, float& hueOut, byte& satOut, byte& valOut) {
+bool getBoardBaseLedColorForPitchSteps(int16_t pitchSteps, float& hueOut, byte& satOut) {
   for (byte i = 0; i < LED_COUNT; i++) {
     if (h[i].isCmd || h[i].stepsFromC != pitchSteps) {
       continue;
     }
     hueOut = h[i].baseLedHue;
     satOut = h[i].baseLedSat;
-    valOut = h[i].baseLedVal;
     return true;
   }
   return false;
@@ -1940,6 +1938,14 @@ colorDef getColor(int32_t temp) {
   */
 uint32_t getLEDcode(colorDef c) {
   return strip.gamma32(strip.ColorHSV(transformHue(c.hue), c.sat, c.val * globalBrightness / 255));
+}
+
+uint32_t buildBoardLinearLedColor(float hue, byte sat, byte val) {
+  return strip.ColorHSV(transformHue(hue), sat, val * globalBrightness / 255);
+}
+
+uint32_t gammaBoardLedColor(uint32_t color) {
+  return strip.gamma32(color);
 }
 /*
     This function cycles through each button, and based on what color
@@ -2186,7 +2192,6 @@ void setLEDcolorCodes() {
       }
       h[i].baseLedHue = setColor.hue;
       h[i].baseLedSat = setColor.sat;
-      h[i].baseLedVal = setColor.val;
       colorDef restColor = setColor;
       restColor.val = applyLEDLevel(restColor.val, ledRestBrightness);
       h[i].LEDcodeRest = getLEDcode(restColor);
@@ -2194,16 +2199,7 @@ void setLEDcolorCodes() {
       selectedColor.val = applyLEDLevel(VALUE_FULL, ledRestBrightness);
       h[i].LEDcodeSelected = getLEDcode(selectedColor);
       colorDef accentColor = setColor;
-      if (accentColor.sat == SAT_BW) {
-        // Pure white ignores hue shifts, so reuse Accent Shift as a stronger cool-white tint strength.
-        accentColor.hue = HUE_LIGHT_BLUE;
-        accentColor.sat = byteLerp(110, 170, 10.0f, 35.0f, getSequencerAccentHueShift());
-      } else {
-        accentColor.hue += getSequencerAccentHueShift();
-        if (accentColor.hue >= 360.0f) {
-          accentColor.hue -= 360.0f;
-        }
-      }
+      // Sequencer accents now use brightness only so note identity always stays in the same hue.
       accentColor.val = static_cast<byte>(min(static_cast<int>(selectedColor.val), static_cast<int>(restColor.val) + 24));
       h[i].LEDcodeAccent = getLEDcode(accentColor);
       colorDef accentSelectedColor = accentColor;
@@ -5323,7 +5319,7 @@ struct SettingsHeader {
   uint8_t defaultProfileIndex;
 };
 
-constexpr uint8_t CURRENT_SETTINGS_VERSION = 4;
+constexpr uint8_t CURRENT_SETTINGS_VERSION = 2;
 constexpr uint8_t PROFILE_COUNT = 9;
 constexpr uint8_t DEFAULT_PROFILE_INDEX = 0;
 
@@ -5389,14 +5385,9 @@ enum class SettingKey : uint8_t {
   SequencerStepAccentEvery,
   SequencerStepColorMode,
   SequencerStepHue,
-  SequencerStepAccentShift,
   // This must remain last – it gives the total number of settings.
   NumSettings
 };
-
-constexpr uint8_t SETTINGS_COUNT_V1 = static_cast<uint8_t>(SettingKey::SequencerTapPreview);
-constexpr uint8_t SETTINGS_COUNT_V2 = static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery);
-constexpr uint8_t SETTINGS_COUNT_V3 = static_cast<uint8_t>(SettingKey::SequencerStepAccentShift);
 
 // Use a constexpr to get the total number of settings.
 constexpr uint8_t NUM_SETTINGS = static_cast<uint8_t>(SettingKey::NumSettings);
@@ -5470,7 +5461,6 @@ const uint8_t factoryDefaults[NUM_SETTINGS] = {
   /* SequencerStepAccentEvery     */ 4,
   /* SequencerStepColorMode       */ 1,
   /* SequencerStepHue             */ 9,
-  /* SequencerStepAccentShift     */ 20,
 };
 
 // ==================================================
@@ -5537,8 +5527,8 @@ bool load_settings() {
     save_settings();
     return false;
   }
-  if (header.version == 0 || header.version > CURRENT_SETTINGS_VERSION) {
-    sendToLog("Settings version mismatch. File version: " + std::to_string(header.version) + "; Expected at most version: " + std::to_string(CURRENT_SETTINGS_VERSION));
+  if (header.version != CURRENT_SETTINGS_VERSION) {
+    sendToLog("Settings version mismatch. File version: " + std::to_string(header.version) + "; Expected version: " + std::to_string(CURRENT_SETTINGS_VERSION));
     f.close();
     applyFactoryDefaultsToSettings();
     save_settings();
@@ -5546,19 +5536,17 @@ bool load_settings() {
   }
   // Always boot from profile 1 even if an older file recorded a different default.
   defaultProfileIndex = DEFAULT_PROFILE_INDEX;
-  bool needsRewrite = (header.version != CURRENT_SETTINGS_VERSION);
-  if (header.version <= 3) {
+  size_t storedSettingCount = NUM_SETTINGS;
+  size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * NUM_SETTINGS;
+  size_t actualSize = static_cast<size_t>(f.size());
+  size_t actualSettingsSize = (actualSize >= sizeof(SettingsHeader)) ? (actualSize - sizeof(SettingsHeader)) : 0;
+  if (actualSettingsSize != expectedSize) {
+    sendToLog("Settings size mismatch for current version. Restoring defaults.");
+    f.close();
     applyFactoryDefaultsToSettings();
+    save_settings();
+    return false;
   }
-  size_t storedSettingCount = SETTINGS_COUNT_V1;
-  if (header.version >= 4) {
-    storedSettingCount = NUM_SETTINGS;
-  } else if (header.version >= 3) {
-    storedSettingCount = SETTINGS_COUNT_V3;
-  } else if (header.version >= 2) {
-    storedSettingCount = SETTINGS_COUNT_V2;
-  }
-  size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * storedSettingCount;
   // Read into a packed buffer first so older file widths do not misalign the
   // in-memory profile rows when NUM_SETTINGS grows in newer firmware.
   uint8_t packedSettings[PROFILE_COUNT * NUM_SETTINGS] = { 0 };
@@ -5580,9 +5568,6 @@ bool load_settings() {
   settings = settingsProfiles[activeProfileIndex];
   settingsDirty = false;
   sendToLog("Settings loaded successfully.");
-  if (needsRewrite) {
-    save_settings();
-  }
   return true;
 }
 
@@ -5670,7 +5655,6 @@ void persistSequencerGeneralSettingsToProfile() {
   settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)] = sequencerSettings.stepAccentEvery;
   settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)] = sequencerSettings.stepColorMode;
   settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)] = sequencerSettings.stepHue;
-  settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentShift)] = sequencerSettings.stepAccentShift;
   markSettingsDirty();
 }
 
@@ -7390,7 +7374,6 @@ void syncSettingsToRuntime() {
   sequencerSettings.stepAccentEvery = settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)];
   sequencerSettings.stepColorMode = settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)];
   sequencerSettings.stepHue = settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)];
-  sequencerSettings.stepAccentShift = settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentShift)];
   applySequencerPersistentSettings(sequencerSettings);
   updateEnvelopeParamsFromSettings();
   updateArpeggiatorTiming();
