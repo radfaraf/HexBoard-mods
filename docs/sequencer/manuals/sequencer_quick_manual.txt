@@ -166,10 +166,12 @@ Seq Lights
 - Default Accent Every is 4.
 - Accent Shift controls how far accented programmed steps shift in hue.
 - Accent Shift choices are:
-  10, 15, 20, 25, 30, 35
+  15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70
 - Default Accent Shift is 20.
 - Accent Shift is shown only when Accent Every is not Off.
 - Accent Shift previews live while you scroll through its choices.
+- White-ish note accents and accented empty steps try to choose a nearby hue
+  that stays at least 20 degrees away from conflicting sequencer hues.
 - Step Color choices are:
   Note, Regular
 - Default Step Color is Regular.
@@ -179,6 +181,8 @@ Seq Lights
   note hue.
 - Accented empty steps use a visible light-blue to cyan accent so Accent Every
   remains easy to see on white steps too.
+- White and white-ish accent paths are kept one brightness level lower than the
+  other step accents while still following shared Color Options brightness.
 - If an accented note-mode step is selected, it stays in that accented hue and
   gets brighter.
 - In Regular mode, programmed steps use the selected Step Hue and empty steps

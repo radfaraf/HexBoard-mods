@@ -3,6 +3,7 @@
 
 #include <Adafruit_NeoPixel.h>
 #include <LittleFS.h>
+#include <cmath>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -337,6 +338,9 @@ bool isSequencerAccentStep(byte stepIndex);
 float sequencerStepHueValue(byte hueSetting);
 byte normalizeSequencerStepAccentShift(byte rawShift);
 byte sequencerByteLerp(byte startValue, byte endValue, float startAt, float endAt, float currentValue);
+float normalizeSequencerHue(float hue);
+float sequencerHueDistance(float leftHue, float rightHue);
+float chooseDistinctSequencerWhiteAccentHue(float preferredHue);
 uint32_t getSequencerAccentedNoteStepLedColor(int16_t pitchSteps, bool selected);
 uint32_t getSequencerAccentedUnsetStepLedColor(bool selected);
 uint32_t getSequencerRegularFilledStepLedColor(bool highlighted, bool accented);
@@ -396,6 +400,52 @@ byte sequencerByteLerp(byte startValue, byte endValue, float startAt, float endA
   return static_cast<byte>(blended);
 }
 
+float normalizeSequencerHue(float hue) {
+  while (hue < 0.0f) {
+    hue += 360.0f;
+  }
+  while (hue >= 360.0f) {
+    hue -= 360.0f;
+  }
+  return hue;
+}
+
+float sequencerHueDistance(float leftHue, float rightHue) {
+  float delta = fabsf(normalizeSequencerHue(leftHue) - normalizeSequencerHue(rightHue));
+  return (delta > 180.0f) ? (360.0f - delta) : delta;
+}
+
+float chooseDistinctSequencerWhiteAccentHue(float preferredHue) {
+  constexpr float minimumHueDistance = 20.0f;
+  float blockedHues[] = {
+    normalizeSequencerHue(preferredHue),
+    sequencerStepHueValue(sequencerStepHue)
+  };
+
+  for (int stepOffset = 1; stepOffset <= 9; ++stepOffset) {
+    float lowerCandidate = preferredHue - (20.0f * stepOffset);
+    if (isfinite(lowerCandidate)) {
+      lowerCandidate = normalizeSequencerHue(lowerCandidate);
+      if (sequencerHueDistance(lowerCandidate, blockedHues[0]) >= minimumHueDistance &&
+          sequencerHueDistance(lowerCandidate, blockedHues[1]) >= minimumHueDistance) {
+        return lowerCandidate;
+      }
+    }
+
+    float higherCandidate = preferredHue + (20.0f * stepOffset);
+    if (!isfinite(higherCandidate)) {
+      continue;
+    }
+    higherCandidate = normalizeSequencerHue(higherCandidate);
+    if (sequencerHueDistance(higherCandidate, blockedHues[0]) >= minimumHueDistance &&
+        sequencerHueDistance(higherCandidate, blockedHues[1]) >= minimumHueDistance) {
+      return higherCandidate;
+    }
+  }
+
+  return normalizeSequencerHue(preferredHue + 20.0f);
+}
+
 uint32_t getSequencerAccentedNoteStepLedColor(int16_t pitchSteps, bool selected) {
   float hue = 0.0f;
   byte sat = 0;
@@ -419,15 +469,15 @@ uint32_t getSequencerAccentedNoteStepLedColor(int16_t pitchSteps, bool selected)
     // White-ish notes need an explicit accent color that stays visible on hardware.
     float coolHueStart = getBoardNamedHue(SEQUENCER_STEP_HUE_LIGHT_BLUE);
     float coolHueEnd = getBoardNamedHue(SEQUENCER_STEP_HUE_CYAN);
-    float shiftWeight = (getSequencerAccentHueShift() - 10.0f) / 25.0f;
+    float shiftWeight = (getSequencerAccentHueShift() - 15.0f) / 55.0f;
     if (shiftWeight < 0.0f) {
       shiftWeight = 0.0f;
     } else if (shiftWeight > 1.0f) {
       shiftWeight = 1.0f;
     }
-    hue = coolHueStart + ((coolHueEnd - coolHueStart) * shiftWeight);
-    sat = 255;
-    accentVal = applyBoardRestLedLevel(selected ? 255 : 220);
+    hue = chooseDistinctSequencerWhiteAccentHue(coolHueStart + ((coolHueEnd - coolHueStart) * shiftWeight));
+    sat = 127;
+    accentVal = applyBoardRestLedLevel(selected ? 220 : 180);
   } else {
     hue += getSequencerAccentHueShift();
     if (hue >= 360.0f) {
@@ -447,15 +497,15 @@ uint32_t getSequencerAccentedUnsetStepLedColor(bool selected) {
   // their own accent color or "white accented steps" will still look white.
   float coolHueStart = getBoardNamedHue(SEQUENCER_STEP_HUE_LIGHT_BLUE);
   float coolHueEnd = getBoardNamedHue(SEQUENCER_STEP_HUE_CYAN);
-  float shiftWeight = (getSequencerAccentHueShift() - 10.0f) / 25.0f;
+  float shiftWeight = (getSequencerAccentHueShift() - 15.0f) / 55.0f;
   if (shiftWeight < 0.0f) {
     shiftWeight = 0.0f;
   } else if (shiftWeight > 1.0f) {
     shiftWeight = 1.0f;
   }
-  float hue = coolHueStart + ((coolHueEnd - coolHueStart) * shiftWeight);
-  byte value = applyBoardRestLedLevel(selected ? 255 : 210);
-  return buildBoardLedColor(hue, 255, value);
+  float hue = chooseDistinctSequencerWhiteAccentHue(coolHueStart + ((coolHueEnd - coolHueStart) * shiftWeight));
+  byte value = applyBoardRestLedLevel(selected ? 220 : 180);
+  return buildBoardLedColor(hue, 127, value);
 }
 
 // Regular step colors are sequencer-only UI colors and ignore the stored note hue.
@@ -470,18 +520,24 @@ uint32_t getSequencerRegularFilledStepLedColor(bool highlighted, bool accented) 
     }
   }
 
-  const byte stepValue = highlighted ? 255 : 150;
+  const byte stepValue = applyBoardRestLedLevel(highlighted ? 255 : 150);
   return buildBoardLedColor(hue, 255, stepValue);
 }
 
 byte normalizeSequencerStepAccentShift(byte rawShift) {
   switch (rawShift) {
-    case 10:
     case 15:
     case 20:
     case 25:
     case 30:
     case 35:
+    case 40:
+    case 45:
+    case 50:
+    case 55:
+    case 60:
+    case 65:
+    case 70:
       return rawShift;
     default:
       return SEQUENCER_STEP_ACCENT_SHIFT_DEFAULT;
@@ -3231,12 +3287,18 @@ SelectOptionByte optionByteSequencerStepAccentEvery[] = {
 };
 GEMSelect selectSequencerStepAccentEvery(sizeof(optionByteSequencerStepAccentEvery) / sizeof(SelectOptionByte), optionByteSequencerStepAccentEvery);
 SelectOptionByte optionByteSequencerStepAccentShift[] = {
-  { " 10", 10 },
   { " 15", 15 },
   { " 20", 20 },
   { " 25", 25 },
   { " 30", 30 },
-  { " 35", 35 }
+  { " 35", 35 },
+  { " 40", 40 },
+  { " 45", 45 },
+  { " 50", 50 },
+  { " 55", 55 },
+  { " 60", 60 },
+  { " 65", 65 },
+  { " 70", 70 }
 };
 GEMSelect selectSequencerStepAccentShift(sizeof(optionByteSequencerStepAccentShift) / sizeof(SelectOptionByte), optionByteSequencerStepAccentShift);
 SelectOptionByte optionByteSequencerStepColor[] = {

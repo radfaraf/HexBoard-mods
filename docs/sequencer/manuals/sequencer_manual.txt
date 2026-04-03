@@ -466,7 +466,8 @@ Seq Lights submenu:
 
 These are the same shared color settings used in Keyboard mode.
 
-- Rest Bright controls normal in-scale resting note brightness.
+- Rest Bright controls normal resting note brightness and regular sequencer
+  step-light brightness.
 - Dim Bright controls out-of-scale note brightness only while Scale Lock is Off.
 - When Scale Lock is On, out-of-scale notes are off instead of dimmed.
 
@@ -476,10 +477,12 @@ Seq Lights controls:
 - Accent Every choices are Off, 2, 3, 4, 5, 6, 7, and 8.
 - The default Accent Every value is 4.
 - Accent Shift controls how far accented programmed steps shift in hue.
-- Accent Shift choices are 10, 15, 20, 25, 30, and 35.
+- Accent Shift choices are 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, and 70.
 - The default Accent Shift value is 20.
 - Accent Shift is shown only while Accent Every is not Off.
 - Accent Shift previews live while you scroll through its choices.
+- White-ish note accents and accented empty steps try to choose a nearby hue
+  that stays at least 20 degrees away from conflicting sequencer hues.
 - Step Color chooses between:
   Note and Regular.
 - The default Step Color value is Regular.
@@ -489,6 +492,8 @@ Seq Lights controls:
   note hue instead of switching to the play-highlight tint.
 - Accented empty steps use a visible light-blue to cyan accent so Accent Every
   remains easy to see on white steps too.
+- White and white-ish accent paths are kept one brightness level lower than the
+  other step accents while still following the shared Color Options brightness.
 - If an accented note-mode step is selected, it stays in that accented hue and
   increases in brightness.
 - In Regular mode, programmed steps use the selected Step Hue and empty steps

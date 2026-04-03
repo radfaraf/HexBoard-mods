@@ -70,7 +70,8 @@ Details:
   Keyboard Color Options menu.
 - Changing a Color Options setting from Keyboard mode or Sequencer mode shall
   update the same shared value.
-- Rest Bright shall control normal in-scale resting note brightness.
+- Rest Bright shall control normal resting note brightness and regular
+  sequencer step-light brightness.
 - Dim Bright shall control out-of-scale note brightness only while Scale Lock
   is Off.
 
@@ -93,11 +94,13 @@ Details:
 - Accent Every shall emphasize every Nth step, starting from step 1.
 - The default Accent Every value shall be 4.
 - Accent Shift shall provide:
-  10, 15, 20, 25, 30, 35.
+  15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70.
 - The default Accent Shift value shall be 20.
 - Accent Shift shall be available only while Accent Every is not Off.
 - Accent Shift shall preview live while its menu choices are scrolled before
   the selection is confirmed.
+- White-ish note accents and accented empty steps shall choose a nearby hue
+  that stays at least 20 degrees away from conflicting sequencer hues.
 - Step Color shall provide:
   Note and Regular.
 - The default Step Color value shall be Regular.
@@ -107,6 +110,9 @@ Details:
   variant of the note hue rather than switching to the play-highlight tint.
 - Accented empty steps shall use a visible light-blue to cyan accent so Accent
   Every remains easy to see on white steps too.
+- White and white-ish accent paths shall stay one brightness level lower than
+  the other step accents while still following shared Color Options
+  brightness.
 - In Step Color = Regular, programmed steps shall use the selected Step Hue and
   empty steps shall stay white.
 - In Step Color = Regular, an accented selected step shall keep its accent hue
