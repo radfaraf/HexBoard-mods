@@ -5017,7 +5017,9 @@ void processIncomingMIDI() {
 }
 
 void animateLEDs() {
-  if (delegatedControl || !isKeyboardMode()) {
+  // Sequencer uses the same board animation engine; its step/button LEDs are
+  // still overlaid later by applySequencerLedOverrides().
+  if (delegatedControl) {
     return;
   }
   for (byte i = 0; i < LED_COUNT; i++) {
