@@ -54,6 +54,10 @@ Step Tools Picker
 - Press the last button on the third row with a step selected to open tools.
 - The tools screen shows the selected step number, a compact
   `L ...% V ... P ...%` line, and the current notes.
+- The tool buttons move to the lower part of the board so the 4 step rows stay
+  visible at the top while the picker is open.
+- While the picker is open, tapping another step pad switches the selected step
+  and keeps the picker open.
 - Current tool choices are:
   Len, Vel, Oct+, Oct-, Prob, Tie, Copy
 - The tools screen also shows:

@@ -19,17 +19,19 @@ Current OLED layout:
 
 Current active tool keys:
 
-- first row key 1: Len
-- first row key 2: Vel
-- first row key 3: Oct+
-- first row key 4: Oct-
-- second row key 1: Prob
-- second row key 2: Tie
-- second row key 3: Copy
-- lower CANCEL key: exits the picker
+- sixth-row key 1: Len
+- sixth-row key 2: Vel
+- sixth-row key 3: Oct+
+- sixth-row key 4: Oct-
+- seventh-row key 1: Prob
+- seventh-row key 2: Tie
+- seventh-row key 3: Copy
+- lower CANCEL key two rows below its old position: exits the picker
 
 Current behavior:
 
+- the top 4 sequencer step rows stay lit while the picker is open
+- tapping another step pad switches the selected step and keeps the picker open
 - Len opens the exact length screen for the selected step
 - Vel opens the exact velocity screen for the selected step
 - Prob opens the exact probability screen for the selected step
@@ -44,7 +46,7 @@ LED behavior while the picker is open:
 
 - tool keys are blue
 - CANCEL is blue
-- all other keys are off
+- the normal step and transport LEDs remain visible above the tool rows
 
 Display behavior:
 

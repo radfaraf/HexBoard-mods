@@ -48,7 +48,7 @@ constexpr byte SEQUENCER_TRANSPORT_BUTTON_INDEX = 9;
 constexpr byte SEQUENCER_OVERVIEW_BUTTON_INDEX = 18;
 constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
 constexpr byte SEQUENCER_FUNCTION_BUTTON_INDEX = 29;
-constexpr byte SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX = 82;
+constexpr byte SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX = 102;
 constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
 constexpr byte SEQUENCER_MAX_MANAGED_HELD_NOTES = 80;
 constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
@@ -330,6 +330,8 @@ byte sequencerVelocityChoiceValue(byte choiceIndex);
 byte sequencerVelocityChoiceIndex(byte velocity);
 byte sequencerProbabilityChoiceValue(byte choiceIndex);
 byte sequencerProbabilityChoiceIndex(byte probability);
+void snapshotUndoBufferFromStep(byte stepIndex);
+void loadEditBufferFromStep(byte stepIndex);
 void openSequencerDeleteFileBrowser();
 void openSequencerDeleteFolderBrowser();
 void openSequencerRenameFileBrowser();
@@ -522,13 +524,13 @@ const SequencerNamingKey sequencerExactLengthKeys[] = {
 };
 
 const SequencerToolKey sequencerToolKeys[] = {
-  { 1, SequencerToolAction::Length },
-  { 2, SequencerToolAction::Velocity },
-  { 3, SequencerToolAction::OctaveUp },
-  { 4, SequencerToolAction::OctaveDown },
-  { 10, SequencerToolAction::Probability },
-  { 11, SequencerToolAction::Tie },
-  { 12, SequencerToolAction::Copy },
+  { 50, SequencerToolAction::Length },
+  { 51, SequencerToolAction::Velocity },
+  { 52, SequencerToolAction::OctaveUp },
+  { 53, SequencerToolAction::OctaveDown },
+  { 61, SequencerToolAction::Probability },
+  { 62, SequencerToolAction::Tie },
+  { 63, SequencerToolAction::Copy },
   { SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX, SequencerToolAction::Cancel }
 };
 
@@ -552,6 +554,22 @@ void refreshSequencerMenuTitle() {
              sequencerDirty ? "*" : "", displayName);
   }
   menuPageSequencer.setTitle(sequencerMenuTitle);
+}
+
+void selectSequencerStepForEditing(byte stepIndex, SequencerOverlayMode nextOverlayMode) {
+  sequencerSelectedStep = static_cast<int8_t>(stepIndex);
+  snapshotUndoBufferFromStep(stepIndex);
+  loadEditBufferFromStep(stepIndex);
+  sequencerLengthPercentDisplay = sequencerStepGatePercent[stepIndex];
+  sequencerVelocityDisplay = sequencerStepVelocity[stepIndex];
+  sequencerProbabilityDisplay = sequencerStepProbability[stepIndex];
+  sequencerExactLengthOriginal = sequencerLengthPercentDisplay;
+  sequencerExactVelocityOriginal = sequencerVelocityDisplay;
+  sequencerExactProbabilityOriginal = sequencerProbabilityDisplay;
+  sequencerOverlayMode = nextOverlayMode;
+  sequencerOverlayUntil = 0;
+  sequencerOverlayVisible = false;
+  sequencerOverlayDirty = true;
 }
 
 void setSequencerDirtyState(bool dirty) {
@@ -3621,11 +3639,23 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     }
 
     const SequencerToolKey* toolKey = getSequencerToolKey(buttonIndex);
-    if (toolKey == nullptr) {
+    if (toolKey != nullptr) {
+      handleSequencerToolAction(toolKey->action);
       return;
     }
 
-    handleSequencerToolAction(toolKey->action);
+    int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
+    if (stepIndex < 0) {
+      return;
+    }
+
+    // Keep step pads live while the picker is open so tools can be reused across nearby steps.
+    if (sequencerTapPreview == SEQUENCER_TAP_PREVIEW_ON) {
+      previewSequencerStep(static_cast<byte>(stepIndex));
+    }
+    if (sequencerSelectedStep != stepIndex) {
+      selectSequencerStepForEditing(static_cast<byte>(stepIndex), SequencerOverlayMode::FunctionPicker);
+    }
     return;
   }
 
@@ -3790,12 +3820,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
       hideSequencerOverlay();
       return;
     }
-    sequencerSelectedStep = stepIndex;
-    snapshotUndoBufferFromStep(static_cast<byte>(stepIndex));
-    loadEditBufferFromStep(static_cast<byte>(stepIndex));
-    sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
-    sequencerOverlayUntil = 0;
-    sequencerOverlayDirty = true;
+    selectSequencerStepForEditing(static_cast<byte>(stepIndex), SequencerOverlayMode::AwaitingNote);
     return;
   }
 
@@ -4373,20 +4398,10 @@ void applySequencerLedOverrides() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
-    uint32_t activeColor = getSequencerConfirmLedColor();
     uint16_t ledCount = strip.numPixels();
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
     }
-    if (SEQUENCER_FUNCTION_BUTTON_INDEX < ledCount) {
-      strip.setPixelColor(SEQUENCER_FUNCTION_BUTTON_INDEX, getSequencerUtilityLedColor(true));
-    }
-    for (const SequencerToolKey& key : sequencerToolKeys) {
-      if (key.buttonIndex < ledCount) {
-        strip.setPixelColor(key.buttonIndex, activeColor);
-      }
-    }
-    return;
   }
 
   strip.setPixelColor(
@@ -4448,6 +4463,16 @@ void applySequencerLedOverrides() {
 
     colorCode = getSequencerNoteStepLedColor(primaryPitchSteps, selected, playing, accented);
     strip.setPixelColor(buttonIndex, colorCode);
+  }
+
+  if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
+    uint32_t activeColor = getSequencerConfirmLedColor();
+    uint16_t ledCount = strip.numPixels();
+    for (const SequencerToolKey& key : sequencerToolKeys) {
+      if (key.buttonIndex < ledCount) {
+        strip.setPixelColor(key.buttonIndex, activeColor);
+      }
+    }
   }
 }
 

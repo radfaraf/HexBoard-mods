@@ -162,5 +162,9 @@ Details:
 - Copy opens destination-step selection and copies notes, length, velocity, and
   probability into the chosen destination step.
 - Cancel/Finished exits the tools picker.
+- The picker's tool buttons shall be mapped to lower rows so the 4 step rows
+  remain available above them.
+- While the picker is open, pressing another step pad shall switch the selected
+  step and keep the picker open.
 - Oct+ and Oct- shall leave the tools picker open after they apply.
 - If Oct+ or Oct- is chosen on an empty step, the step shall remain unchanged.

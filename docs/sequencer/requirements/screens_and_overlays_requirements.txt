@@ -62,6 +62,10 @@ currently available tool labels.
 
 Details:
 - Step note labels shall follow the current tuning naming style.
+- While this overlay is open, the normal sequencer step LEDs shall remain
+  visible.
+- The tool buttons shall move to lower rows so the top 4 step rows remain free
+  for step selection.
 
 
 ID: SEQ-UI-005
