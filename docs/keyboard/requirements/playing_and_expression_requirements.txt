@@ -1,0 +1,169 @@
+HEXBOARD PLAYING AND EXPRESSION REQUIREMENTS
+
+Confidence
+
+Overall confidence for this file is medium because the behavior is inferred
+from current note-input, wheel, synth, and panic-stop code paths.
+
+ID: KB-PLAY-010
+Title: Playable Key Note Output
+Status: Active
+Area: Playing And Expression
+Priority: High
+
+Requirement:
+In Keyboard mode, pressing an allowed playable key shall trigger note output.
+
+Details:
+- MIDI note output shall be sent when the key resolves to a valid note.
+- Onboard synth output shall also be triggered when `Synth Mode` is not `Off`.
+- Releasing the key shall send the corresponding note-off behavior.
+
+Related:
+- KB-CORE-003
+- KB-PLAY-014
+- KB-MIDI-050
+
+
+ID: KB-PLAY-011
+Title: Scale Lock Play Gating
+Status: Active
+Area: Playing And Expression
+Priority: High
+
+Requirement:
+`Scale Lock` shall determine whether out-of-scale playable keys are allowed to
+sound.
+
+Details:
+- When `Scale Lock` is On, only in-scale keys shall respond.
+- When `Scale Lock` is Off, all playable note keys shall respond.
+
+Related:
+- KB-CORE-006
+- KB-TUNE-024
+
+
+ID: KB-PLAY-012
+Title: Velocity Wheel Command Buttons
+Status: Active
+Area: Playing And Expression
+Priority: High
+
+Requirement:
+Keyboard mode shall provide a dedicated command-button velocity wheel.
+
+Details:
+- The top 3 command buttons shall make up the velocity wheel.
+- The current velocity wheel value shall be used as played note velocity.
+- The same current value shall also be used where the firmware emits channel
+  pressure for MPE-style note handling.
+
+Related:
+- KB-UI-044
+- KB-MIDI-053
+
+
+ID: KB-PLAY-013
+Title: Lower Wheel Toggle And Output
+Status: Active
+Area: Playing And Expression
+Priority: High
+
+Requirement:
+Keyboard mode shall provide a lower command-button wheel that can switch
+between modulation and pitch bend.
+
+Details:
+- The center command button shall toggle the lower wheel mode.
+- The lower 3 command buttons shall control the currently selected lower wheel.
+- Modulation messages shall target the primary MIDI channel.
+- Pitch bend changes shall target the primary MIDI channel and update synth
+  frequency as needed.
+
+Related:
+- KB-PLAY-015
+- KB-MIDI-050
+
+
+ID: KB-PLAY-014
+Title: Synth Mode Choices
+Status: Active
+Area: Playing And Expression
+Priority: High
+
+Requirement:
+The Keyboard `Synth Options` page shall provide selectable onboard synth modes.
+
+Details:
+- Current choices are `Off`, `Mono`, `Arp'gio`, and `Poly`.
+- `Off` disables onboard synth note playback.
+- `Mono` keeps one synth voice active at a time.
+- `Arp'gio` cycles held notes according to arpeggiator timing.
+- `Poly` uses multiple synth voices at once.
+
+Notes:
+- Shared setting: this page is board-wide and also affects Sequencer mode where
+  applicable.
+
+Related:
+- KB-MENU-031
+- KB-LIMIT-060
+
+
+ID: KB-PLAY-015
+Title: Wheel Speed And Behavior Settings
+Status: Active
+Area: Playing And Expression
+Priority: Medium
+
+Requirement:
+Keyboard mode shall provide stored response settings for velocity, modulation,
+and pitch-bend wheel movement.
+
+Details:
+- `Vel Wheel`, `PB Wheel`, and `Mod Wheel` shall each have a stored speed
+  setting.
+- Pitch bend and modulation shall each have a stored `Springy` or `Sticky`
+  behavior setting.
+
+Related:
+- KB-MENU-033
+
+
+ID: KB-PLAY-016
+Title: Arpeggiator Timing From BPM And Division
+Status: Active
+Area: Playing And Expression
+Priority: Medium
+
+Requirement:
+In `Arp'gio` synth mode, the arpeggiator step duration shall be calculated from
+the stored `Arp BPM` and `Arp Speed` settings.
+
+Details:
+- `Arp BPM` shall define the base tempo.
+- `Arp Speed` shall define the whole-note division.
+- A zero BPM or zero division shall be guarded against by falling back to `1`.
+
+Related:
+- KB-MENU-031
+- KB-LIMIT-064
+
+
+ID: KB-PLAY-017
+Title: Panic Stop From Encoder Hold
+Status: Active
+Area: Playing And Expression
+Priority: High
+
+Requirement:
+Holding the encoder for about 2 seconds shall perform a panic stop.
+
+Details:
+- The panic stop shall silence MIDI and synth output.
+- It shall clear held note state and LED activity associated with current note
+  playback.
+
+Related:
+- KB-UI-045

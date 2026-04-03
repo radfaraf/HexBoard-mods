@@ -7,9 +7,9 @@ requirements-style format.
 
 They are meant to complement:
 
-- docs/sequencer_quick_manual.txt
-- docs/sequencer_manual.txt
-- docs/layouts/*.txt
+- docs/sequencer/manuals/sequencer_quick_manual.txt
+- docs/sequencer/manuals/sequencer_manual.txt
+- docs/sequencer/layouts/*.txt
 
 The manuals describe how the sequencer is used.
 The layout files describe what important screens look like.

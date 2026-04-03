@@ -1,0 +1,173 @@
+HEXBOARD MENUS, PROFILES, AND PERSISTENCE REQUIREMENTS
+
+Confidence
+
+Overall confidence for this file is high because these items are derived from
+the current menu-construction code and settings persistence logic.
+
+ID: KB-MENU-030
+Title: Keyboard Main Menu Structure
+Status: Active
+Area: Menus And Persistence
+Priority: High
+
+Requirement:
+The Keyboard home page shall provide the current top-level Keyboard menu.
+
+Details:
+- Current top-level items are `Sequencer`, `Tuning`, `Layout`, `Scales`,
+  `Color Options`, `Synth Options`, `MIDI Options`, `Control Wheel`,
+  `Transpose`, `Save`, `Load`, and `Advanced`.
+
+Related:
+- KB-MENU-031
+- KB-MENU-032
+- KB-MENU-033
+
+
+ID: KB-MENU-031
+Title: Synth Options Page Structure
+Status: Active
+Area: Menus And Persistence
+Priority: High
+
+Requirement:
+The Keyboard `Synth Options` page shall expose the current stored synth
+controls.
+
+Details:
+- Current items are `Synth Mode`, `Waveform`, `Attack`, `Decay`, `Sustain`,
+  `Release`, `Arp Speed`, and `Arp BPM`.
+- On hardware v1.2, the page shall also include `SynthOutput`.
+
+Notes:
+- Shared setting: this page is board-wide and also affects Sequencer mode where
+  applicable.
+
+Related:
+- KB-PLAY-014
+
+
+ID: KB-MENU-032
+Title: MIDI Options Page Structure
+Status: Active
+Area: Menus And Persistence
+Priority: High
+
+Requirement:
+The Keyboard `MIDI Options` page shall expose the current stored MIDI and MPE
+controls.
+
+Details:
+- Current items are `MIDI Channel`, `MPE Mode`, `MPE Bend`, `MPE Low Ch`,
+  `MPE High Ch`, `MPE Low Priority`, `Extra MPE`, `CC 74 Value`,
+  `RolandMT32`, and `GeneralMidi`.
+
+Notes:
+- Shared setting: this page is board-wide and also affects Sequencer mode where
+  applicable.
+
+Related:
+- KB-MIDI-050
+- KB-MIDI-054
+
+
+ID: KB-MENU-033
+Title: Control Wheel Page Structure
+Status: Active
+Area: Menus And Persistence
+Priority: Medium
+
+Requirement:
+The Keyboard `Control Wheel` page shall expose the current stored wheel speed
+and behavior settings.
+
+Details:
+- Current items are `Vel Wheel`, `PB Wheel`, `Mod Wheel`, `Pitch Bend`, and
+  `Mod Wheel`.
+- The first three items set speeds.
+- The last two items set springy/sticky behavior for the lower wheel modes.
+
+Related:
+- KB-PLAY-015
+
+
+ID: KB-MENU-034
+Title: Save Profiles And Auto-Save
+Status: Active
+Area: Menus And Persistence
+Priority: High
+
+Requirement:
+The Keyboard `Save` page shall provide profile save targets and a stored
+`Auto-Save` setting.
+
+Details:
+- The page shall contain `Auto-Save`, `Boot/Auto-Save Slot`, and `Slot 1`
+  through `Slot 8`.
+- When Auto-Save is enabled, the firmware shall wait about 10 seconds after a
+  settings change before writing the current settings snapshot to the
+  `Boot/Auto-Save Slot`.
+
+Related:
+- KB-MENU-035
+- KB-MENU-037
+
+
+ID: KB-MENU-035
+Title: Load Profiles
+Status: Active
+Area: Menus And Persistence
+Priority: High
+
+Requirement:
+The Keyboard `Load` page shall allow the active settings profile to be switched
+to any stored slot.
+
+Details:
+- The page shall contain `Boot/Auto-Save Slot` and `Slot 1` through `Slot 8`.
+- Loading a slot shall switch the active backing settings array and resync the
+  runtime state from it.
+
+Related:
+- KB-CORE-004
+
+
+ID: KB-MENU-036
+Title: Reset Defaults From Advanced Menu
+Status: Active
+Area: Menus And Persistence
+Priority: High
+
+Requirement:
+The `Advanced` page shall provide a `Reset Defaults` action that restores the
+stored settings set to factory defaults.
+
+Details:
+- The reset shall apply to all profile slots, not only the current active slot.
+- The reset shall also rewrite the stored settings file.
+
+Related:
+- KB-MENU-037
+
+
+ID: KB-MENU-037
+Title: Persistent Settings File
+Status: Active
+Area: Menus And Persistence
+Priority: Medium
+
+Requirement:
+Keyboard-visible persisted settings shall be stored in the onboard flash
+settings file.
+
+Details:
+- The file path shall be `/settings.dat`.
+- The stored settings file shall include the shared settings array for all
+  profile slots.
+- The firmware shall restore factory defaults if the settings file is missing,
+  invalid, or incomplete.
+
+Related:
+- KB-CORE-004
+- KB-MENU-034

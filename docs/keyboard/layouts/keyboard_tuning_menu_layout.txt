@@ -1,5 +1,9 @@
 KEYBOARD TUNING MENU LAYOUT
 
+Confidence:
+- Medium-high. This file reflects the current tuning-menu construction and
+  current selection-marker behavior in the firmware.
+
 Purpose:
 - Shows the available keyboard tunings.
 - Clearly marks the currently selected tuning.

@@ -1,0 +1,168 @@
+HEXBOARD MIDI AND DELEGATED MODE REQUIREMENTS
+
+Confidence
+
+Overall confidence for this file is medium-high because these items are derived
+from current MIDI-routing, MPE, program-change, delegated-mode, and SysEx
+handling code.
+
+ID: KB-MIDI-050
+Title: Primary MIDI Routing
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: High
+
+Requirement:
+Keyboard mode shall provide MIDI note output using either primary-channel or
+MPE-based routing, depending on current mode needs.
+
+Details:
+- When MPE is not active, the board shall use the configured default MIDI
+  channel.
+- When MPE is active, channel 1 shall act as the master channel.
+
+Related:
+- KB-MIDI-051
+- KB-MIDI-052
+
+
+ID: KB-MIDI-051
+Title: MPE Mode Auto, Disable, And Force
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: High
+
+Requirement:
+The `MPE Mode` setting shall provide `Auto`, `Disable`, and `Force` behavior.
+
+Details:
+- `Auto` shall use single-channel routing when the tuning behaves like standard
+  semitone steps and MPE is not otherwise required.
+- `Auto` shall enable MPE when tuning or just-intonation behavior requires
+  independent pitch control.
+- `Disable` shall force non-MPE routing and enable the standard multi-channel
+  microtonal fallback when needed.
+- `Force` shall always enable MPE.
+
+Related:
+- KB-TUNE-027
+- KB-MIDI-052
+
+
+ID: KB-MIDI-052
+Title: MPE Range And Channel Allocation
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: High
+
+Requirement:
+When MPE is enabled, the firmware shall use the configured MPE bend range and
+playable channel window.
+
+Details:
+- `MPE Bend` shall define the pitch-bend range for playable MPE channels.
+- `MPE Low Ch` and `MPE High Ch` shall define the playable MPE channel window.
+- `MPE Low Priority` may force queue-based channel reuse behavior.
+- The firmware shall advertise the current MPE zone and reset per-channel pitch
+  bend ranges after a routing reset.
+
+Related:
+- KB-LIMIT-065
+
+
+ID: KB-MIDI-053
+Title: Extra MPE Messages
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: Medium
+
+Requirement:
+When `Extra MPE` is enabled, per-note output shall also send the extra
+controller messages configured by the firmware.
+
+Details:
+- Current extra messages are channel pressure and `CC 74`.
+- The `CC 74 Value` menu item shall provide the stored CC 74 payload.
+
+Related:
+- KB-PLAY-012
+
+
+ID: KB-MIDI-054
+Title: Program Change Preset Menus
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: Medium
+
+Requirement:
+The Keyboard MIDI page shall provide preset program-change selectors for
+`RolandMT32` and `GeneralMidi`.
+
+Details:
+- Selecting a non-`None` entry shall store the chosen program number.
+- The firmware shall send the program change on the primary MIDI channel after
+  the setting changes.
+
+Related:
+- KB-MENU-032
+
+
+ID: KB-MIDI-055
+Title: External MIDI Note Tracking For Board Feedback
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: Low
+
+Requirement:
+Incoming external MIDI note-on and note-off events shall update the board's
+external-note tracking state for affected hexes.
+
+Details:
+- This tracked state feeds current board feedback behavior such as the `MIDI In`
+  animation mode.
+
+Related:
+- KB-UI-041
+
+
+ID: KB-MIDI-056
+Title: Delegated Control Mode
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: Medium
+
+Requirement:
+The `Advanced` page shall provide a delegated-control mode that turns the board
+into an externally driven button-and-LED surface.
+
+Details:
+- In delegated mode, most normal Keyboard behavior shall be disabled.
+- Command buttons shall lose their normal wheel meanings.
+- The menu may remain visible even though most normal menu actions are not
+  useful until delegated mode is exited.
+
+Related:
+- KB-MIDI-057
+
+
+ID: KB-MIDI-057
+Title: Delegated SysEx And Button Event Protocol
+Status: Active
+Area: MIDI And Delegated Mode
+Priority: Medium
+
+Requirement:
+Delegated mode shall expose the current MIDI and SysEx control protocol used by
+the firmware.
+
+Details:
+- Buttons shall be numbered `0` through `139`.
+- Button press shall send `NoteOn` and release shall send `NoteOff`.
+- The channel shall encode the hundreds digit and the MIDI note shall encode
+  the remainder.
+- The firmware shall accept delegated enter, exit, and LED-control SysEx codes.
+- The firmware shall also answer the standard identity-request SysEx path it
+  currently supports.
+
+Related:
+- KB-MIDI-056

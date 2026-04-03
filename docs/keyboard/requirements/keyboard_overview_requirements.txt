@@ -1,0 +1,130 @@
+HEXBOARD KEYBOARD OVERVIEW REQUIREMENTS
+
+Confidence
+
+Overall confidence for this file is medium-high because these items are derived
+from the board mode, settings restore, and menu-home behavior in the firmware.
+
+ID: KB-CORE-001
+Title: Keyboard Mode As Normal Board Mode
+Status: Active
+Area: Core Behavior
+Priority: High
+
+Requirement:
+The firmware shall provide Keyboard mode as the normal board-playing mode and
+the default top-level menu context.
+
+Details:
+- The Keyboard home page shall be titled `Keyboard`.
+- Returning to menu home in Keyboard mode shall reopen the Keyboard main page.
+
+Related:
+- KB-CORE-002
+- KB-MENU-030
+
+
+ID: KB-CORE-002
+Title: Mode Separation And Sequencer Entry
+Status: Active
+Area: Core Behavior
+Priority: High
+
+Requirement:
+The firmware shall keep Keyboard mode and Sequencer mode as separate board
+modes and shall allow entry into Sequencer mode from the Keyboard menu.
+
+Details:
+- Choosing `Sequencer` from the Keyboard menu shall switch the board mode to
+  Sequencer.
+- Returning from Sequencer mode shall restore Keyboard mode as a separate mode
+  rather than merging the two interaction models.
+
+Related:
+- KB-MENU-030
+
+
+ID: KB-CORE-003
+Title: Playable And Command Button Split
+Status: Active
+Area: Core Behavior
+Priority: High
+
+Requirement:
+Keyboard mode shall distinguish playable note keys from dedicated command
+buttons.
+
+Details:
+- Command buttons shall not act as normal note keys in Keyboard mode.
+- Playable note keys shall use the current pitch mapping and scale logic.
+- Command buttons shall be reserved for wheel, toggle, shortcut, or service
+  behavior.
+
+Related:
+- KB-PLAY-010
+- KB-UI-044
+
+
+ID: KB-CORE-004
+Title: Runtime Restore From Active Profile
+Status: Active
+Area: Core Behavior
+Priority: High
+
+Requirement:
+On startup or profile load, the firmware shall restore Keyboard-visible
+settings from the active settings profile and apply them to the running board.
+
+Details:
+- This includes tuning, layout, scale, key, transpose, wheel settings, synth
+  settings, MIDI settings, display settings, and other persisted options stored
+  in the shared settings array.
+- After restore, the firmware shall reapply layout, scale, MIDI routing, synth
+  frequencies, and menu state as needed.
+
+Related:
+- KB-MENU-034
+- KB-MENU-035
+- KB-TUNE-020
+
+
+ID: KB-CORE-005
+Title: Pitch Mapping From Keyboard State
+Status: Active
+Area: Core Behavior
+Priority: High
+
+Requirement:
+Keyboard-mode pitch assignment shall be derived from the current tuning,
+layout, key, and transpose state.
+
+Details:
+- Layout determines each playable key's relative pitch position.
+- Key and scale determine in-scale status.
+- Transpose shifts the final sounded pitch assignment.
+
+Related:
+- KB-TUNE-020
+- KB-TUNE-023
+- KB-TUNE-026
+
+
+ID: KB-CORE-006
+Title: Scale Membership As Play Filter
+Status: Active
+Area: Core Behavior
+Priority: High
+
+Requirement:
+The firmware shall maintain an in-scale state for playable keys based on the
+current scale and key selection.
+
+Details:
+- The root shall always be treated as in scale.
+- Scale membership shall be recalculated when the scale, key, tuning, or layout
+  changes.
+- Scale membership shall feed into `Scale Lock` play filtering.
+
+Related:
+- KB-TUNE-024
+- KB-PLAY-011

@@ -1,0 +1,164 @@
+HEXBOARD TUNINGS, LAYOUTS, AND SCALES REQUIREMENTS
+
+Confidence
+
+Overall confidence for this file is high for menu and reset behavior because
+these items are derived directly from the tuning, layout, scale, and transpose
+handlers in the firmware.
+
+ID: KB-TUNE-020
+Title: Firmware-Defined Tuning List
+Status: Active
+Area: Tuning And Layout
+Priority: High
+
+Requirement:
+The Keyboard `Tuning` page shall expose the firmware's predefined tuning list.
+
+Details:
+- The visible list is built from the firmware's tuning definitions.
+- Opening the `Tuning` page shall place the cursor on the current tuning.
+- The current tuning row shall be marked with `* `.
+
+Related:
+- KB-UI-040
+
+
+ID: KB-TUNE-021
+Title: Tuning Change Reset Behavior
+Status: Active
+Area: Tuning And Layout
+Priority: High
+
+Requirement:
+Changing the tuning shall reset dependent Keyboard state to that tuning's
+default-visible starting state.
+
+Details:
+- `Layout` shall reset to the first layout listed for the selected tuning.
+- `Scale` shall reset to `None`.
+- `Key` shall reset to `C`.
+- Valid layout, scale, and key choices shall be recalculated.
+- MIDI routing and synth frequencies shall be refreshed.
+
+Related:
+- KB-TUNE-022
+- KB-TUNE-024
+- KB-MIDI-051
+
+
+ID: KB-TUNE-022
+Title: Layout Choices Filtered By Tuning
+Status: Active
+Area: Tuning And Layout
+Priority: High
+
+Requirement:
+The Keyboard `Layout` page shall show only layouts that belong to the current
+tuning.
+
+Details:
+- Opening the page shall place the cursor on the current visible layout.
+- The current layout row shall be marked with `* `.
+- Selecting a layout shall update the board geometry immediately.
+
+Related:
+- KB-UI-040
+
+
+ID: KB-TUNE-023
+Title: Layout Mirror And Rotation Controls
+Status: Active
+Area: Tuning And Layout
+Priority: Medium
+
+Requirement:
+The Keyboard `Layout` page shall provide stored mirror and rotation controls
+for the current layout.
+
+Details:
+- `Mirror Ver.` and `Mirror Hor.` shall alter the layout mapping logic.
+- `Rotate:` shall provide six 60-degree step choices from `0 Deg` through
+  `300 Deg`.
+- Layout mirror and rotation changes shall rebuild layout-derived pitch
+  assignment.
+
+Related:
+- KB-CORE-005
+
+
+ID: KB-TUNE-024
+Title: Key, Scale Lock, And Scale List
+Status: Active
+Area: Tuning And Layout
+Priority: High
+
+Requirement:
+The Keyboard `Scales` page shall provide a tuning-specific key selector, a
+stored `Scale Lock` setting, and the visible scale list for the current tuning.
+
+Details:
+- The `Key` selector shown shall match the current tuning's key names.
+- Scale items shall be filtered to the current tuning, except all-tuning scale
+  choices such as `None`.
+- The current scale row shall be marked with `* `.
+
+Related:
+- KB-PLAY-011
+- KB-UI-040
+
+
+ID: KB-TUNE-025
+Title: Key Changes Reapply Scale In Place
+Status: Active
+Area: Tuning And Layout
+Priority: Medium
+
+Requirement:
+Changing `Key` shall reapply scale membership without forcing the menu to leave
+the current page.
+
+Details:
+- The new key shall be written into persisted settings.
+- The scale state shall be rebuilt immediately.
+
+Related:
+- KB-CORE-006
+
+
+ID: KB-TUNE-026
+Title: Transpose As Stored Pitch Offset
+Status: Active
+Area: Tuning And Layout
+Priority: High
+
+Requirement:
+Keyboard mode shall provide a stored `Transpose` offset expressed in tuning
+steps.
+
+Details:
+- Changing `Transpose` shall update pitch assignment immediately.
+- `Transpose` shall affect sounded pitch but not the layout geometry itself.
+- The current transpose shall be stored in persisted settings.
+
+Related:
+- KB-CORE-005
+- KB-LIMIT-062
+
+
+ID: KB-TUNE-027
+Title: Just Intonation Controls On Tuning Page
+Status: Active
+Area: Tuning And Layout
+Priority: Medium
+
+Requirement:
+The Keyboard `Tuning` page shall expose the current just intonation controls.
+
+Details:
+- Current items are `Dynamic JI`, `JI BPM Sync`, `Beat BPM`, and `BPM Mult.`
+- Changing those items shall refresh MIDI routing behavior.
+
+Related:
+- KB-MIDI-051
+- KB-LIMIT-064

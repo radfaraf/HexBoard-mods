@@ -1,0 +1,126 @@
+HEXBOARD SCREENS AND FEEDBACK REQUIREMENTS
+
+Confidence
+
+Overall confidence for this file is medium-high because these items are derived
+from the menu-label refresh, display, overlay, LED, and screen-saver code.
+
+ID: KB-UI-040
+Title: Current Choice Marker On Tuning, Layout, And Scale Pages
+Status: Active
+Area: Screens And Feedback
+Priority: High
+
+Requirement:
+The Keyboard Tuning, Layout, and Scale pages shall visibly mark the current
+choice.
+
+Details:
+- The current choice row shall be prefixed with `* `.
+- Opening each of those pages shall place the cursor on the current visible
+  choice.
+
+Related:
+- KB-TUNE-020
+- KB-TUNE-022
+- KB-TUNE-024
+
+
+ID: KB-UI-041
+Title: Color And Brightness Feedback Controls
+Status: Active
+Area: Screens And Feedback
+Priority: Medium
+
+Requirement:
+The Keyboard `Color Options` page shall expose stored LED color and brightness
+controls.
+
+Details:
+- Current items are `Color Mode`, `Brightness`, `Animation`, `Rest Bright`, and
+  `Dim Bright`.
+- Previewing those values shall immediately refresh LED presentation where the
+  current code supports preview callbacks.
+
+Related:
+- KB-MENU-030
+
+
+ID: KB-UI-042
+Title: DisplayNotes Overlay
+Status: Active
+Area: Screens And Feedback
+Priority: Medium
+
+Requirement:
+When the shared `DisplayNotes` setting is enabled, Keyboard mode shall provide
+a temporary `Now Playing` overlay for played notes.
+
+Details:
+- The overlay shall show up to 6 unique notes.
+- It shall stay visible briefly after release.
+- It shall use a short chord-shrink grace period to avoid jitter when notes are
+  released at slightly different times.
+
+Notes:
+- Shared setting: this overlay setting also affects note-display behavior in
+  Sequencer mode where applicable.
+
+Related:
+- KB-LIMIT-061
+
+
+ID: KB-UI-043
+Title: Screen Saver Timeout
+Status: Active
+Area: Screens And Feedback
+Priority: Medium
+
+Requirement:
+The OLED display shall enter a low-contrast screen-saver state after a period
+of inactivity.
+
+Details:
+- The current timeout is about 33 seconds.
+- Keyboard interaction and menu activity shall reset the timer.
+- The note overlay may temporarily wake the display.
+
+Related:
+- KB-UI-042
+
+
+ID: KB-UI-044
+Title: Encoder And Menu Shortcut Controls
+Status: Active
+Area: Screens And Feedback
+Priority: High
+
+Requirement:
+Keyboard mode shall provide encoder-based menu navigation plus a temporary
+command-button menu shortcut.
+
+Details:
+- Turning the encoder shall move through menu items or edit the current value.
+- Clicking the encoder shall confirm or open the current selection.
+- Holding the lowest command button below the encoder while a menu page is open
+  shall make the top two command buttons act as menu up/down shortcuts.
+
+Related:
+- KB-CORE-003
+- KB-PLAY-012
+
+
+ID: KB-UI-045
+Title: Encoder Hold Panic Gesture
+Status: Active
+Area: Screens And Feedback
+Priority: High
+
+Requirement:
+Holding the encoder for about 2 seconds shall trigger the panic-stop gesture.
+
+Details:
+- The panic gesture shall not also trigger a normal encoder click afterward.
+
+Related:
+- KB-PLAY-017

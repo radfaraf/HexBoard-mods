@@ -1,6 +1,7 @@
 # HexBoard Sequencer Project Instructions
 
-These are standing instructions for work on the Sequencer for Codex to follow.
+These are standing instructions for work on the HexBoard firmware and its
+mode-specific documentation for Codex to follow.
 
 ## Core Project Rules
 
@@ -33,17 +34,17 @@ Preferred workflow for larger Sequencer changes:
 - then immediately update the documentation files in the same overall pass when Sequencer docs, layouts, or requirements need it
 - when beginning that documentation pass, use this exact line:
   `UPDATING DOCS.`
-- if a Sequencer change affects requirements, include the relevant `docs/requirements` updates as part of the documentation pass
+- if a Sequencer change affects requirements, include the relevant `docs/sequencer/requirements` updates as part of the documentation pass
 - do not regenerate the manual PDFs unless the user explicitly asks for PDF updates
 - this lets the user start compiling and testing while commit-message and documentation work continues
 - only wait for separate confirmation before docs if the user explicitly asks for that slower workflow in a specific case
 
 Manual files:
 
-- `docs/sequencer_quick_manual.txt`
-- `docs/sequencer_quick_manual.pdf`
-- `docs/sequencer_manual.txt`
-- `docs/sequencer_manual.pdf`
+- `docs/sequencer/manuals/sequencer_quick_manual.txt`
+- `docs/sequencer/manuals/sequencer_quick_manual.pdf`
+- `docs/sequencer/manuals/sequencer_manual.txt`
+- `docs/sequencer/manuals/sequencer_manual.pdf`
 
 Manual roles:
 
@@ -58,42 +59,76 @@ When the manuals are updated:
 - describe the current behavior directly without comparing it to removed older behavior unless the user specifically asks for history or migration notes
 - only regenerate the PDF versions after updating the text versions when the user explicitly asks for PDF updates
 
+## Keyboard Documentation Maintenance
+
+Whenever Keyboard mode behavior, direct playing controls, tunings, layouts,
+scales, keyboard-visible menus, profiles, MIDI, synth, delegated control, or
+screen/LED feedback changes in a meaningful way, update the keyboard docs to
+match the current behavior.
+
+Keyboard documentation folders:
+
+- `docs/keyboard/manuals/`
+- `docs/keyboard/requirements/`
+- `docs/keyboard/layouts/`
+
+Keyboard manual files:
+
+- `docs/keyboard/manuals/keyboard_quick_manual.txt`
+- `docs/keyboard/manuals/keyboard_manual.txt`
+
+Keyboard documentation guidance:
+
+- keep Keyboard and Sequencer docs separate
+- treat the Keyboard docs as the current best structured reference, while
+  remembering they began as a reconstruction from code and comments
+- keep confidence notes short and readable when a Keyboard behavior is inferred
+  rather than hardware-verified
+- use `Shared setting:` wording when a keyboard-visible setting also affects
+  Sequencer mode
+- do not regenerate or create PDF versions for Keyboard docs unless the user
+  explicitly asks for them
+
 ## Layout Reference Maintenance
 
-Keep the layout reference files in `docs/layouts` current whenever a sequencer
-screen, menu, browser flow, naming screen, or other structured UI layout
-changes in a meaningful way. 
+Keep the layout reference files in the mode-owned layout folders current
+whenever a Keyboard or Sequencer screen, menu, browser flow, naming screen, or
+other structured UI layout changes in a meaningful way.
 
-Current layout reference folder:
+Current layout reference folders:
 
-- `docs/layouts/`
+- `docs/keyboard/layouts/`
+- `docs/sequencer/layouts/`
 
 When needed:
 
-- update the existing layout reference text files
+- update the existing layout reference text files in the relevant mode folder
 - create new layout reference files for newly added complex screens or menus
 - remove or revise outdated layout descriptions so they match current behavior
 - describe layouts in terms of the current UI only, not past versions, unless the user specifically asks for comparison notes
+- keep Keyboard and Sequencer layout references in their own folders
 
 These layout files are documentation only and are not part of the firmware.
 
 ## Requirements Maintenance
 
-Keep the requirements files in `docs/requirements` current whenever Sequencer
-behavior changes in a meaningful way.
+Keep the requirements files in the matching mode folder current whenever
+Keyboard or Sequencer behavior changes in a meaningful way.
 
-Current requirements folder:
+Current requirements folders:
 
-- `docs/requirements/`
+- `docs/keyboard/requirements/`
+- `docs/sequencer/requirements/`
 
 When needed:
 
 - update the existing requirement entries so they match the current intended behavior
-- add new requirement entries for meaningful new Sequencer features or workflows
+- add new requirement entries for meaningful new Keyboard or Sequencer features or workflows
 - avoid reusing old requirement IDs for unrelated meanings
 - prefer updating an existing requirement ID when the same feature changes details
 - treat the requirements docs as an intended-behavior reference alongside the latest explicit user instructions
 - if requirements and code disagree, treat that as something to clarify or align rather than ignoring it
+- keep Keyboard and Sequencer requirements in their own folders
 
 ## Maintenance Preference
 

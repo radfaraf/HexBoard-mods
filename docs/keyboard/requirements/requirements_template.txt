@@ -1,0 +1,47 @@
+REQUIREMENT TEMPLATE
+
+ID: KB-AREA-001
+Title: Short Requirement Name
+Status: Active
+Area: Example Area
+Priority: High
+
+Requirement:
+Write one clear statement describing what the system shall do.
+
+Details:
+- Add clarifying rules, limits, or edge cases here.
+- Keep details about current behavior, not implementation history.
+
+Notes:
+- Optional context or confidence notes.
+
+Related:
+- KB-AREA-002
+- KB-AREA-003
+
+
+EXAMPLE
+
+ID: KB-PLAY-010
+Title: Velocity Wheel Control
+Status: Active
+Area: Playing And Expression
+Priority: High
+
+Requirement:
+Keyboard mode shall provide a dedicated command-button velocity wheel that
+controls played note velocity.
+
+Details:
+- The top 3 command buttons make up the velocity wheel.
+- The current velocity value shall be used for note-on velocity.
+- The same current velocity value shall also be used for channel pressure where
+  the firmware sends that message.
+
+Notes:
+- This requirement describes current wheel behavior inferred from the firmware.
+
+Related:
+- KB-PLAY-011
+- KB-UI-042

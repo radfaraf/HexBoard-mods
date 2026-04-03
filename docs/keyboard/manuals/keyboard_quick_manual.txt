@@ -1,0 +1,113 @@
+HEXBOARD KEYBOARD MODE
+QUICK MANUAL
+
+Confidence
+
+This is a first-pass Keyboard manual reconstructed from the current firmware
+code and comments in `src/HexBoard.ino`.
+
+Overview
+
+Keyboard mode is the board's normal playing mode. The playable hexes follow the
+current tuning, layout, scale, key, and transpose settings. The OLED menu lets
+you change the board-wide keyboard settings and enter Sequencer mode.
+
+Direct Playing
+
+- Non-command hexes play notes.
+- The pitch mapping follows the current tuning, layout, key, and transpose.
+- When `Scale Lock` is On, only in-scale note keys respond.
+- When `Scale Lock` is Off, all playable note keys respond.
+- `Transpose` shifts the sounded pitches without changing the layout geometry.
+- Shared setting: `DisplayNotes` can show the notes you are holding on the
+  OLED.
+
+Command Buttons And Wheels
+
+- The board has 7 command buttons beside the main playable field.
+- The top 3 command buttons act as the velocity wheel.
+- The middle command button toggles the lower wheel between modulation and
+  pitch bend.
+- The bottom 3 command buttons act as the currently selected lower wheel.
+- Pitch Bend and Mod Wheel behavior can each be `Springy` or `Sticky`.
+- Velocity, Mod Wheel, and Pitch Bend wheel speeds are adjustable in the menu.
+
+Encoder And Menu
+
+- Turn the encoder to move through menu items and edit values.
+- Press the encoder to open a page, confirm a choice, or save an edited value.
+- Hold the encoder for about 2 seconds to send a panic stop that silences MIDI
+  and synth output.
+- When a menu page is open, hold the lowest command button below the encoder to
+  make the top two command buttons act as menu up/down shortcuts.
+
+Main Menu
+
+- `Sequencer`: enter Sequencer mode.
+- `Tuning`: choose the tuning and the just intonation options.
+- `Layout`: choose the current layout for the tuning and adjust mirror/rotate.
+- `Scales`: choose `Key`, `Scale Lock`, and the current scale.
+- `Color Options`: set color mode, brightness, animation, rest brightness, and
+  dim brightness.
+- `Synth Options`: set synth mode, waveform, envelope, arpeggiator settings,
+  and on hardware v1.2 the audio output destination.
+- `MIDI Options`: set MIDI channel, MPE behavior, CC 74 value, and preset
+  program-change lists.
+- `Control Wheel`: adjust wheel speeds and springy/sticky behavior.
+- `Transpose`: shift played pitches from `-127` to `+127` tuning steps.
+- `Save`: save the current settings into a profile slot and choose Auto-Save.
+- `Load`: load a saved profile slot.
+- `Advanced`: firmware info, hardware info, invert encoder, `ColorByKey`,
+  `DisplayNotes`, reset, update firmware, delegated mode, and debug.
+
+Tuning, Layout, And Scales
+
+- Tuning choices are firmware-defined and include standard and microtonal
+  systems such as `12 EDO (Normal)`, `17 EDO`, `31 EDO`, `Bohlen-Pierce`, and
+  the Carlos tunings.
+- Choosing a new tuning resets `Layout` to that tuning's first layout, `Scale`
+  to `None`, and `Key` to `C`.
+- Layout choices are filtered to the current tuning only.
+- Scale choices are filtered to the current tuning, except all-tuning choices
+  such as `None`.
+- The Tuning, Layout, and Scale pages mark the current choice with `*`.
+
+Synth And MIDI
+
+- Shared setting: `Synth Options` are board-wide and are also used by
+  Sequencer mode where applicable.
+- `Synth Mode` choices are `Off`, `Mono`, `Arp'gio`, and `Poly`.
+- `Waveform` choices are `Hybrid`, `Square`, `Saw`, `Triangl`, `Sine`,
+  `Strings`, and `Clrinet`.
+- Arpeggiator timing uses `Arp BPM` and `Arp Speed`.
+- Shared setting: `MIDI Options` are board-wide and are also used by
+  Sequencer mode where applicable.
+- `MPE Mode` choices are `Auto`, `Disable`, and `Force`.
+- `MPE Bend` choices are `1`, `2`, `12`, `24`, `48`, and `96` semitones.
+- The MIDI page also includes `MPE Low Ch`, `MPE High Ch`, `MPE Low Priority`,
+  `Extra MPE`, `CC 74 Value`, `RolandMT32`, and `GeneralMidi`.
+
+Profiles And Persistence
+
+- There are 9 profile slots total:
+  `Boot/Auto-Save Slot` and `Slot 1` through `Slot 8`.
+- `Auto-Save` waits about 10 seconds after a settings change, then writes the
+  current settings into the `Boot/Auto-Save Slot`.
+- Loading a profile makes it the active runtime profile.
+- `Reset Defaults` restores all profile slots to factory defaults.
+- Settings are stored in onboard flash in `/settings.dat`.
+
+Display And Advanced
+
+- Shared setting: `DisplayNotes` shows a `Now Playing` overlay when notes are
+  pressed.
+- The overlay can wake the OLED temporarily if it was sleeping.
+- The screen saver dims the OLED after about 33 seconds of inactivity.
+- `Delegate Control` turns the board into an externally driven button/LED
+  surface.
+- `Update Firmware` reboots into the bootloader.
+
+Entering And Leaving Sequencer
+
+- Choose `Sequencer` from the Keyboard main menu to enter Sequencer mode.
+- In Sequencer mode, choose `Keyboard` from the Sequencer menu to return.

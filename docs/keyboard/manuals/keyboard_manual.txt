@@ -1,0 +1,709 @@
+HEXBOARD KEYBOARD MODE
+DETAILED MANUAL
+
+1. Purpose
+
+Keyboard mode is the board's normal playing mode. It is the main performance
+mode for the HexBoard's playable hexes, menus, tuning system, synth, MIDI
+routing, and profile-backed settings.
+
+Confidence
+
+This is a first structured pass reconstructed from the current firmware code
+and comments in `src/HexBoard.ino`.
+
+- Confidence is generally medium.
+- Sections describing menu structure and stored settings are higher confidence.
+- Sections describing direct physical workflow are based on current code and may
+  still benefit from hardware verification.
+
+
+2. Keyboard Mode Overview
+
+In Keyboard mode:
+
+- the OLED home page is the `Keyboard` menu
+- the playable hexes use the current tuning, layout, scale, key, and transpose
+- command buttons act as velocity and wheel controls
+- the encoder navigates the menu and edits values
+- shared board settings such as synth, MIDI, and profiles are reachable from
+  the Keyboard menu
+
+Choosing `Sequencer` from the Keyboard menu switches the board into Sequencer
+mode. Sequencer mode can return to Keyboard mode from its own menu.
+
+
+3. Physical Controls In Keyboard Mode
+
+3.1 Playable field
+
+Most non-command hexes are playable note keys.
+
+- their pitch mapping comes from the current tuning and layout
+- their in-scale status comes from the current scale and key
+- their final sounded pitch also includes the current transpose setting
+
+3.2 Command buttons
+
+The board has 7 command buttons grouped beside the playable field.
+
+- The top 3 command buttons act as the velocity wheel.
+- The middle command button toggles the lower wheel between modulation and
+  pitch bend.
+- The bottom 3 command buttons act as the current lower wheel.
+
+Normal wheel use:
+
+- velocity wheel sets the performance velocity value
+- lower wheel controls modulation when the middle toggle is off
+- lower wheel controls pitch bend when the middle toggle is on
+
+Menu shortcut use:
+
+- when a menu page is open and ready for input, hold the lowest command button
+  below the encoder
+- while held, the top two command buttons temporarily act as menu up/down
+- releasing the lowest command button returns those top two buttons to normal
+  wheel use
+
+3.3 Encoder
+
+The encoder is used for menu navigation and value editing.
+
+- turn to move through items or change the current editable value
+- press to open a page, confirm a choice, or save an edited value
+- hold for about 2 seconds to send a panic stop
+
+Panic stop behavior:
+
+- sends MIDI `All Sound Off` and `All Notes Off` across channels 1-16
+- clears board-held MIDI and synth note state
+- resets synth output and MIDI routing
+- clears the LEDs
+
+
+4. Direct Playing Behavior
+
+4.1 Normal note playing
+
+When a non-command playable hex is pressed:
+
+- the board sends a MIDI note if the key is allowed to play
+- the board also triggers the onboard synth if `Synth Mode` is not `Off`
+
+4.2 Scale Lock
+
+`Scale Lock` controls whether out-of-scale notes are playable.
+
+- `On`: only in-scale note keys respond
+- `Off`: all playable note keys respond
+
+Scale membership is based on the current tuning, selected scale, and selected
+key.
+
+4.3 Transpose
+
+`Transpose` shifts the sounded pitch in tuning steps.
+
+- it changes pitch assignment and output
+- it does not change the underlying layout geometry
+- it is stored as a signed range from `-127` to `+127`
+
+4.4 Note overlay
+
+Shared setting: `DisplayNotes` is a board-wide setting.
+
+When `DisplayNotes` is enabled:
+
+- the OLED can show a `Now Playing` overlay while notes are held
+- the overlay shows up to 6 unique played notes
+- it lingers briefly after release
+- it can temporarily wake the display if the screen saver had dimmed it
+
+
+5. Tuning, Layout, Key, And Scale
+
+5.1 Tuning page
+
+The `Tuning` page contains:
+
+- the firmware's predefined tuning list
+- `Dynamic JI`
+- `JI BPM Sync`
+- `Beat BPM`
+- `BPM Mult.`
+
+Current tuning list in firmware:
+
+- `12 EDO (Normal)`
+- `12 TET 34 ZPI`
+- `17 EDO`
+- `19 EDO`
+- `22 EDO`
+- `24 EDO`
+- `31 EDO`
+- `31 TET 127 ZPI`
+- `41 EDO`
+- `43 EDO`
+- `46 EDO`
+- `53 EDO`
+- `58 EDO`
+- `58 EDO 289 ZPI`
+- `72 EDO`
+- `72 EDO 380 ZPI`
+- `80 EDO`
+- `87 EDO`
+- `Bohlen-Pierce`
+- `Carlos Alpha`
+- `Carlos Beta`
+- `Carlos Gamma`
+
+When the tuning changes:
+
+- `Layout` resets to that tuning's first layout
+- `Scale` resets to `None`
+- `Key` resets to `C`
+- valid layout choices are recalculated
+- valid scale choices are recalculated
+- valid key choices are recalculated
+- pitch mapping, MIDI routing, and synth frequencies are refreshed
+
+`Dynamic JI`, `JI BPM Sync`, `Beat BPM`, and `BPM Mult.` are stored settings
+that feed back into MIDI routing and pitch behavior.
+
+5.2 Layout page
+
+The `Layout` page contains:
+
+- the current tuning's visible layout list
+- `Mirror Ver.`
+- `Mirror Hor.`
+- `Rotate:`
+
+Layout behavior:
+
+- only layouts for the current tuning are visible
+- the current layout row is marked with `* `
+- opening the page places the cursor on the current visible layout
+- choosing a layout updates the board geometry immediately
+
+Mirror and rotate behavior:
+
+- `Mirror Ver.` mirrors the layout left/right in the board's coordinate logic
+- `Mirror Hor.` mirrors the layout up/down in the board's coordinate logic
+- `Rotate:` offers `0 Deg`, `60 Deg`, `120 Deg`, `180 Deg`, `240 Deg`, and
+  `300 Deg`
+
+5.3 Scales page
+
+The `Scales` page contains:
+
+- `Key`
+- `Scale Lock`
+- the visible scale list for the current tuning
+
+Scale behavior:
+
+- only scales for the current tuning are visible
+- all-tuning scales such as `None` stay available
+- the current scale row is marked with `* `
+- opening the page places the cursor on the current visible scale
+
+Key behavior:
+
+- the visible `Key` selector depends on the current tuning
+- changing `Key` reapplies the scale without leaving the page
+
+
+6. Color And Visual Feedback
+
+6.1 Color Options page
+
+The `Color Options` page contains:
+
+- `Color Mode`
+- `Brightness`
+- `Animation`
+- `Rest Bright`
+- `Dim Bright`
+
+Current `Color Mode` choices:
+
+- `Rainbow`
+- `Tiered`
+- `Alt`
+- `Fifths`
+- `Piano`
+- `Alt Piano`
+- `Filament`
+
+Current `Animation` choices:
+
+- `Off`
+- `Button`
+- `Octave`
+- `By Note`
+- `Star`
+- `Splash`
+- `Orbit`
+- `Beams`
+- `rSplash`
+- `rStar`
+- `MIDI In`
+
+Brightness controls:
+
+- `Brightness` is the global LED output level
+- `Rest Bright` sets the resting note-key brightness level
+- `Dim Bright` sets the dimmed-note brightness level
+
+6.2 Screen saver
+
+The OLED display dims after about 33 seconds of inactivity.
+
+- menu activity resets the timer
+- note overlay wake can temporarily restore the display
+- when the note overlay finishes, the display can return to sleep if it had
+  been woken only for the overlay
+
+
+7. Synth Options
+
+Shared setting: the `Synth Options` page is board-wide and is also reachable
+from Sequencer mode.
+
+The `Synth Options` page contains:
+
+- `Synth Mode`
+- on hardware v1.2 only: `SynthOutput`
+- `Waveform`
+- `Attack`
+- `Decay`
+- `Sustain`
+- `Release`
+- `Arp Speed`
+- `Arp BPM`
+
+7.1 Synth Mode
+
+Current `Synth Mode` choices:
+
+- `Off`
+- `Mono`
+- `Arp'gio`
+- `Poly`
+
+Behavior:
+
+- `Off` disables the onboard synth
+- `Mono` keeps one synth voice active at a time
+- `Arp'gio` cycles held notes using the arpeggiator timing
+- `Poly` uses up to 8 synth voices and steals the oldest active voice if
+  needed
+
+7.2 SynthOutput
+
+This item appears only when the firmware detects hardware v1.2.
+
+Current choices:
+
+- `Buzzer`
+- `Jack`
+- `Both`
+
+7.3 Waveform and envelopes
+
+Current `Waveform` choices:
+
+- `Hybrid`
+- `Square`
+- `Saw`
+- `Triangl`
+- `Sine`
+- `Strings`
+- `Clrinet`
+
+Current envelope time choices for `Attack`, `Decay`, and `Release`:
+
+- `0 ms`
+- `5 ms`
+- `10 ms`
+- `20 ms`
+- `50 ms`
+- `100 ms`
+- `200 ms`
+- `500 ms`
+- `1 s`
+- `2 s`
+
+Current `Sustain` choices:
+
+- `0%`
+- `10%`
+- `25%`
+- `50%`
+- `75%`
+- `100%`
+
+7.4 Arpeggiator
+
+Current `Arp Speed` choices:
+
+- `1/2`
+- `1/3`
+- `1/4`
+- `1/6`
+- `1/8`
+- `1/12`
+- `1/16`
+- `1/24`
+- `1/32`
+
+`Arp BPM` is a `1` to `255` BPM setting.
+
+The arpeggiator duration is derived from:
+
+- 4 quarter notes per whole note
+- the current `Arp BPM`
+- the current `Arp Speed` denominator
+
+
+8. MIDI Options
+
+Shared setting: the `MIDI Options` page is board-wide and is also used by
+Sequencer mode where applicable.
+
+The `MIDI Options` page contains:
+
+- `MIDI Channel`
+- `MPE Mode`
+- `MPE Bend`
+- `MPE Low Ch`
+- `MPE High Ch`
+- `MPE Low Priority`
+- `Extra MPE`
+- `CC 74 Value`
+- `RolandMT32`
+- `GeneralMidi`
+
+8.1 MIDI Channel
+
+`MIDI Channel` sets the default single-channel output target from `1` to `16`.
+
+8.2 MPE Mode
+
+Current `MPE Mode` choices:
+
+- `Auto`
+- `Disable`
+- `Force`
+
+Behavior:
+
+- `Auto` uses single-channel mode for standard 100-cent step tunings when MPE
+  is not otherwise needed
+- `Auto` enables MPE when the tuning or just intonation behavior requires
+  independent pitch control
+- `Disable` forces non-MPE routing and enables the standard multi-channel
+  microtonal fallback when needed
+- `Force` always enables MPE
+
+8.3 MPE settings
+
+Current `MPE Bend` choices:
+
+- `1`
+- `2`
+- `12`
+- `24`
+- `48`
+- `96`
+
+Channel range behavior:
+
+- `MPE Low Ch` and `MPE High Ch` are clamped into the range `2` to `16`
+- if the low channel is set above the high channel, the high channel is pulled
+  up to match
+
+`MPE Low Priority` changes the channel-allocation strategy and can force the
+firmware to use a channel queue.
+
+8.4 Extra MPE and CC 74
+
+When `Extra MPE` is enabled, per-note MIDI output also sends:
+
+- channel pressure
+- `CC 74` with the configured `CC 74 Value`
+
+8.5 Program change menus
+
+The MIDI page provides two preset program-change selectors:
+
+- `RolandMT32`
+- `GeneralMidi`
+
+Choosing a non-`None` entry stores the selected program and sends a program
+change on the primary MIDI channel.
+
+
+9. Control Wheel Page
+
+The `Control Wheel` page contains:
+
+- `Vel Wheel`
+- `PB Wheel`
+- `Mod Wheel`
+- `Pitch Bend`
+- `Mod Wheel`
+
+Current speed choices:
+
+- `too slo`
+- `Turtle`
+- `Slow`
+- `Medium`
+- `Fast`
+- `Cheetah`
+- `Instant`
+
+Behavior choices for `Pitch Bend` and the lower `Mod Wheel` behavior item:
+
+- `Springy`
+- `Sticky`
+
+Notes:
+
+- `Vel Wheel` adjusts how quickly the velocity wheel reaches its target
+- `PB Wheel` adjusts the lower wheel speed while pitch bend is selected
+- `Mod Wheel` adjusts the lower wheel speed while modulation is selected
+- the lower wheel behavior settings are stored independently for pitch bend and
+  modulation
+
+
+10. Save, Load, And Persistence
+
+10.1 Save Profiles
+
+The `Save` page contains:
+
+- `Auto-Save`
+- `Boot/Auto-Save Slot`
+- `Slot 1`
+- `Slot 2`
+- `Slot 3`
+- `Slot 4`
+- `Slot 5`
+- `Slot 6`
+- `Slot 7`
+- `Slot 8`
+
+`Auto-Save` behavior:
+
+- when enabled, settings changes mark the system dirty
+- after about 10 seconds of no further changes, the current settings snapshot
+  is copied into the `Boot/Auto-Save Slot`
+- that slot is then written to `/settings.dat`
+
+10.2 Load Profiles
+
+The `Load` page contains:
+
+- `Boot/Auto-Save Slot`
+- `Slot 1`
+- `Slot 2`
+- `Slot 3`
+- `Slot 4`
+- `Slot 5`
+- `Slot 6`
+- `Slot 7`
+- `Slot 8`
+
+Loading a profile:
+
+- switches the active backing settings array
+- clears the dirty flag
+- re-syncs the runtime state from the loaded profile
+
+10.3 Reset Defaults
+
+`Reset Defaults` is in the `Advanced` page.
+
+It restores:
+
+- all profiles to factory defaults
+- the active runtime state to factory defaults
+- the stored settings file on flash
+
+10.4 Settings file
+
+Keyboard-visible persistent settings are stored in onboard flash as:
+
+- `/settings.dat`
+
+The stored settings include keyboard, synth, MIDI, display, profile, and
+Sequencer-general settings that are defined in the shared settings array.
+
+
+11. Advanced Page
+
+The `Advanced` page contains:
+
+- `Firmware 1.2.0`
+- `Hardware`
+- `Invert Encoder`
+- `ColorByKey`
+- `DisplayNotes`
+- `Reset Defaults`
+- `Update Firmware`
+- `Delegate Control`
+- `Serial Debug`
+
+Notes:
+
+- `Firmware 1.2.0` is a read-only display item
+- `Hardware` is a read-only display item
+- `Invert Encoder` reverses encoder direction
+- `ColorByKey` stores whether the palette centers on the musical key
+- Shared setting: `DisplayNotes` affects both Keyboard-mode playing and the
+  lower-keyboard note overlay behavior in Sequencer mode
+- `Update Firmware` reboots to the bootloader
+- `Delegate Control` switches the board into externally controlled mode
+- `Serial Debug` enables extra debug logging
+
+
+12. Delegated Control
+
+Confidence
+
+This section is based directly on the in-code delegated-control comment block
+and handler code and is therefore relatively high confidence.
+
+When `Delegate Control` is enabled:
+
+- the HexBoard behaves like a button-and-LED terminal for an external program
+- most normal keyboard logic is disabled
+- the command buttons lose their normal wheel behavior
+- the menu remains visible, but most menu actions do not have useful effect
+
+Outgoing delegated button events:
+
+- buttons are numbered `0` through `139`
+- button press sends `NoteOn`
+- button release sends `NoteOff`
+- the MIDI note number is `button % 100`
+- the MIDI channel encodes the hundreds digit as `(button / 100) + 1`
+
+Supported SysEx behavior:
+
+- universal identity request `0x7E ?? 0x06 0x01` is answered
+- `0xF0 0x7D 0x01 0xF7` enters delegated mode
+- delegated `0x02` exits delegated mode
+- delegated `0x03` sets LED colors
+
+LED SysEx format:
+
+- LED number is sent as 14 bits
+- hue, saturation, and value are each sent as 7-bit values
+- the firmware converts those values into its internal HSV-based LED format
+
+
+13. Full Keyboard Menu Tree
+
+This is the visible Keyboard-mode menu structure as assembled by the firmware.
+
+```text
+Keyboard
+  Sequencer
+  Tuning
+    [current tuning list]
+    Dynamic JI
+    JI BPM Sync
+    Beat BPM
+    BPM Mult.
+  Layout
+    [current tuning's layout list]
+    Mirror Ver.
+    Mirror Hor.
+    Rotate:
+  Scales
+    Key
+    Scale Lock
+    [current tuning's scale list]
+  Color Options
+    Color Mode
+    Brightness
+    Animation
+    Rest Bright
+    Dim Bright
+  Synth Options
+    Synth Mode
+    SynthOutput    (hardware v1.2 only)
+    Waveform
+    Attack
+    Decay
+    Sustain
+    Release
+    Arp Speed
+    Arp BPM
+  MIDI Options
+    MIDI Channel
+    MPE Mode
+    MPE Bend
+    MPE Low Ch
+    MPE High Ch
+    MPE Low Priority
+    Extra MPE
+    CC 74 Value
+    RolandMT32
+    GeneralMidi
+  Control Wheel
+    Vel Wheel
+    PB Wheel
+    Mod Wheel
+    Pitch Bend
+    Mod Wheel
+  Transpose
+  Save Profiles
+    Auto-Save
+    Boot/Auto-Save Slot
+    Slot 1
+    Slot 2
+    Slot 3
+    Slot 4
+    Slot 5
+    Slot 6
+    Slot 7
+    Slot 8
+  Load Profiles
+    Boot/Auto-Save Slot
+    Slot 1
+    Slot 2
+    Slot 3
+    Slot 4
+    Slot 5
+    Slot 6
+    Slot 7
+    Slot 8
+  Advanced
+    Firmware 1.2.0
+    Hardware
+    Invert Encoder
+    ColorByKey
+    DisplayNotes
+    Reset Defaults
+    Update Firmware
+    Delegate Control
+    Serial Debug
+```
+
+
+14. Current Limits And Practical Notes
+
+- The onboard poly synth supports up to 8 voices.
+- The `Now Playing` overlay shows up to 6 unique notes.
+- `Transpose` is limited to `-127` through `+127`.
+- `Arp BPM`, `Beat BPM`, and `BPM Mult.` are currently `1` through `255`.
+- `MPE Low Ch` and `MPE High Ch` are currently limited to channels `2` through
+  `16`.
+- Some menu pages include dynamically generated tuning, layout, and scale rows,
+  so the exact visible list depends on the current tuning.

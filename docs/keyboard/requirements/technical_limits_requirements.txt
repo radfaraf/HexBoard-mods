@@ -1,0 +1,105 @@
+HEXBOARD KEYBOARD TECHNICAL LIMITS REQUIREMENTS
+
+Confidence
+
+Overall confidence for this file is high because these limits are taken from
+fixed constants, current menu option lists, and explicit code bounds.
+
+ID: KB-LIMIT-060
+Title: Poly Synth Voice Limit
+Status: Active
+Area: Technical Limits
+Priority: Medium
+
+Requirement:
+The onboard polyphonic synth shall be limited to 8 simultaneous voice slots.
+
+Details:
+- When the poly synth is full, the firmware may steal the oldest active voice.
+
+Related:
+- KB-PLAY-014
+
+
+ID: KB-LIMIT-061
+Title: DisplayNotes Overlay Note Count Limit
+Status: Active
+Area: Technical Limits
+Priority: Low
+
+Requirement:
+The `DisplayNotes` overlay shall display at most 6 unique notes at once.
+
+Related:
+- KB-UI-042
+
+
+ID: KB-LIMIT-062
+Title: Transpose Range
+Status: Active
+Area: Technical Limits
+Priority: Medium
+
+Requirement:
+The stored Keyboard transpose value shall be limited to `-127` through `+127`
+tuning steps.
+
+Related:
+- KB-TUNE-026
+
+
+ID: KB-LIMIT-063
+Title: Maximum Tuning Cycle Size
+Status: Active
+Area: Technical Limits
+Priority: Low
+
+Requirement:
+The current firmware's tuning and scale support shall assume a maximum cycle
+size of 87 steps for menu and scale-array allocation.
+
+Details:
+- This limit is tied to the current `MAX_SCALE_DIVISIONS` allocation size.
+
+Related:
+- KB-TUNE-020
+
+
+ID: KB-LIMIT-064
+Title: Current BPM And Envelope Option Bounds
+Status: Active
+Area: Technical Limits
+Priority: Low
+
+Requirement:
+Several Keyboard timing settings shall be limited to the current firmware menu
+bounds.
+
+Details:
+- `Arp BPM`, `Beat BPM`, and `BPM Mult.` currently use a `1` to `255` spinner.
+- `Attack`, `Decay`, and `Release` currently use the fixed choices from
+  `0 ms` through `2 s`.
+- `Sustain` currently uses the fixed choices from `0%` through `100%`.
+
+Related:
+- KB-TUNE-027
+- KB-MENU-031
+
+
+ID: KB-LIMIT-065
+Title: Current MPE Channel And Bend Bounds
+Status: Active
+Area: Technical Limits
+Priority: Low
+
+Requirement:
+Current Keyboard MPE controls shall use the current firmware bounds and option
+lists.
+
+Details:
+- `MPE Low Ch` and `MPE High Ch` are currently bounded to channels `2` through
+  `16`.
+- `MPE Bend` currently offers `1`, `2`, `12`, `24`, `48`, and `96`.
+
+Related:
+- KB-MIDI-052

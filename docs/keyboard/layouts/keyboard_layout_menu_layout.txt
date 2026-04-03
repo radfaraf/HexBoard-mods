@@ -1,5 +1,9 @@
 KEYBOARD LAYOUT MENU LAYOUT
 
+Confidence:
+- Medium-high. This file reflects the current menu-building code and current
+  stored-default behavior.
+
 Purpose:
 - Shows the available keyboard layouts for the current tuning.
 - Clearly marks the currently selected layout.

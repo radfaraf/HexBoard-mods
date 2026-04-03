@@ -1,5 +1,9 @@
 KEYBOARD SCALES MENU LAYOUT
 
+Confidence:
+- Medium-high. This file reflects the current scale-menu filtering and current
+  selection-marker behavior in the firmware.
+
 Purpose:
 - Shows the available scales for the current tuning.
 - Clearly marks the currently selected scale.
