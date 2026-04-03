@@ -43,9 +43,9 @@ brighter selected-note color that preserves the note's hue better than the play
 highlight tint.
 
 Details:
-- Selected steps shall use the highest level in the sequencer step-light
+- Selected note steps shall use the high level in the sequencer step-light
   brightness ladder.
-- An accented selected step shall keep the same hue and use that highest
+- An accented selected note step shall keep the same hue and use that high
   brightness level.
 
 

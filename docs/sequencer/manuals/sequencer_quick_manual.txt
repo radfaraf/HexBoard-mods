@@ -174,8 +174,8 @@ Seq Lights
   empty step without accent = off
   empty step with accent = medium
   step with note = medium
-  accented step with note = highest
-  selected step with note = highest
+  accented step with note = high
+  selected step with note = high
   playing step with note = highest
 - In Note mode, programmed steps use note-based colors with that brightness
   ladder.

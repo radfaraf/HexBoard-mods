@@ -84,7 +84,8 @@ constexpr byte SEQUENCER_STEP_LIGHT_OFF = 0;
 constexpr byte SEQUENCER_STEP_LIGHT_LOW = 64;
 // Keep medium/high above the very low LED region where some hues can look skewed.
 constexpr byte SEQUENCER_STEP_LIGHT_MEDIUM = 112;
-constexpr byte SEQUENCER_STEP_LIGHT_HIGH = 208;
+// High is intentionally about 25% below highest so play-position pop stays visible.
+constexpr byte SEQUENCER_STEP_LIGHT_HIGH = 192;
 constexpr byte SEQUENCER_STEP_LIGHT_HIGHEST = 255;
 constexpr byte SEQUENCER_STEP_HUE_RED = 0;
 constexpr byte SEQUENCER_STEP_HUE_ORANGE = 1;
@@ -398,7 +399,7 @@ byte getSequencerProgrammedStepLightLevel(bool selected, bool playing, bool acce
     return SEQUENCER_STEP_LIGHT_HIGHEST;
   }
   if (selected || accented) {
-    return SEQUENCER_STEP_LIGHT_HIGHEST;
+    return SEQUENCER_STEP_LIGHT_HIGH;
   }
   return SEQUENCER_STEP_LIGHT_MEDIUM;
 }
@@ -4411,7 +4412,10 @@ void applySequencerLedOverrides() {
       if (accented) {
         strip.setPixelColor(buttonIndex, getSequencerAccentedUnsetStepLedColor(selected || playing));
       } else {
-        strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing));
+        const bool highlighted = selected || playing;
+        // Sequencer mapping requires empty non-accented steps to stay fully off
+        // unless they are selected/playing.
+        strip.setPixelColor(buttonIndex, highlighted ? getSequencerUnsetStepLedColor(true) : 0);
       }
       continue;
     }
