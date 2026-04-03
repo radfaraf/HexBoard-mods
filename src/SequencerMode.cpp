@@ -380,7 +380,9 @@ float sequencerStepHueValue(byte hueSetting) {
 // Regular step colors are sequencer-only UI colors and ignore the stored note hue.
 uint32_t getSequencerRegularFilledStepLedColor(bool highlighted, bool accented) {
   float hue = sequencerStepHueValue(sequencerStepHue);
-  if (accented && !highlighted) {
+  // Keep accent hue identity even when selected/playing; selection should read
+  // as a brightness change on top of the same accent color.
+  if (accented) {
     hue += SEQUENCER_ACCENT_HUE_SHIFT;
     if (hue >= 360.0f) {
       hue -= 360.0f;
@@ -4354,7 +4356,7 @@ void applySequencerLedOverrides() {
     }
 
     if (primaryPitchSteps == SEQUENCER_NO_PITCH) {
-      strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing || accented));
+      strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing));
       continue;
     }
 
@@ -4363,9 +4365,15 @@ void applySequencerLedOverrides() {
       continue;
     }
 
-    if (selected && !playing && getBoardSelectedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
+    if (selected && accented && !playing && getBoardSelectedAccentedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
-    } else if (getBoardLedColorForPitchSteps(primaryPitchSteps, playing || accented, colorCode)) {
+    } else if (selected && !playing && getBoardSelectedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
+      strip.setPixelColor(buttonIndex, colorCode);
+    } else if (playing && getBoardLedColorForPitchSteps(primaryPitchSteps, true, colorCode)) {
+      strip.setPixelColor(buttonIndex, colorCode);
+    } else if (accented && getBoardAccentedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
+      strip.setPixelColor(buttonIndex, colorCode);
+    } else if (getBoardLedColorForPitchSteps(primaryPitchSteps, false, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
     }
   }

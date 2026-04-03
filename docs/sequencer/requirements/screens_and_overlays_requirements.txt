@@ -42,6 +42,10 @@ During the visible phase of the selected-step blink, a note step shall use a
 brighter selected-note color that preserves the note's hue better than the play
 highlight tint.
 
+Details:
+- An accented selected step shall keep its accented note hue and change in
+  brightness.
+
 
 ID: SEQ-UI-004
 Title: Step Tools Overlay

@@ -887,6 +887,10 @@ const byte scaleCount = sizeof(scaleOptions) / sizeof(scaleDef);
 #define HUE_PURPLE 288.0
 #define HUE_MAGENTA 324.0
 #define HUE_PINK 342.0
+
+// Sequencer note-mode accents use a small hue shift so accented steps stay distinct
+// while selected accents can remain the same accent family and only get brighter.
+#define SEQUENCER_NOTE_ACCENT_HUE_SHIFT 22.0
 /*
     This class is a basic hue, saturation,
     and value triplet, with some limited
@@ -1351,6 +1355,8 @@ public:
   uint32_t LEDcodePlay = 0;  // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeRest = 0;  // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeSelected = 0;  // sequencer-selected color that preserves the note hue while standing out more
+  uint32_t LEDcodeAccent = 0;  // sequencer accent color that preserves the note hue without using the play tint
+  uint32_t LEDcodeAccentSelected = 0;  // sequencer-selected accent color that keeps the accent hue family and raises brightness
   uint32_t LEDcodeOff = 0;   // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeDim = 0;   // calculate it once and store value, to make LED playback snappier
   bool animate = 0;          // hex is flagged as part of the animation in this frame, helps make animations smoother
@@ -1661,6 +1667,28 @@ bool getBoardSelectedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOu
       continue;
     }
     colorOut = h[i].LEDcodeSelected;
+    return true;
+  }
+  return false;
+}
+
+bool getBoardSelectedAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut) {
+  for (byte i = 0; i < LED_COUNT; i++) {
+    if (h[i].isCmd || h[i].stepsFromC != pitchSteps) {
+      continue;
+    }
+    colorOut = h[i].LEDcodeAccentSelected;
+    return true;
+  }
+  return false;
+}
+
+bool getBoardAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut) {
+  for (byte i = 0; i < LED_COUNT; i++) {
+    if (h[i].isCmd || h[i].stepsFromC != pitchSteps) {
+      continue;
+    }
+    colorOut = h[i].LEDcodeAccent;
     return true;
   }
   return false;
@@ -2145,6 +2173,17 @@ void setLEDcolorCodes() {
       colorDef selectedColor = setColor;
       selectedColor.val = applyLEDLevel(VALUE_FULL, ledRestBrightness);
       h[i].LEDcodeSelected = getLEDcode(selectedColor);
+      colorDef accentColor = setColor;
+      accentColor.hue += SEQUENCER_NOTE_ACCENT_HUE_SHIFT;
+      if (accentColor.hue >= 360.0f) {
+        accentColor.hue -= 360.0f;
+      }
+      accentColor.val = static_cast<byte>(min(static_cast<int>(selectedColor.val), static_cast<int>(restColor.val) + 24));
+      h[i].LEDcodeAccent = getLEDcode(accentColor);
+      colorDef accentSelectedColor = accentColor;
+      accentSelectedColor.val =
+        static_cast<byte>(min(static_cast<int>(selectedColor.val), static_cast<int>(accentColor.val) + 48));
+      h[i].LEDcodeAccentSelected = getLEDcode(accentSelectedColor);
       colorDef playColor = setColor.tint();
       h[i].LEDcodePlay = getLEDcode(playColor);
       colorDef dimColor = setColor.shade();
