@@ -142,6 +142,8 @@ Menu Items
 - Save New: saves as a new file in the selected folder.
 - Load: loads a saved sequence.
 - Revert: reloads the last saved version of the current sequence.
+- Seq Lights:
+  Accent Every, Step Color, Step Hue
 - Color Options: opens the shared LED color settings page
 - Playback Settings:
   Steps, Direction, Tempo, Play Type, MIDI Sync
@@ -153,6 +155,26 @@ Menu Items
 - Tap Preview: audition step contents when a step is tapped
 - Synth Options: opens the shared synth settings page
 - Update Firmware: reboots to the firmware update bootloader
+
+Seq Lights
+
+- Accent Every emphasizes every Nth step, starting from step 1.
+- Choices are:
+  Off, 2, 3, 4, 5, 6, 7, 8
+- Default Accent Every is 4.
+- Step Color choices are:
+  Note, Regular
+- Default Step Color is Regular.
+- In Note mode, programmed steps use note-based colors and empty steps stay
+  white.
+- In Regular mode, programmed steps use the selected Step Hue and empty steps
+  stay white.
+- Step Hue is available only in Regular mode.
+- Step Hue choices are:
+  Red, Orange, Yellow, Lime, Green, Teal, Cyan, Lt Blue, Blue, Indigo,
+  Purple, Magenta, Pink
+- Default Step Hue is Indigo.
+- Step Hue previews live while you scroll through its choices.
 
 Saving And Files
 
@@ -167,6 +189,9 @@ Saving And Files
 - Clock Source, Send Clock, and Send Transport are general sequencer settings
   and are not stored per sequence file. They are saved with the board profile
   and Auto-Save settings system.
+- Seq Lights settings are general sequencer settings and are not stored per
+  sequence file. They are saved with the board profile and Auto-Save settings
+  system.
 - Color Options settings are shared with Keyboard mode and use the same board
   profile and Auto-Save settings system.
 - In those shared settings, `Dim Bright` affects out-of-scale note LEDs only

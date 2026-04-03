@@ -17,6 +17,7 @@ Menu order:
   Save New
   Load
   Revert
+  Seq Lights
   Color Options
   Tap Preview
   Update Firmware
@@ -35,6 +36,12 @@ MIDI Sync submenu:
   Send Clock
   Send Transport
 
+Seq Lights submenu:
+
+  Accent Every
+  Step Color
+  Step Hue (Regular only)
+
 Color Options submenu:
 
   Color Mode
@@ -48,4 +55,5 @@ Notes:
 - The title includes the loaded file name when one is active.
 - A leading * in the file part of the title means unsaved changes.
 - Keyboard exits Sequencer mode and returns to normal board behavior.
+- Seq Lights settings are general sequencer profile settings, not sequence data.
 - Color Options uses the same shared board settings as Keyboard mode.

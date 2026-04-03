@@ -9,6 +9,10 @@ Priority: High
 Requirement:
 Sequence files shall be stored under /Sequences in onboard flash.
 
+Details:
+- General sequencer display preferences such as Tap Preview, MIDI Sync
+  settings, and Seq Lights settings shall not be stored in sequence files.
+
 
 ID: SEQ-FILE-002
 Title: Current Path Memory

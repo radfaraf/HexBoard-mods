@@ -82,7 +82,7 @@ Area: Screens And Feedback
 Priority: Medium
 
 Requirement:
-The OLED display shall enter a low-contrast screen-saver state after a period
+The OLED display shall enter an off screen-saver state after a period
 of inactivity.
 
 Details:

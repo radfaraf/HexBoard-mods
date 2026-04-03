@@ -26,7 +26,7 @@ Requirement:
 The selected step shall blink to show selection.
 
 Details:
-- Blink timing is 1.0 seconds on and 0.2 seconds off.
+- Blink timing is 0.6 seconds on and 0.2 seconds off.
 - Empty selected steps blink visibly instead of staying dark.
 - A selected empty step uses the unset-step visual style while blinking.
 

@@ -419,6 +419,7 @@ Main Sequencer menu:
 - Save New
 - Load
 - Revert
+- Seq Lights
 - Color Options
 - Tap Preview
 - Update Firmware
@@ -454,11 +455,37 @@ Color Options submenu:
 - Rest Bright
 - Dim Bright
 
+Seq Lights submenu:
+
+- Accent Every
+- Step Color
+- Step Hue
+
 These are the same shared color settings used in Keyboard mode.
 
 - Rest Bright controls normal in-scale resting note brightness.
 - Dim Bright controls out-of-scale note brightness only while Scale Lock is Off.
 - When Scale Lock is On, out-of-scale notes are off instead of dimmed.
+
+Seq Lights controls:
+
+- Accent Every emphasizes every Nth step, starting from step 1.
+- Accent Every choices are Off, 2, 3, 4, 5, 6, 7, and 8.
+- The default Accent Every value is 4.
+- Step Color chooses between:
+  Note and Regular.
+- The default Step Color value is Regular.
+- In Note mode, programmed steps use note-based colors and empty steps stay
+  white.
+- In Regular mode, programmed steps use the selected Step Hue and empty steps
+  stay white.
+- Step Hue is available only while Step Color is set to Regular.
+- Step Hue choices are:
+  Red, Orange, Yellow, Lime, Green, Teal, Cyan, Lt Blue, Blue, Indigo,
+  Purple, Magenta, and Pink.
+- The default Step Hue value is Indigo.
+- Step Hue previews live while you scroll through its choices, and saves when
+  you confirm the selection.
 
 
 13. New, Saving, Loading, And Reverting
@@ -741,6 +768,10 @@ file. It is saved with the board profile and Auto-Save settings system.
 Clock Source, Send Clock, and Send Transport are general sequencer settings and
 are not stored per sequence file. They are saved with the board profile and
 Auto-Save settings system.
+
+Seq Lights settings are general sequencer settings and are not stored per
+sequence file. They are saved with the board profile and Auto-Save settings
+system.
 
 Color Options settings are shared with Keyboard mode and are also saved with
 the board profile and Auto-Save settings system.

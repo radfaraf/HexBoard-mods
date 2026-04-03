@@ -20,6 +20,7 @@ Details:
 - Save New
 - Load
 - Revert
+- Seq Lights
 - Color Options
 - Tap Preview
 - Update Firmware
@@ -72,6 +73,41 @@ Details:
 - Rest Bright shall control normal in-scale resting note brightness.
 - Dim Bright shall control out-of-scale note brightness only while Scale Lock
   is Off.
+
+
+ID: SEQ-MENU-017
+Title: Seq Lights Submenu
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+Sequencer mode shall provide a Seq Lights submenu for sequencer step-light
+preferences.
+
+Details:
+- The Seq Lights submenu shall include:
+  Accent Every, Step Color, and Step Hue.
+- Accent Every shall provide:
+  Off, 2, 3, 4, 5, 6, 7, 8.
+- Accent Every shall emphasize every Nth step, starting from step 1.
+- The default Accent Every value shall be 4.
+- Step Color shall provide:
+  Note and Regular.
+- The default Step Color value shall be Regular.
+- In Step Color = Note, programmed steps shall use note-based colors and empty
+  steps shall stay white.
+- In Step Color = Regular, programmed steps shall use the selected Step Hue and
+  empty steps shall stay white.
+- Step Hue shall be available only while Step Color = Regular.
+- Step Hue shall provide:
+  Red, Orange, Yellow, Lime, Green, Teal, Cyan, Lt Blue, Blue, Indigo,
+  Purple, Magenta, Pink.
+- The default Step Hue value shall be Indigo.
+- Step Hue shall preview live while its menu choices are scrolled before the
+  selection is confirmed.
+- Seq Lights settings shall be stored in the board profile settings rather than
+  in the current sequence file.
 
 
 ID: SEQ-MENU-004

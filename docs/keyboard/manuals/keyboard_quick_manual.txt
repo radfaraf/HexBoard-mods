@@ -103,7 +103,7 @@ Display And Advanced
 - Shared setting: `DisplayNotes` shows a `Now Playing` overlay when notes are
   pressed.
 - The overlay can wake the OLED temporarily if it was sleeping.
-- The screen saver dims the OLED after about 33 seconds of inactivity.
+- The screen saver turns the OLED off after about 33 seconds of inactivity.
 - `Delegate Control` turns the board into an externally driven button/LED
   surface.
 - `Update Firmware` reboots into the bootloader.

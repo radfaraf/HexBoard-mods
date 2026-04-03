@@ -118,7 +118,7 @@ When `DisplayNotes` is enabled:
 - the OLED can show a `Now Playing` overlay while notes are held
 - the overlay shows up to 6 unique played notes
 - it lingers briefly after release
-- it can temporarily wake the display if the screen saver had dimmed it
+- it can temporarily wake the display if the screen saver had turned it off
 
 
 5. Tuning, Layout, Key, And Scale

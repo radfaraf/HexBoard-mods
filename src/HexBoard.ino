@@ -879,11 +879,14 @@ const byte scaleCount = sizeof(scaleOptions) / sizeof(scaleDef);
 #define HUE_YELLOW 72.0
 #define HUE_LIME 108.0
 #define HUE_GREEN 144.0
+#define HUE_TEAL 162.0
 #define HUE_CYAN 180.0
+#define HUE_LIGHT_BLUE 198.0
 #define HUE_BLUE 216.0
 #define HUE_INDIGO 252.0
 #define HUE_PURPLE 288.0
 #define HUE_MAGENTA 324.0
+#define HUE_PINK 342.0
 /*
     This class is a basic hue, saturation,
     and value triplet, with some limited
@@ -1663,6 +1666,31 @@ bool getBoardSelectedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOu
   return false;
 }
 
+uint32_t buildBoardLedColor(float hue, byte sat, byte val) {
+  colorDef color = { hue, sat, val };
+  return getLEDcode(color);
+}
+
+float getBoardNamedHue(byte hueIndex) {
+  switch (hueIndex) {
+    case 0: return HUE_RED;
+    case 1: return HUE_ORANGE;
+    case 2: return HUE_YELLOW;
+    case 3: return HUE_LIME;
+    case 4: return HUE_GREEN;
+    case 5: return HUE_TEAL;
+    case 6: return HUE_CYAN;
+    case 7: return HUE_LIGHT_BLUE;
+    case 8: return HUE_BLUE;
+    case 10: return HUE_PURPLE;
+    case 11: return HUE_MAGENTA;
+    case 12: return HUE_PINK;
+    case 9:
+    default:
+      return HUE_INDIGO;
+  }
+}
+
 byte getSequencerTuningCycleLength() {
   return (current.tuning().cycleLength > 0) ? current.tuning().cycleLength : 12;
 }
@@ -1722,7 +1750,7 @@ uint32_t getSequencerUnsetStepLedColor(bool highlighted) {
   colorDef unsetColor = {
     static_cast<float>(HUE_NONE),
     SAT_BW,
-    static_cast<byte>(highlighted ? VALUE_FULL : VALUE_BLACK)
+    static_cast<byte>(highlighted ? VALUE_FULL : VALUE_LOW)
   };
   return getLEDcode(unsetColor);
 }
@@ -5230,7 +5258,7 @@ struct SettingsHeader {
   uint8_t defaultProfileIndex;
 };
 
-constexpr uint8_t CURRENT_SETTINGS_VERSION = 2;
+constexpr uint8_t CURRENT_SETTINGS_VERSION = 3;
 constexpr uint8_t PROFILE_COUNT = 9;
 constexpr uint8_t DEFAULT_PROFILE_INDEX = 0;
 
@@ -5293,11 +5321,15 @@ enum class SettingKey : uint8_t {
   SequencerClockSource,
   SequencerSendClock,
   SequencerSendTransport,
+  SequencerStepAccentEvery,
+  SequencerStepColorMode,
+  SequencerStepHue,
   // This must remain last – it gives the total number of settings.
   NumSettings
 };
 
 constexpr uint8_t SETTINGS_COUNT_V1 = static_cast<uint8_t>(SettingKey::SequencerTapPreview);
+constexpr uint8_t SETTINGS_COUNT_V2 = static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery);
 
 // Use a constexpr to get the total number of settings.
 constexpr uint8_t NUM_SETTINGS = static_cast<uint8_t>(SettingKey::NumSettings);
@@ -5368,6 +5400,9 @@ const uint8_t factoryDefaults[NUM_SETTINGS] = {
   /* SequencerClockSource         */ 0,
   /* SequencerSendClock           */ 0,
   /* SequencerSendTransport       */ 0,
+  /* SequencerStepAccentEvery     */ 4,
+  /* SequencerStepColorMode       */ 1,
+  /* SequencerStepHue             */ 9,
 };
 
 // ==================================================
@@ -5444,10 +5479,15 @@ bool load_settings() {
   // Always boot from profile 1 even if an older file recorded a different default.
   defaultProfileIndex = DEFAULT_PROFILE_INDEX;
   bool needsRewrite = (header.version != CURRENT_SETTINGS_VERSION);
-  if (header.version == 1) {
+  if (header.version <= 2) {
     applyFactoryDefaultsToSettings();
   }
-  size_t storedSettingCount = (header.version >= 2) ? NUM_SETTINGS : SETTINGS_COUNT_V1;
+  size_t storedSettingCount = SETTINGS_COUNT_V1;
+  if (header.version >= 3) {
+    storedSettingCount = NUM_SETTINGS;
+  } else if (header.version >= 2) {
+    storedSettingCount = SETTINGS_COUNT_V2;
+  }
   size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * storedSettingCount;
   size_t bytesRead = f.read((uint8_t*)settingsProfiles, expectedSize);
   f.close();
@@ -5548,6 +5588,9 @@ void persistSequencerGeneralSettingsToProfile() {
   settings[static_cast<uint8_t>(SettingKey::SequencerClockSource)] = sequencerSettings.clockSource;
   settings[static_cast<uint8_t>(SettingKey::SequencerSendClock)] = sequencerSettings.sendClock;
   settings[static_cast<uint8_t>(SettingKey::SequencerSendTransport)] = sequencerSettings.sendTransport;
+  settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)] = sequencerSettings.stepAccentEvery;
+  settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)] = sequencerSettings.stepColorMode;
+  settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)] = sequencerSettings.stepHue;
   markSettingsDirty();
 }
 
@@ -7264,6 +7307,9 @@ void syncSettingsToRuntime() {
   sequencerSettings.clockSource = settings[static_cast<uint8_t>(SettingKey::SequencerClockSource)];
   sequencerSettings.sendClock = settings[static_cast<uint8_t>(SettingKey::SequencerSendClock)];
   sequencerSettings.sendTransport = settings[static_cast<uint8_t>(SettingKey::SequencerSendTransport)];
+  sequencerSettings.stepAccentEvery = settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)];
+  sequencerSettings.stepColorMode = settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)];
+  sequencerSettings.stepHue = settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)];
   applySequencerPersistentSettings(sequencerSettings);
   updateEnvelopeParamsFromSettings();
   updateArpeggiatorTiming();
