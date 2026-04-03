@@ -20,6 +20,7 @@ Details:
 - Save New
 - Load
 - Revert
+- Color Options
 - Tap Preview
 - Update Firmware
 
@@ -50,6 +51,24 @@ Priority: Medium
 
 Requirement:
 Sequencer mode shall provide access to Synth Options from the Sequencer menu.
+
+
+ID: SEQ-MENU-016
+Title: Shared Color Options Access
+Status: Active
+Area: Menus
+Priority: Medium
+
+Requirement:
+Sequencer mode shall provide access to Color Options from the Sequencer menu.
+
+Details:
+- The Sequencer Color Options submenu shall include:
+  Color Mode, Brightness, Animation, Rest Bright, and Dim Bright.
+- These controls shall use the same underlying board profile settings as the
+  Keyboard Color Options menu.
+- Changing a Color Options setting from Keyboard mode or Sequencer mode shall
+  update the same shared value.
 
 
 ID: SEQ-MENU-004

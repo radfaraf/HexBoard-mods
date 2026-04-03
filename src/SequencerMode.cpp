@@ -12,6 +12,7 @@ extern void rebootToBootloader();
 extern bool fileSystemExists;
 extern GEM_u8g2 menu;
 extern GEMPage menuPageSynthSequencer;
+extern GEMPage menuPageColorsSequencer;
 extern GEMPage menuPageSequencer;
 extern GEMPage menuPageSequencerBrowser;
 extern GEMPage menuPageSequencerFiles;
@@ -3029,6 +3030,7 @@ GEMItem menuItemEnterKeyboard("Keyboard", enterKeyboardMode);
 GEMItem menuGotoSequencerPlayback("Playback Settings", menuPageSequencerPlayback);
 GEMItem menuGotoSequencerMidiSync("MIDI Sync", menuPageSequencerMidiSync);
 GEMItem menuGotoSynthFromSequencer("Synth Options", menuPageSynthSequencer);
+GEMItem menuGotoColorsFromSequencer("Color Options", menuPageColorsSequencer);
 GEMItem menuGotoSequencerFiles("File Management", menuPageSequencerFiles);
 GEMItem menuGotoSequencerUsbBackup("USB Backup", menuPageSequencerUsbBackup);
 GEMItem menuItemSequencerNew("New", newSequencerMenuCallback);
@@ -3610,6 +3612,7 @@ void setupSequencerMenu() {
   menuPageSequencer.addMenuItem(menuItemSequencerSaveNew);
   menuPageSequencer.addMenuItem(menuItemSequencerLoad);
   menuPageSequencer.addMenuItem(menuItemSequencerRevert);
+  menuPageSequencer.addMenuItem(menuGotoColorsFromSequencer);
   menuPageSequencer.addMenuItem(menuItemSequencerTapPreview);
   menuPageSequencer.addMenuItem(menuItemSequencerFirmwareUpdate);
 

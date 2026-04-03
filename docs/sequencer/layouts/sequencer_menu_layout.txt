@@ -17,6 +17,7 @@ Menu order:
   Save New
   Load
   Revert
+  Color Options
   Tap Preview
   Update Firmware
 
@@ -34,8 +35,17 @@ MIDI Sync submenu:
   Send Clock
   Send Transport
 
+Color Options submenu:
+
+  Color Mode
+  Brightness
+  Animation
+  Rest Bright
+  Dim Bright
+
 Notes:
 
 - The title includes the loaded file name when one is active.
 - A leading * in the file part of the title means unsaved changes.
 - Keyboard exits Sequencer mode and returns to normal board behavior.
+- Color Options uses the same shared board settings as Keyboard mode.

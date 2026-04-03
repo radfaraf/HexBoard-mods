@@ -5846,6 +5846,7 @@ GEMPage menuPageScales("Scales", menuPageMain);
 GEMItem menuGotoScales("Scales", openScalesMenu);
 GEMPage menuPageColors("Color Options", menuPageMain);
 GEMItem menuGotoColors("Color Options", menuPageColors);
+GEMPage menuPageColorsSequencer("Color Options", menuPageSequencer);
 GEMPage menuPageSynth("Synth Options", menuPageMain);
 GEMItem menuGotoSynth("Synth Options", menuPageSynth);
 GEMPage menuPageSynthSequencer("Synth Options", menuPageSequencer);
@@ -6889,6 +6890,9 @@ PersistentCallbackInfo callbackInfoColorMode = {
 };
 GEMItem menuItemColor("Color Mode", colorMode, selectColor, universalSaveCallback,
                       reinterpret_cast<void*>(&callbackInfoColorMode));
+// Sequencer mirrors Keyboard Color Options so both menus edit the same stored setting.
+GEMItem menuItemColorSequencer("Color Mode", colorMode, selectColor, universalSaveCallback,
+                               reinterpret_cast<void*>(&callbackInfoColorMode));
 void previewColor(GEMPreviewCallbackData previewData) {
   colorMode = previewData.previewValByte;
   // Refresh the LED display with the new colorMode value
@@ -6918,6 +6922,8 @@ PersistentCallbackInfo callbackInfoAnimation = {
 };
 GEMItem menuItemAnimate("Animation", animationType, selectAnimate, universalSaveCallback,
                         reinterpret_cast<void*>(&callbackInfoAnimation));
+GEMItem menuItemAnimateSequencer("Animation", animationType, selectAnimate, universalSaveCallback,
+                                 reinterpret_cast<void*>(&callbackInfoAnimation));
 void previewAnimate(GEMPreviewCallbackData previewData) {
   animationType = previewData.previewValByte;
 }
@@ -6938,6 +6944,8 @@ PersistentCallbackInfo callbackInfoRestLedLevel = {
 };
 GEMItem menuItemRestLedLevel("Rest Bright", ledRestBrightness, selectRestLedLevel, universalSaveCallback,
                              reinterpret_cast<void*>(&callbackInfoRestLedLevel));
+GEMItem menuItemRestLedLevelSequencer("Rest Bright", ledRestBrightness, selectRestLedLevel, universalSaveCallback,
+                                      reinterpret_cast<void*>(&callbackInfoRestLedLevel));
 void previewRestLedLevel(GEMPreviewCallbackData previewData) {
   ledRestBrightness = previewData.previewValByte;
   setLEDcolorCodes();
@@ -6959,6 +6967,8 @@ PersistentCallbackInfo callbackInfoDimLedLevel = {
 };
 GEMItem menuItemDimLedLevel("Dim Bright", ledDimBrightness, selectDimLedLevel, universalSaveCallback,
                             reinterpret_cast<void*>(&callbackInfoDimLedLevel));
+GEMItem menuItemDimLedLevelSequencer("Dim Bright", ledDimBrightness, selectDimLedLevel, universalSaveCallback,
+                                     reinterpret_cast<void*>(&callbackInfoDimLedLevel));
 void previewDimLedLevel(GEMPreviewCallbackData previewData) {
   ledDimBrightness = previewData.previewValByte;
   setLEDcolorCodes();
@@ -6974,6 +6984,8 @@ PersistentCallbackInfo callbackInfoBrightness = {
 };
 GEMItem menuItemBright("Brightness", globalBrightness, selectBright, universalSaveCallback,
                        reinterpret_cast<void*>(&callbackInfoBrightness));
+GEMItem menuItemBrightSequencer("Brightness", globalBrightness, selectBright, universalSaveCallback,
+                                reinterpret_cast<void*>(&callbackInfoBrightness));
 void previewBright(GEMPreviewCallbackData previewData) {
   globalBrightness = previewData.previewValByte;
   // Refresh the LED display with the new brightness value
@@ -7658,14 +7670,24 @@ void setupMenu() {
   menuPageMain.addMenuItem(menuGotoColors);
   menuPageColors.addMenuItem(menuItemColor);
   menuItemColor.setPreviewCallback(previewColor);
+  menuPageColorsSequencer.addMenuItem(menuItemColorSequencer);
+  menuItemColorSequencer.setPreviewCallback(previewColor);
   menuPageColors.addMenuItem(menuItemBright);
   menuItemBright.setPreviewCallback(previewBright);
+  menuPageColorsSequencer.addMenuItem(menuItemBrightSequencer);
+  menuItemBrightSequencer.setPreviewCallback(previewBright);
   menuPageColors.addMenuItem(menuItemAnimate);
   menuItemAnimate.setPreviewCallback(previewAnimate);
+  menuPageColorsSequencer.addMenuItem(menuItemAnimateSequencer);
+  menuItemAnimateSequencer.setPreviewCallback(previewAnimate);
   menuPageColors.addMenuItem(menuItemRestLedLevel);
   menuItemRestLedLevel.setPreviewCallback(previewRestLedLevel);
+  menuPageColorsSequencer.addMenuItem(menuItemRestLedLevelSequencer);
+  menuItemRestLedLevelSequencer.setPreviewCallback(previewRestLedLevel);
   menuPageColors.addMenuItem(menuItemDimLedLevel);
   menuItemDimLedLevel.setPreviewCallback(previewDimLedLevel);
+  menuPageColorsSequencer.addMenuItem(menuItemDimLedLevelSequencer);
+  menuItemDimLedLevelSequencer.setPreviewCallback(previewDimLedLevel);
   menuPageMain.addMenuItem(menuGotoSynth);
   menuPageSynth.addMenuItem(menuItemPlayback);
   menuPageSynthSequencer.addMenuItem(menuItemPlaybackSequencer);

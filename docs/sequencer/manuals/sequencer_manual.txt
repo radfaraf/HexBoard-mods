@@ -419,6 +419,7 @@ Main Sequencer menu:
 - Save New
 - Load
 - Revert
+- Color Options
 - Tap Preview
 - Update Firmware
 
@@ -444,6 +445,14 @@ File Management submenu:
 - Delete File
 - Delete Folder
 - USB Backup
+
+Color Options submenu:
+
+- Color Mode
+- Brightness
+- Animation
+- Rest Bright
+- Dim Bright
 
 
 13. New, Saving, Loading, And Reverting
@@ -726,6 +735,9 @@ file. It is saved with the board profile and Auto-Save settings system.
 Clock Source, Send Clock, and Send Transport are general sequencer settings and
 are not stored per sequence file. They are saved with the board profile and
 Auto-Save settings system.
+
+Color Options settings are shared with Keyboard mode and are also saved with
+the board profile and Auto-Save settings system.
 
 Current sequence files are saved as `version=2` with `noteFormat=stepsFromC`.
 

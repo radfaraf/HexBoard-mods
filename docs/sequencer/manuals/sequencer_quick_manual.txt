@@ -142,6 +142,7 @@ Menu Items
 - Save New: saves as a new file in the selected folder.
 - Load: loads a saved sequence.
 - Revert: reloads the last saved version of the current sequence.
+- Color Options: opens the shared LED color settings page
 - Playback Settings:
   Steps, Direction, Tempo, Play Type, MIDI Sync
 - Playback Settings > MIDI Sync:
@@ -166,6 +167,8 @@ Saving And Files
 - Clock Source, Send Clock, and Send Transport are general sequencer settings
   and are not stored per sequence file. They are saved with the board profile
   and Auto-Save settings system.
+- Color Options settings are shared with Keyboard mode and use the same board
+  profile and Auto-Save settings system.
 - On startup, the sequencer restores the last loaded sequence file when that
   remembered path is still valid.
 - File Management > USB Backup starts a dedicated USB serial backup session for
