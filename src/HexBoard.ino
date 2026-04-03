@@ -8020,6 +8020,13 @@ void readHexes() {
     }
     if (pressed) {
       bool isTopShortcutButton = (buttonIndex == assignCmd[0]);
+      if (!isKeyboardMode()) {
+        int8_t direction = isTopShortcutButton ? -1 : 1;
+        if (handleSequencerRotaryTurn(direction)) {
+          screenTime = 0;
+          return true;
+        }
+      }
       if (menu.isEditMode()) {
         // Keep "top button increases / bottom button decreases" while editing values.
         menu.registerKeyPress(isTopShortcutButton ? GEM_KEY_DOWN : GEM_KEY_UP);
