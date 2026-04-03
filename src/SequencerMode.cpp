@@ -336,6 +336,9 @@ void sequencerBrowserRenameFolderCallback();
 bool isSequencerAccentStep(byte stepIndex);
 float sequencerStepHueValue(byte hueSetting);
 byte normalizeSequencerStepAccentShift(byte rawShift);
+byte sequencerByteLerp(byte startValue, byte endValue, float startAt, float endAt, float currentValue);
+uint32_t getSequencerAccentedNoteStepLedColor(int16_t pitchSteps, bool selected);
+uint32_t getSequencerAccentedUnsetStepLedColor(bool selected);
 uint32_t getSequencerRegularFilledStepLedColor(bool highlighted, bool accented);
 extern GEMItem menuItemSequencerStepHue;
 extern GEMItem menuItemSequencerStepAccentShift;
@@ -379,6 +382,80 @@ bool isSequencerAccentStep(byte stepIndex) {
 
 float sequencerStepHueValue(byte hueSetting) {
   return getBoardNamedHue(hueSetting);
+}
+
+byte sequencerByteLerp(byte startValue, byte endValue, float startAt, float endAt, float currentValue) {
+  float weight = (currentValue - startAt) / (endAt - startAt);
+  int blended = startValue + static_cast<int>((endValue - startValue) * weight);
+  if (blended < startValue) {
+    blended = startValue;
+  }
+  if (blended > endValue) {
+    blended = endValue;
+  }
+  return static_cast<byte>(blended);
+}
+
+uint32_t getSequencerAccentedNoteStepLedColor(int16_t pitchSteps, bool selected) {
+  float hue = 0.0f;
+  byte sat = 0;
+  byte val = 0;
+  if (!getBoardBaseLedColorForPitchSteps(pitchSteps, hue, sat, val)) {
+    uint32_t fallbackColor = 0;
+    if (selected && getBoardSelectedAccentedLedColorForPitchSteps(pitchSteps, fallbackColor)) {
+      return fallbackColor;
+    }
+    if (getBoardAccentedLedColorForPitchSteps(pitchSteps, fallbackColor)) {
+      return fallbackColor;
+    }
+    return 0;
+  }
+
+  byte selectedVal = applyBoardRestLedLevel(255);
+  byte accentVal = static_cast<byte>(min(static_cast<int>(selectedVal), static_cast<int>(applyBoardRestLedLevel(val)) + 24));
+
+  bool whiteishNote = (sat <= 160 && val >= 164);
+  if (whiteishNote) {
+    // White-ish notes need an explicit accent color that stays visible on hardware.
+    float coolHueStart = getBoardNamedHue(SEQUENCER_STEP_HUE_LIGHT_BLUE);
+    float coolHueEnd = getBoardNamedHue(SEQUENCER_STEP_HUE_CYAN);
+    float shiftWeight = (getSequencerAccentHueShift() - 10.0f) / 25.0f;
+    if (shiftWeight < 0.0f) {
+      shiftWeight = 0.0f;
+    } else if (shiftWeight > 1.0f) {
+      shiftWeight = 1.0f;
+    }
+    hue = coolHueStart + ((coolHueEnd - coolHueStart) * shiftWeight);
+    sat = 255;
+    accentVal = applyBoardRestLedLevel(selected ? 255 : 220);
+  } else {
+    hue += getSequencerAccentHueShift();
+    if (hue >= 360.0f) {
+      hue -= 360.0f;
+    }
+  }
+
+  if (selected) {
+    accentVal = static_cast<byte>(min(static_cast<int>(selectedVal), static_cast<int>(accentVal) + 48));
+  }
+
+  return buildBoardLedColor(hue, sat, accentVal);
+}
+
+uint32_t getSequencerAccentedUnsetStepLedColor(bool selected) {
+  // Empty/unset steps never reach the note-color path below, so they need
+  // their own accent color or "white accented steps" will still look white.
+  float coolHueStart = getBoardNamedHue(SEQUENCER_STEP_HUE_LIGHT_BLUE);
+  float coolHueEnd = getBoardNamedHue(SEQUENCER_STEP_HUE_CYAN);
+  float shiftWeight = (getSequencerAccentHueShift() - 10.0f) / 25.0f;
+  if (shiftWeight < 0.0f) {
+    shiftWeight = 0.0f;
+  } else if (shiftWeight > 1.0f) {
+    shiftWeight = 1.0f;
+  }
+  float hue = coolHueStart + ((coolHueEnd - coolHueStart) * shiftWeight);
+  byte value = applyBoardRestLedLevel(selected ? 255 : 210);
+  return buildBoardLedColor(hue, 255, value);
 }
 
 // Regular step colors are sequencer-only UI colors and ignore the stored note hue.
@@ -4405,8 +4482,16 @@ void applySequencerLedOverrides() {
       continue;
     }
 
+    // Sequencer step LEDs split into three visual paths:
+    // 1) empty/unset steps, 2) regular step colors, 3) note-colored steps.
+    // Bugs in one path may not appear in the others, so debug the matching
+    // branch instead of assuming all "white-looking" steps are note colors.
     if (primaryPitchSteps == SEQUENCER_NO_PITCH) {
-      strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing));
+      if (accented) {
+        strip.setPixelColor(buttonIndex, getSequencerAccentedUnsetStepLedColor(selected || playing));
+      } else {
+        strip.setPixelColor(buttonIndex, getSequencerUnsetStepLedColor(selected || playing));
+      }
       continue;
     }
 
@@ -4415,13 +4500,9 @@ void applySequencerLedOverrides() {
       continue;
     }
 
-    if (selected && accented && !playing && getBoardSelectedAccentedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
-      strip.setPixelColor(buttonIndex, colorCode);
-    } else if (selected && !playing && getBoardSelectedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
+    if (selected && !playing && getBoardSelectedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
     } else if (playing && getBoardLedColorForPitchSteps(primaryPitchSteps, true, colorCode)) {
-      strip.setPixelColor(buttonIndex, colorCode);
-    } else if (accented && getBoardAccentedLedColorForPitchSteps(primaryPitchSteps, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);
     } else if (getBoardLedColorForPitchSteps(primaryPitchSteps, false, colorCode)) {
       strip.setPixelColor(buttonIndex, colorCode);

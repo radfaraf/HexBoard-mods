@@ -487,13 +487,14 @@ Seq Lights controls:
   white.
 - In Note mode, accented programmed steps use a stable accent variant of the
   note hue instead of switching to the play-highlight tint.
+- Accented empty steps use a visible light-blue to cyan accent so Accent Every
+  remains easy to see on white steps too.
 - If an accented note-mode step is selected, it stays in that accented hue and
   increases in brightness.
 - In Regular mode, programmed steps use the selected Step Hue and empty steps
   stay white.
 - In Regular mode, an accented selected step keeps its accent hue and increases
   in brightness.
-- Accent grouping does not brighten empty white steps when they are unselected.
 - Step Hue is available only while Step Color is set to Regular.
 - Step Hue choices are:
   Red, Orange, Yellow, Lime, Green, Teal, Cyan, Lt Blue, Blue, Indigo,

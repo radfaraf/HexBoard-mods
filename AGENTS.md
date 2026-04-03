@@ -19,6 +19,11 @@ mode-specific documentation for Codex to follow.
 - Do not comment obvious line-by-line behavior when the code already reads clearly.
 - Keep comments brief and useful, usually one line and sometimes a few short lines when context matters.
 - When changing tricky code, update or remove nearby comments so they stay accurate.
+- When a bug fix reveals a non-obvious runtime split such as different render
+  paths, empty-vs-programmed state, or mode-specific branches, leave a short
+  comment near that branch explaining the split and the bug it can cause.
+- Prefer documenting the real decision point in code over only describing the
+  symptom in chat, so future work starts from the correct branch faster.
 
 ## Sequencer Manual Maintenance
 

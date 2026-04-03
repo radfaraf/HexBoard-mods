@@ -105,12 +105,12 @@ Details:
   steps shall stay white.
 - In Step Color = Note, accented programmed steps shall use a stable accent
   variant of the note hue rather than switching to the play-highlight tint.
+- Accented empty steps shall use a visible light-blue to cyan accent so Accent
+  Every remains easy to see on white steps too.
 - In Step Color = Regular, programmed steps shall use the selected Step Hue and
   empty steps shall stay white.
 - In Step Color = Regular, an accented selected step shall keep its accent hue
   and increase in brightness.
-- Accent grouping shall not brighten empty white steps while they are
-  unselected.
 - Step Hue shall be available only while Step Color = Regular.
 - Step Hue shall provide:
   Red, Orange, Yellow, Lime, Green, Teal, Cyan, Lt Blue, Blue, Indigo,

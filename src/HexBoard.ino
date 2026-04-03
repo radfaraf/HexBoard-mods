@@ -1356,6 +1356,9 @@ public:
   uint32_t LEDcodeAccentSelected = 0;  // sequencer-selected accent color that keeps the accent hue family and raises brightness
   uint32_t LEDcodeOff = 0;   // calculate it once and store value, to make LED playback snappier
   uint32_t LEDcodeDim = 0;   // calculate it once and store value, to make LED playback snappier
+  float baseLedHue = 0.0f;   // base note hue before rest/selected/accent variants are derived
+  byte baseLedSat = 0;       // base note saturation before rest/selected/accent variants are derived
+  byte baseLedVal = 0;       // base note value before rest/selected/accent variants are derived
   bool animate = 0;          // hex is flagged as part of the animation in this frame, helps make animations smoother
   int16_t stepsFromC = 0;    // number of steps from C4 (semitones in 12EDO; microtones if >12EDO)
   bool isCmd = 0;            // 0 if it's a MIDI note; 1 if it's a MIDI control cmd
@@ -1689,6 +1692,23 @@ bool getBoardAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOu
     return true;
   }
   return false;
+}
+
+bool getBoardBaseLedColorForPitchSteps(int16_t pitchSteps, float& hueOut, byte& satOut, byte& valOut) {
+  for (byte i = 0; i < LED_COUNT; i++) {
+    if (h[i].isCmd || h[i].stepsFromC != pitchSteps) {
+      continue;
+    }
+    hueOut = h[i].baseLedHue;
+    satOut = h[i].baseLedSat;
+    valOut = h[i].baseLedVal;
+    return true;
+  }
+  return false;
+}
+
+byte applyBoardRestLedLevel(byte value) {
+  return applyLEDLevel(value, ledRestBrightness);
 }
 
 uint32_t buildBoardLedColor(float hue, byte sat, byte val) {
@@ -2164,6 +2184,9 @@ void setLEDcolorCodes() {
           };
           break;
       }
+      h[i].baseLedHue = setColor.hue;
+      h[i].baseLedSat = setColor.sat;
+      h[i].baseLedVal = setColor.val;
       colorDef restColor = setColor;
       restColor.val = applyLEDLevel(restColor.val, ledRestBrightness);
       h[i].LEDcodeRest = getLEDcode(restColor);
@@ -2171,9 +2194,15 @@ void setLEDcolorCodes() {
       selectedColor.val = applyLEDLevel(VALUE_FULL, ledRestBrightness);
       h[i].LEDcodeSelected = getLEDcode(selectedColor);
       colorDef accentColor = setColor;
-      accentColor.hue += getSequencerAccentHueShift();
-      if (accentColor.hue >= 360.0f) {
-        accentColor.hue -= 360.0f;
+      if (accentColor.sat == SAT_BW) {
+        // Pure white ignores hue shifts, so reuse Accent Shift as a stronger cool-white tint strength.
+        accentColor.hue = HUE_LIGHT_BLUE;
+        accentColor.sat = byteLerp(110, 170, 10.0f, 35.0f, getSequencerAccentHueShift());
+      } else {
+        accentColor.hue += getSequencerAccentHueShift();
+        if (accentColor.hue >= 360.0f) {
+          accentColor.hue -= 360.0f;
+        }
       }
       accentColor.val = static_cast<byte>(min(static_cast<int>(selectedColor.val), static_cast<int>(restColor.val) + 24));
       h[i].LEDcodeAccent = getLEDcode(accentColor);

@@ -34,6 +34,8 @@ bool getBoardLedColorForPitchSteps(int16_t pitchSteps, bool highlighted, uint32_
 bool getBoardSelectedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut);
 bool getBoardSelectedAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut);
 bool getBoardAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut);
+bool getBoardBaseLedColorForPitchSteps(int16_t pitchSteps, float& hueOut, byte& satOut, byte& valOut);
+byte applyBoardRestLedLevel(byte value);
 uint32_t buildBoardLedColor(float hue, byte sat, byte val);
 float getBoardNamedHue(byte hueIndex);
 float getSequencerAccentHueShift();
