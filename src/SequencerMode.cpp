@@ -28,6 +28,7 @@ extern uint64_t screenTime;
 extern uint64_t runTime;
 extern Adafruit_NeoPixel strip;
 extern RP2040 rp2040;
+extern void setLEDcolorCodes();
 extern volatile bool isrProfilingEnabled;
 extern volatile uint32_t isrProfileAvgUs;
 extern volatile uint32_t isrProfileCount;
@@ -63,7 +64,6 @@ constexpr uint64_t SEQUENCER_PERFORMANCE_HOLD_MICROS = 2000000ULL;
 constexpr uint64_t SEQUENCER_PERFORMANCE_REFRESH_MICROS = 250000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_ON_MICROS = 600000ULL;
 constexpr uint64_t SEQUENCER_SELECTED_OFF_MICROS = 200000ULL;
-constexpr float SEQUENCER_ACCENT_HUE_SHIFT = 22.0f;
 constexpr uint32_t SEQUENCER_AUDIO_ISR_PERIOD_MICROS = 24;
 constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
@@ -78,6 +78,7 @@ constexpr byte SEQUENCER_SEND_CLOCK_ON = 1;
 constexpr byte SEQUENCER_SEND_TRANSPORT_OFF = 0;
 constexpr byte SEQUENCER_SEND_TRANSPORT_ON = 1;
 constexpr byte SEQUENCER_STEP_ACCENT_OFF = 0;
+constexpr byte SEQUENCER_STEP_ACCENT_SHIFT_DEFAULT = 20;
 constexpr byte SEQUENCER_STEP_COLOR_NOTE = 0;
 constexpr byte SEQUENCER_STEP_COLOR_REGULAR = 1;
 constexpr byte SEQUENCER_STEP_HUE_RED = 0;
@@ -241,6 +242,7 @@ byte sequencerClockSource = SEQUENCER_CLOCK_SOURCE_INTERNAL;
 byte sequencerSendClock = SEQUENCER_SEND_CLOCK_OFF;
 byte sequencerSendTransport = SEQUENCER_SEND_TRANSPORT_OFF;
 byte sequencerStepAccentEvery = 4;
+byte sequencerStepAccentShift = SEQUENCER_STEP_ACCENT_SHIFT_DEFAULT;
 byte sequencerStepColorMode = SEQUENCER_STEP_COLOR_REGULAR;
 byte sequencerStepHue = SEQUENCER_STEP_HUE_INDIGO;
 byte sequencerDirection = SEQUENCER_DIRECTION_FORWARD;
@@ -333,8 +335,10 @@ void sequencerBrowserDeleteFolderCallback();
 void sequencerBrowserRenameFolderCallback();
 bool isSequencerAccentStep(byte stepIndex);
 float sequencerStepHueValue(byte hueSetting);
+byte normalizeSequencerStepAccentShift(byte rawShift);
 uint32_t getSequencerRegularFilledStepLedColor(bool highlighted, bool accented);
 extern GEMItem menuItemSequencerStepHue;
+extern GEMItem menuItemSequencerStepAccentShift;
 extern GEMItem menuItemSequencerUsbBackupStatusOne;
 extern GEMItem menuItemSequencerUsbBackupStatusTwo;
 extern GEMItem menuItemSequencerUsbBackupStart;
@@ -383,7 +387,7 @@ uint32_t getSequencerRegularFilledStepLedColor(bool highlighted, bool accented) 
   // Keep accent hue identity even when selected/playing; selection should read
   // as a brightness change on top of the same accent color.
   if (accented) {
-    hue += SEQUENCER_ACCENT_HUE_SHIFT;
+    hue += sequencerStepAccentShift;
     if (hue >= 360.0f) {
       hue -= 360.0f;
     }
@@ -391,6 +395,20 @@ uint32_t getSequencerRegularFilledStepLedColor(bool highlighted, bool accented) 
 
   const byte stepValue = highlighted ? 255 : 150;
   return buildBoardLedColor(hue, 255, stepValue);
+}
+
+byte normalizeSequencerStepAccentShift(byte rawShift) {
+  switch (rawShift) {
+    case 10:
+    case 15:
+    case 20:
+    case 25:
+    case 30:
+    case 35:
+      return rawShift;
+    default:
+      return SEQUENCER_STEP_ACCENT_SHIFT_DEFAULT;
+  }
 }
 
 const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
@@ -3035,8 +3053,9 @@ void sequencerSendTransportMenuCallback(GEMCallbackData callbackData) {
   persistSequencerGeneralSettingsToProfile();
 }
 
-// Step Hue is only relevant in Regular mode, so hide it in Note mode.
+// Hide Seq Lights options that are not relevant for the current mode/state.
 void refreshSequencerLightsMenu(bool redrawMenu) {
+  menuItemSequencerStepAccentShift.hide(sequencerStepAccentEvery == SEQUENCER_STEP_ACCENT_OFF);
   menuItemSequencerStepHue.hide(sequencerStepColorMode != SEQUENCER_STEP_COLOR_REGULAR);
   if (redrawMenu && menu.getCurrentMenuPage() == &menuPageSequencerLights) {
     menu.drawMenu();
@@ -3055,6 +3074,19 @@ void sequencerStepAccentEveryMenuCallback(GEMCallbackData callbackData) {
     sequencerStepAccentEvery = SEQUENCER_STEP_ACCENT_OFF;
   }
   persistSequencerGeneralSettingsToProfile();
+  refreshSequencerLightsMenu(true);
+}
+
+void sequencerStepAccentShiftMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  sequencerStepAccentShift = normalizeSequencerStepAccentShift(sequencerStepAccentShift);
+  setLEDcolorCodes();
+  persistSequencerGeneralSettingsToProfile();
+}
+
+void previewSequencerStepAccentShift(GEMPreviewCallbackData previewData) {
+  sequencerStepAccentShift = normalizeSequencerStepAccentShift(previewData.previewValByte);
+  setLEDcolorCodes();
 }
 
 void sequencerStepColorModeMenuCallback(GEMCallbackData callbackData) {
@@ -3112,15 +3144,24 @@ SelectOptionByte optionByteSequencerSendTransport[] = {
 GEMSelect selectSequencerSendTransport(sizeof(optionByteSequencerSendTransport) / sizeof(SelectOptionByte), optionByteSequencerSendTransport);
 SelectOptionByte optionByteSequencerStepAccentEvery[] = {
   { "Off", SEQUENCER_STEP_ACCENT_OFF },
-  { "2", 2 },
-  { "3", 3 },
-  { "4", 4 },
-  { "5", 5 },
-  { "6", 6 },
-  { "7", 7 },
-  { "8", 8 }
+  { " 2", 2 },
+  { " 3", 3 },
+  { " 4", 4 },
+  { " 5", 5 },
+  { " 6", 6 },
+  { " 7", 7 },
+  { " 8", 8 }
 };
 GEMSelect selectSequencerStepAccentEvery(sizeof(optionByteSequencerStepAccentEvery) / sizeof(SelectOptionByte), optionByteSequencerStepAccentEvery);
+SelectOptionByte optionByteSequencerStepAccentShift[] = {
+  { " 10", 10 },
+  { " 15", 15 },
+  { " 20", 20 },
+  { " 25", 25 },
+  { " 30", 30 },
+  { " 35", 35 }
+};
+GEMSelect selectSequencerStepAccentShift(sizeof(optionByteSequencerStepAccentShift) / sizeof(SelectOptionByte), optionByteSequencerStepAccentShift);
 SelectOptionByte optionByteSequencerStepColor[] = {
   { "Note", SEQUENCER_STEP_COLOR_NOTE },
   { "Regular", SEQUENCER_STEP_COLOR_REGULAR }
@@ -3181,7 +3222,8 @@ GEMItem menuItemSequencerPlayType("Play Type", sequencerPlayType, selectSequence
 GEMItem menuItemSequencerClockSource("Clock Source", sequencerClockSource, selectSequencerClockSource, sequencerClockSourceMenuCallback);
 GEMItem menuItemSequencerSendClock("Send Clock", sequencerSendClock, selectSequencerSendClock, sequencerSendClockMenuCallback);
 GEMItem menuItemSequencerSendTransport("Send Transport", sequencerSendTransport, selectSequencerSendTransport, sequencerSendTransportMenuCallback);
-GEMItem menuItemSequencerStepAccentEvery("Accent Every", sequencerStepAccentEvery, selectSequencerStepAccentEvery, sequencerStepAccentEveryMenuCallback);
+GEMItem menuItemSequencerStepAccentEvery("Accent Every  ", sequencerStepAccentEvery, selectSequencerStepAccentEvery, sequencerStepAccentEveryMenuCallback);
+GEMItem menuItemSequencerStepAccentShift("Accent Shift  ", sequencerStepAccentShift, selectSequencerStepAccentShift, sequencerStepAccentShiftMenuCallback);
 GEMItem menuItemSequencerStepColor("Step Color", sequencerStepColorMode, selectSequencerStepColor, sequencerStepColorModeMenuCallback);
 GEMItem menuItemSequencerStepHue("Step Hue", sequencerStepHue, selectSequencerStepHue, sequencerStepHueMenuCallback);
 GEMItem menuItemSequencerDirection("Direction", sequencerDirection, selectSequencerDirection, sequencerDirectionMenuCallback);
@@ -3317,6 +3359,10 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 
 }  // namespace
 
+float getSequencerAccentHueShift() {
+  return static_cast<float>(sequencerStepAccentShift);
+}
+
 SequencerPersistentSettings getSequencerPersistentSettings() {
   SequencerPersistentSettings values;
   values.tapPreview = sequencerTapPreview;
@@ -3324,6 +3370,7 @@ SequencerPersistentSettings getSequencerPersistentSettings() {
   values.sendClock = sequencerSendClock;
   values.sendTransport = sequencerSendTransport;
   values.stepAccentEvery = sequencerStepAccentEvery;
+  values.stepAccentShift = sequencerStepAccentShift;
   values.stepColorMode = sequencerStepColorMode;
   values.stepHue = sequencerStepHue;
   return values;
@@ -3342,6 +3389,7 @@ void applySequencerPersistentSettings(const SequencerPersistentSettings& values)
   } else {
     sequencerStepAccentEvery = SEQUENCER_STEP_ACCENT_OFF;
   }
+  sequencerStepAccentShift = normalizeSequencerStepAccentShift(values.stepAccentShift);
   sequencerStepColorMode = (values.stepColorMode == SEQUENCER_STEP_COLOR_REGULAR) ? SEQUENCER_STEP_COLOR_REGULAR : SEQUENCER_STEP_COLOR_NOTE;
   sequencerStepHue = (values.stepHue <= SEQUENCER_STEP_HUE_PINK) ? values.stepHue : SEQUENCER_STEP_HUE_INDIGO;
 
@@ -3776,8 +3824,10 @@ void setupSequencerMenu() {
   menuPageSequencerMidiSync.addMenuItem(menuItemSequencerSendTransport);
 
   menuPageSequencerLights.addMenuItem(menuItemSequencerStepAccentEvery);
+  menuPageSequencerLights.addMenuItem(menuItemSequencerStepAccentShift);
   menuPageSequencerLights.addMenuItem(menuItemSequencerStepColor);
   menuPageSequencerLights.addMenuItem(menuItemSequencerStepHue);
+  menuItemSequencerStepAccentShift.setPreviewCallback(previewSequencerStepAccentShift);
   menuItemSequencerStepHue.setPreviewCallback(previewSequencerStepHue);
   refreshSequencerLightsMenu(false);
 

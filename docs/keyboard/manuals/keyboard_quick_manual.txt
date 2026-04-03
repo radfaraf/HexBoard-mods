@@ -40,6 +40,8 @@ Encoder And Menu
   and synth output.
 - When a menu page is open, hold the lowest command button below the encoder to
   make the top two command buttons act as menu up/down shortcuts.
+- While editing a value, the top shortcut button increases the value and the
+  lower shortcut button decreases it.
 
 Main Menu
 

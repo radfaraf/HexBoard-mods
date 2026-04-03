@@ -407,6 +407,8 @@ When a menu page is open, hold the bottom command button below the encoder to
 temporarily make the top two command buttons act like one encoder step up or
 down. Releasing that bottom button returns them to their normal non-menu
 behavior.
+While editing a value, the top shortcut button increases that value and the
+lower shortcut button decreases it.
 
 Main Sequencer menu:
 
@@ -458,6 +460,7 @@ Color Options submenu:
 Seq Lights submenu:
 
 - Accent Every
+- Accent Shift
 - Step Color
 - Step Hue
 
@@ -472,6 +475,11 @@ Seq Lights controls:
 - Accent Every emphasizes every Nth step, starting from step 1.
 - Accent Every choices are Off, 2, 3, 4, 5, 6, 7, and 8.
 - The default Accent Every value is 4.
+- Accent Shift controls how far accented programmed steps shift in hue.
+- Accent Shift choices are 10, 15, 20, 25, 30, and 35.
+- The default Accent Shift value is 20.
+- Accent Shift is shown only while Accent Every is not Off.
+- Accent Shift previews live while you scroll through its choices.
 - Step Color chooses between:
   Note and Regular.
 - The default Step Color value is Regular.

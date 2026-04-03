@@ -23,6 +23,7 @@ struct SequencerPersistentSettings {
   byte sendClock = 0;
   byte sendTransport = 0;
   byte stepAccentEvery = 0;
+  byte stepAccentShift = 20;
   byte stepColorMode = 1;
   byte stepHue = 0;
 };
@@ -35,6 +36,7 @@ bool getBoardSelectedAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t&
 bool getBoardAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut);
 uint32_t buildBoardLedColor(float hue, byte sat, byte val);
 float getBoardNamedHue(byte hueIndex);
+float getSequencerAccentHueShift();
 byte getSequencerTuningCycleLength();
 int getSequencerCurrentTranspose();
 void formatBoardPitchStepsForSequencer(int16_t pitchSteps, char* out, size_t outSize);

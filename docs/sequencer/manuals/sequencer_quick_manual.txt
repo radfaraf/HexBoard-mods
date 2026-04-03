@@ -137,13 +137,15 @@ Menu Items
 - When a menu page is open, hold the bottom command button below the encoder to
   temporarily make the top two command buttons act like one encoder step up or
   down. Releasing that bottom button returns them to normal behavior.
+- While editing a value, the top shortcut button increases that value and the
+  lower shortcut button decreases it.
 - New: clears to a blank untitled sequence.
 - Save: saves to the current file, or opens folder selection and naming if the sequence is untitled.
 - Save New: saves as a new file in the selected folder.
 - Load: loads a saved sequence.
 - Revert: reloads the last saved version of the current sequence.
 - Seq Lights:
-  Accent Every, Step Color, Step Hue
+  Accent Every, Accent Shift, Step Color, Step Hue
 - Color Options: opens the shared LED color settings page
 - Playback Settings:
   Steps, Direction, Tempo, Play Type, MIDI Sync
@@ -162,6 +164,12 @@ Seq Lights
 - Choices are:
   Off, 2, 3, 4, 5, 6, 7, 8
 - Default Accent Every is 4.
+- Accent Shift controls how far accented programmed steps shift in hue.
+- Accent Shift choices are:
+  10, 15, 20, 25, 30, 35
+- Default Accent Shift is 20.
+- Accent Shift is shown only when Accent Every is not Off.
+- Accent Shift previews live while you scroll through its choices.
 - Step Color choices are:
   Note, Regular
 - Default Step Color is Regular.

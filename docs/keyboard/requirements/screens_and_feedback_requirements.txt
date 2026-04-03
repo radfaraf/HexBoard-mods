@@ -109,6 +109,10 @@ Details:
 - Clicking the encoder shall confirm or open the current selection.
 - Holding the lowest command button below the encoder while a menu page is open
   shall make the top two command buttons act as menu up/down shortcuts.
+- During menu navigation, the top shortcut button shall navigate up and the
+  lower shortcut button shall navigate down.
+- While editing a value, the top shortcut button shall increase the value and
+  the lower shortcut button shall decrease the value.
 
 Related:
 - KB-CORE-003

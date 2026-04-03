@@ -39,6 +39,7 @@ MIDI Sync submenu:
 Seq Lights submenu:
 
   Accent Every
+  Accent Shift (shown only when Accent Every is not Off)
   Step Color
   Step Hue (Regular only)
 

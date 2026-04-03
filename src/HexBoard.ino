@@ -888,9 +888,6 @@ const byte scaleCount = sizeof(scaleOptions) / sizeof(scaleDef);
 #define HUE_MAGENTA 324.0
 #define HUE_PINK 342.0
 
-// Sequencer note-mode accents use a small hue shift so accented steps stay distinct
-// while selected accents can remain the same accent family and only get brighter.
-#define SEQUENCER_NOTE_ACCENT_HUE_SHIFT 22.0
 /*
     This class is a basic hue, saturation,
     and value triplet, with some limited
@@ -2174,7 +2171,7 @@ void setLEDcolorCodes() {
       selectedColor.val = applyLEDLevel(VALUE_FULL, ledRestBrightness);
       h[i].LEDcodeSelected = getLEDcode(selectedColor);
       colorDef accentColor = setColor;
-      accentColor.hue += SEQUENCER_NOTE_ACCENT_HUE_SHIFT;
+      accentColor.hue += getSequencerAccentHueShift();
       if (accentColor.hue >= 360.0f) {
         accentColor.hue -= 360.0f;
       }
@@ -5297,7 +5294,7 @@ struct SettingsHeader {
   uint8_t defaultProfileIndex;
 };
 
-constexpr uint8_t CURRENT_SETTINGS_VERSION = 3;
+constexpr uint8_t CURRENT_SETTINGS_VERSION = 4;
 constexpr uint8_t PROFILE_COUNT = 9;
 constexpr uint8_t DEFAULT_PROFILE_INDEX = 0;
 
@@ -5363,12 +5360,14 @@ enum class SettingKey : uint8_t {
   SequencerStepAccentEvery,
   SequencerStepColorMode,
   SequencerStepHue,
+  SequencerStepAccentShift,
   // This must remain last – it gives the total number of settings.
   NumSettings
 };
 
 constexpr uint8_t SETTINGS_COUNT_V1 = static_cast<uint8_t>(SettingKey::SequencerTapPreview);
 constexpr uint8_t SETTINGS_COUNT_V2 = static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery);
+constexpr uint8_t SETTINGS_COUNT_V3 = static_cast<uint8_t>(SettingKey::SequencerStepAccentShift);
 
 // Use a constexpr to get the total number of settings.
 constexpr uint8_t NUM_SETTINGS = static_cast<uint8_t>(SettingKey::NumSettings);
@@ -5442,6 +5441,7 @@ const uint8_t factoryDefaults[NUM_SETTINGS] = {
   /* SequencerStepAccentEvery     */ 4,
   /* SequencerStepColorMode       */ 1,
   /* SequencerStepHue             */ 9,
+  /* SequencerStepAccentShift     */ 20,
 };
 
 // ==================================================
@@ -5518,23 +5518,34 @@ bool load_settings() {
   // Always boot from profile 1 even if an older file recorded a different default.
   defaultProfileIndex = DEFAULT_PROFILE_INDEX;
   bool needsRewrite = (header.version != CURRENT_SETTINGS_VERSION);
-  if (header.version <= 2) {
+  if (header.version <= 3) {
     applyFactoryDefaultsToSettings();
   }
   size_t storedSettingCount = SETTINGS_COUNT_V1;
-  if (header.version >= 3) {
+  if (header.version >= 4) {
     storedSettingCount = NUM_SETTINGS;
+  } else if (header.version >= 3) {
+    storedSettingCount = SETTINGS_COUNT_V3;
   } else if (header.version >= 2) {
     storedSettingCount = SETTINGS_COUNT_V2;
   }
   size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * storedSettingCount;
-  size_t bytesRead = f.read((uint8_t*)settingsProfiles, expectedSize);
+  // Read into a packed buffer first so older file widths do not misalign the
+  // in-memory profile rows when NUM_SETTINGS grows in newer firmware.
+  uint8_t packedSettings[PROFILE_COUNT * NUM_SETTINGS] = { 0 };
+  size_t bytesRead = f.read(packedSettings, expectedSize);
   f.close();
   if (bytesRead != expectedSize) {
     sendToLog("Warning: Settings data incomplete. Restoring defaults.");
     applyFactoryDefaultsToSettings();
     save_settings();
     return false;
+  }
+  for (uint8_t profile = 0; profile < PROFILE_COUNT; ++profile) {
+    memcpy(
+      settingsProfiles[profile],
+      &packedSettings[static_cast<size_t>(profile) * storedSettingCount],
+      storedSettingCount);
   }
   activeProfileIndex = defaultProfileIndex;
   settings = settingsProfiles[activeProfileIndex];
@@ -5630,6 +5641,7 @@ void persistSequencerGeneralSettingsToProfile() {
   settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)] = sequencerSettings.stepAccentEvery;
   settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)] = sequencerSettings.stepColorMode;
   settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)] = sequencerSettings.stepHue;
+  settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentShift)] = sequencerSettings.stepAccentShift;
   markSettingsDirty();
 }
 
@@ -7349,6 +7361,7 @@ void syncSettingsToRuntime() {
   sequencerSettings.stepAccentEvery = settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)];
   sequencerSettings.stepColorMode = settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)];
   sequencerSettings.stepHue = settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)];
+  sequencerSettings.stepAccentShift = settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentShift)];
   applySequencerPersistentSettings(sequencerSettings);
   updateEnvelopeParamsFromSettings();
   updateArpeggiatorTiming();
@@ -7994,7 +8007,14 @@ void readHexes() {
       return false;
     }
     if (pressed) {
-      menu.registerKeyPress((buttonIndex == assignCmd[0]) ? GEM_KEY_UP : GEM_KEY_DOWN);
+      bool isTopShortcutButton = (buttonIndex == assignCmd[0]);
+      if (menu.isEditMode()) {
+        // Keep "top button increases / bottom button decreases" while editing values.
+        menu.registerKeyPress(isTopShortcutButton ? GEM_KEY_DOWN : GEM_KEY_UP);
+      } else {
+        // Keep standard "top button up / bottom button down" menu navigation.
+        menu.registerKeyPress(isTopShortcutButton ? GEM_KEY_UP : GEM_KEY_DOWN);
+      }
       screenTime = 0;
     }
     return true;

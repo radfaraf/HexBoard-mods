@@ -58,14 +58,6 @@ Normal wheel use:
 - lower wheel controls modulation when the middle toggle is off
 - lower wheel controls pitch bend when the middle toggle is on
 
-Menu shortcut use:
-
-- when a menu page is open and ready for input, hold the lowest command button
-  below the encoder
-- while held, the top two command buttons temporarily act as menu up/down
-- releasing the lowest command button returns those top two buttons to normal
-  wheel use
-
 3.3 Encoder
 
 The encoder is used for menu navigation and value editing.
@@ -73,6 +65,15 @@ The encoder is used for menu navigation and value editing.
 - turn to move through items or change the current editable value
 - press to open a page, confirm a choice, or save an edited value
 - hold for about 2 seconds to send a panic stop
+
+Encoder Button use:
+
+- Pressing and holding the bottom command button and pressing and letting go either the top or bottom command button at the same time simulates using the encoder to scroll up or down.
+- while held, the top two command buttons temporarily act as menu up/down
+- while editing a value, the top shortcut button increases the value and the
+  lower shortcut button decreases it
+- releasing the lowest command button returns those top two buttons to normal
+  wheel use
 
 Panic stop behavior:
 
