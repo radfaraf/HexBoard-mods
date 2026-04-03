@@ -2729,6 +2729,8 @@ void sequencerBrowserUpCallback() {
   refreshSequencerBrowserMenu();
 }
 
+int getVisibleBrowserEntryMenuIndex(bool firstVisible);
+
 void sequencerBrowserPrevPageCallback() {
   if (sequencerBrowserOffset >= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) {
     sequencerBrowserOffset -= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
@@ -2743,6 +2745,25 @@ void sequencerBrowserNextPageCallback() {
     sequencerBrowserOffset += SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT;
   }
   refreshSequencerBrowserMenu(false);
+}
+
+void setSequencerBrowserSelectionToBoundaryEntry(bool firstVisible) {
+  int boundaryIndex = getVisibleBrowserEntryMenuIndex(firstVisible);
+  if (boundaryIndex < 0) {
+    return;
+  }
+  menuPageSequencerBrowser.setCurrentMenuItemIndex(static_cast<byte>(boundaryIndex));
+  menu.drawMenu();
+}
+
+void sequencerBrowserMoreAboveCallback() {
+  sequencerBrowserPrevPageCallback();
+  setSequencerBrowserSelectionToBoundaryEntry(false);
+}
+
+void sequencerBrowserMoreBelowCallback() {
+  sequencerBrowserNextPageCallback();
+  setSequencerBrowserSelectionToBoundaryEntry(true);
 }
 
 void sequencerBrowserIndicatorCallback() {
@@ -3241,7 +3262,7 @@ GEMItem menuItemSequencerBrowserNewFolder("New Folder", sequencerBrowserNewFolde
 GEMItem menuItemSequencerBrowserRenameFolder("Rename This Folder", sequencerBrowserRenameFolderCallback);
 GEMItem menuItemSequencerBrowserDeleteFolder("Delete This Folder", sequencerBrowserDeleteFolderCallback);
 GEMItem menuItemSequencerBrowserUp("..", sequencerBrowserUpCallback);
-GEMItem menuItemSequencerBrowserMoreAbove("^ more ^", sequencerBrowserIndicatorCallback);
+GEMItem menuItemSequencerBrowserMoreAbove("^ more ^", sequencerBrowserMoreAboveCallback);
 GEMItem menuItemSequencerBrowserEntry0("", sequencerBrowserEntryCallback, 0);
 GEMItem menuItemSequencerBrowserEntry1("", sequencerBrowserEntryCallback, 1);
 GEMItem menuItemSequencerBrowserEntry2("", sequencerBrowserEntryCallback, 2);
@@ -3250,7 +3271,7 @@ GEMItem menuItemSequencerBrowserEntry4("", sequencerBrowserEntryCallback, 4);
 GEMItem menuItemSequencerBrowserEntry5("", sequencerBrowserEntryCallback, 5);
 GEMItem menuItemSequencerBrowserEntry6("", sequencerBrowserEntryCallback, 6);
 GEMItem menuItemSequencerBrowserEntry7("", sequencerBrowserEntryCallback, 7);
-GEMItem menuItemSequencerBrowserMoreBelow("v more v", sequencerBrowserIndicatorCallback);
+GEMItem menuItemSequencerBrowserMoreBelow("v more v", sequencerBrowserMoreBelowCallback);
 GEMItem menuItemSequencerBrowserPrev("Prev", sequencerBrowserPrevPageCallback);
 GEMItem menuItemSequencerBrowserNext("Next", sequencerBrowserNextPageCallback);
 GEMItem menuItemSequencerUsbBackupStatusOne(sequencerUsbBackupStatusLineOne, usbBackupStatusMenuCallback);
