@@ -28,6 +28,9 @@ mode-specific documentation for Codex to follow.
   - `codex-skills/hexboard-key-menu-builder/`
 - When a task matches one of those skills, prefer reading the repo copy even if another installed copy exists elsewhere.
 - When a project skill is intentionally updated, keep its related references and `agents/openai.yaml` in sync in the same pass.
+- When updating a project skill, update both copies in the same pass:
+  - the repo copy under `codex-skills/`
+  - the installed copy under `$CODEX_HOME/skills/` (for this machine, `/Users/robertw/.codex/skills/`)
 
 ## Code Commenting Preference
 

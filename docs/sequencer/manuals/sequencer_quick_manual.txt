@@ -57,6 +57,7 @@ Step Tools Picker
   `L ...% V ... P ...%` line, and the current notes.
 - The tool buttons move to the lower part of the board so the 4 step rows stay
   visible at the top while the picker is open.
+- Tool selection keys light blue at the sequencer medium light level.
 - While the picker is open, tapping another step pad switches the selected step
   and keeps the picker open.
 - Current tool choices are:
@@ -115,6 +116,7 @@ Exact length screen:
 - the OLED shows separate `Current:` and `New:` values
 - digits fill `New:` without overwriting `Current:`
 - up to 4 digits are allowed
+- exact-length keypad keys light blue at the sequencer medium light level
 - <- deletes the previous digit and is on the eighth-row first key
 - CANCEL exits without saving and uses the same lower cancel area as the tools picker
 - press the encoder to save the `New:` value, or keep the current value if `New:` is blank
@@ -311,6 +313,7 @@ When naming a file or folder, the board shows this entry layout:
 - digits 0-9 are available directly on the bottom two rows.
 - Press the encoder to save the name.
 - the physical CANCEL key is placed lower on the board to reduce accidental exits
+- naming input keys light blue at the sequencer medium light level
 
 Status And Display
 

@@ -172,6 +172,7 @@ In exact length mode:
 - up to 4 digits are allowed
 - the exact-length keypad moves to the lower part of the board so the top 4
   sequencer step rows remain visible
+- exact-length keypad keys are lit blue at the sequencer medium light level
 - <- removes the previous digit and is on the eighth-row first key
 - CANCEL exits exact length entry without saving and uses the same lower cancel
   area as the tools picker
@@ -320,6 +321,7 @@ Current behavior:
 
 - The tool buttons live in the lower part of the board so the 4 sequencer step
   rows stay visible at the top while the picker is open.
+- Tool selection keys are lit blue at the sequencer medium light level.
 - While the picker is open, tapping another step pad switches the selected step
   and keeps the picker open on that step.
 - Len: opens exact length entry for the selected step
@@ -764,7 +766,7 @@ The on-screen keyboard layout is:
 
 While naming is active:
 
-- valid input keys are lit blue
+- valid input keys are lit blue at the sequencer medium light level
 - non-input keys are dark
 - the display shows a blinking cursor in the name line
 

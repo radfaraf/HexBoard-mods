@@ -7,19 +7,16 @@ Used when:
 
 Screen layout:
 
-  Exact #13
+  Exact Length #13
 
   Current:
        200
-
   New:
        250_
 
   0 1 2 3 4
   5 6 7 8 9
-  <-
-
-  CANCEL
+  <- CANCEL
 
   Press encoder
   to save
@@ -30,8 +27,12 @@ Notes:
 - Number keys insert digits directly.
 - The screen keeps the current value visible and uses a separate `New:` field
   for typed digits.
-- The header is shifted upward so the current and new values can use a larger
-  numeric font.
+- The `Current:` and `New:` rows are packed tightly with no blank spacer line
+  between them.
+- The header is shifted upward so the current and new values can use a compact
+  dedicated numeric font without crowding 4-digit values.
+- The keypad digit rows use a slightly larger font than the helper text so the
+  number keys are easier to read.
 - Up to 4 digits are allowed.
 - The top 4 sequencer step rows stay visible while this keypad is open.
 - The keypad itself moves to the lower part of the board:

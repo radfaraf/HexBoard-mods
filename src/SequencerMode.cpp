@@ -404,6 +404,13 @@ uint32_t getSequencerAccentedUnsetStepLedColor(bool selected) {
   return buildBoardLedColor(0.0f, 0, applyBoardRestLedLevel(stepValue));
 }
 
+uint32_t getSequencerMediumBlueActionLedColor() {
+  return buildBoardLedColor(
+    static_cast<float>(sequencerConfirmHue),
+    sequencerConfirmSaturation,
+    applyBoardRestLedLevel(SEQUENCER_STEP_LIGHT_MEDIUM));
+}
+
 byte getSequencerProgrammedStepLightLevel(bool selected, bool playing, bool accented) {
   if (playing) {
     return SEQUENCER_STEP_LIGHT_HIGHEST;
@@ -4231,12 +4238,12 @@ void drawSequencerOverlay() {
     sequencerOverlayVisible = true;
     sequencerOverlayDirty = false;
 
-    char headerLabel[20];
+    char headerLabel[24];
     char currentLabel[16];
     char newLabel[16];
     char currentValueLabel[5];
     char newValueLabel[6];
-    snprintf(headerLabel, sizeof(headerLabel), "Exact #%02d", sequencerSelectedStep + 1);
+    snprintf(headerLabel, sizeof(headerLabel), "Exact Length #%02d", sequencerSelectedStep + 1);
     snprintf(currentLabel, sizeof(currentLabel), "Current:");
     snprintf(currentValueLabel, sizeof(currentValueLabel), "%u", static_cast<unsigned>(sequencerExactLengthOriginal));
     if (sequencerExactLengthLength > 0) {
@@ -4254,20 +4261,22 @@ void drawSequencerOverlay() {
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
-    u8g2.drawStr(20, 12, headerLabel);
+    u8g2.drawStr(2, 12, headerLabel);
     u8g2.drawStr(8, 24, currentLabel);
-    u8g2.drawStr(8, 46, newLabel);
+    u8g2.drawStr(8, 38, newLabel);
 
-    u8g2.setFont(u8g2_font_logisoso16_tf);
-    u8g2.drawStr(64, 28, currentValueLabel);
-    u8g2.drawStr(64, 50, newValueLabel);
+    u8g2.setFont(u8g2_font_7x14_tf);
+    u8g2.drawStr(68, 25, currentValueLabel);
+    u8g2.drawStr(68, 39, newValueLabel);
+
+    u8g2.setFont(u8g2_font_6x13_tf);
+    u8g2.drawStr(8, 54, "0 1 2 3 4");
+    u8g2.drawStr(8, 68, "5 6 7 8 9");
 
     u8g2.setFont(u8g2_font_5x8_tf);
-    u8g2.drawStr(8, 66, "0 1 2 3 4");
-    u8g2.drawStr(8, 80, "5 6 7 8 9");
-    u8g2.drawStr(8, 94, "<- CANCEL");
-    u8g2.drawStr(8, 110, "Press encoder");
-    u8g2.drawStr(8, 122, "to save");
+    u8g2.drawStr(8, 82, "<- CANCEL");
+    u8g2.drawStr(8, 98, "Press encoder");
+    u8g2.drawStr(8, 110, "to save");
     u8g2.sendBuffer();
     return;
   }
@@ -4567,7 +4576,8 @@ void applySequencerLedOverrides() {
   }
 
   if (isSequencerNamingActive()) {
-    uint32_t activeColor = getSequencerConfirmLedColor();
+    // Keep naming helper keys readable but not overpowering while typing.
+    uint32_t activeColor = getSequencerMediumBlueActionLedColor();
     uint16_t ledCount = strip.numPixels();
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
@@ -4581,7 +4591,7 @@ void applySequencerLedOverrides() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
-    uint32_t activeColor = getSequencerConfirmLedColor();
+    uint32_t activeColor = getSequencerMediumBlueActionLedColor();
     uint16_t ledCount = strip.numPixels();
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
@@ -4634,7 +4644,7 @@ void applySequencerLedOverrides() {
   applySequencerStepLedState();
 
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
-    uint32_t activeColor = getSequencerConfirmLedColor();
+    uint32_t activeColor = getSequencerMediumBlueActionLedColor();
     uint16_t ledCount = strip.numPixels();
     for (const SequencerToolKey& key : sequencerToolKeys) {
       if (key.buttonIndex < ledCount) {
