@@ -26,8 +26,8 @@ Main Controls
   overview is open.
 - Blue action key: the far-right key on the second row does undo on short
   press and restores the selected step to the state it had when selected,
-  including notes, length, velocity, and probability; it clears the selected
-  step on a 1-second hold.
+  including notes, length, velocity, probability, and Tie; it clears the
+  selected step on a 1-second hold.
 - Tools: the last button on the third row opens a step-tools picker for the
   selected step.
 - Tools stays lit white while idle and becomes brighter white while the tools
@@ -48,6 +48,7 @@ Step Editing
 - In 12 EDO, note labels use normal note names like `C3`.
 - In other tunings, note labels use `step.octave` style labels like `7.4`.
 - Tap Preview can make a tapped step audition its stored notes when selected.
+- Tied steps do not audition from Tap Preview.
 
 Step Tools Picker
 
@@ -67,10 +68,12 @@ Step Tools Picker
 - Oct- transposes the selected step down 1 tuning cycle and stays in the tools screen.
 - Vel opens exact velocity entry for the selected step.
 - Prob opens exact probability entry for the selected step.
-- Tie is still a placeholder entry for now.
+- Tie toggles a per-step continuation flag and stays in the tools screen.
+- When a step is tied, note-oriented displays show `T` instead of note labels.
+- Tap Preview and manual step preview stay silent on tied steps.
 - Copy opens target-step selection and copies the source step's notes, length,
-  velocity, and probability into the tapped destination step, then keeps the
-  tools picker open on that destination step.
+  velocity, probability, and Tie state into the tapped destination step, then
+  keeps the tools picker open on that destination step.
 - Cancel/Finished closes the picker when you are done.
 
 Step Velocity
@@ -97,6 +100,7 @@ Step Probability
 - Press the encoder to save.
 - Playback, save, and load all use the stored step probability.
 - Tap Preview ignores probability and still auditions the step.
+- Tied steps are the exception: Tap Preview stays silent on them.
 
 Note Length
 
@@ -108,11 +112,12 @@ Note Length
 Exact length screen:
 
 - press number keys to enter the value
-- the first digit typed replaces the current value
+- the OLED shows separate `Current:` and `New:` values
+- digits fill `New:` without overwriting `Current:`
 - up to 4 digits are allowed
-- <- deletes the previous digit and is on the third-row first key
-- CANCEL exits without saving and is on the fifth-row first key
-- press the encoder to save
+- <- deletes the previous digit and is on the eighth-row first key
+- CANCEL exits without saving and uses the same lower cancel area as the tools picker
+- press the encoder to save the `New:` value, or keep the current value if `New:` is blank
 
 Playback
 
@@ -136,6 +141,11 @@ Playback
   MIDI or OB Synth
 - Sequencer note entry, preview, and playback follow the current Keyboard
   tuning and transpose.
+- A tied step does not retrigger a note during transport playback.
+- A tied step continues the nearest earlier eligible non-tied step from the
+  same pattern pass when that source note is still active.
+- If no valid earlier source is active, the tied step is silent.
+- Tie does not wrap from the end of the pattern back to step 1 in v1.
 
 Menu Items
 
@@ -182,6 +192,8 @@ Seq Lights
   accented step with note = high
   selected step with note = high
   playing step with note = highest
+- A tied step uses the same programmed-step brightness behavior as a step with
+  a note.
 - In Note mode, programmed steps use note-based colors with that brightness
   ladder.
 - In Regular mode, programmed steps use the selected Step Hue with that
@@ -203,7 +215,7 @@ Saving And Files
   raw MIDI note numbers.
 - Sequence files also store:
   Tempo, Steps, Play Type, Direction, per-step notes, per-step length,
-  per-step velocity, and per-step probability.
+  per-step velocity, per-step probability, and per-step Tie.
 - Tap Preview is a general sequencer setting and is not stored per sequence
   file. It is saved with the board profile and Auto-Save settings system.
 - Clock Source, Send Clock, and Send Transport are general sequencer settings

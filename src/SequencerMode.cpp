@@ -125,6 +125,7 @@ byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
 uint16_t sequencerStepGatePercent[SEQUENCER_STEP_COUNT] = {};
 byte sequencerStepVelocity[SEQUENCER_STEP_COUNT] = {};
 byte sequencerStepProbability[SEQUENCER_STEP_COUNT] = {};
+bool sequencerStepTie[SEQUENCER_STEP_COUNT] = {};
 
 enum class SequencerOverlayMode : uint8_t {
   Hidden = 0,
@@ -149,6 +150,8 @@ struct SequencerPlaybackGroup {
     SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
   };
   byte noteCount = 0;
+  int8_t sourceStep = -1;
+  bool transportPlayback = false;
   uint64_t noteOffAt = 0;
 };
 
@@ -231,6 +234,7 @@ byte sequencerUndoNoteCount = 0;
 uint16_t sequencerUndoGatePercent = 100;
 byte sequencerUndoVelocity = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerUndoProbability = SEQUENCER_DEFAULT_PROBABILITY;
+bool sequencerUndoTie = false;
 SequencerManagedHeldNote sequencerManagedHeldNotes[SEQUENCER_MAX_MANAGED_HELD_NOTES] = {};
 int8_t sequencerPlayingStep = -1;
 SequencerPlaybackGroup sequencerPlaybackGroups[SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS] = {};
@@ -342,6 +346,7 @@ void sequencerBrowserRenameFolderCallback();
 bool isSequencerAccentStep(byte stepIndex);
 int8_t sequencerStepToButtonIndex(byte stepIndex);
 int16_t sequencerPrimaryPitchSteps(byte stepIndex);
+bool isSequencerProgrammedStep(byte stepIndex);
 bool isSequencerSelectionLit();
 byte sequencerActiveStepCount();
 float sequencerStepHueValue(byte hueSetting);
@@ -460,13 +465,23 @@ void saveEditBufferToStep(byte stepIndex);
 void copySequencerStepData(byte sourceStep, byte destinationStep);
 void restoreSelectedSequencerStepFromUndo();
 void previewSequencerStep(byte stepIndex);
-void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability = true);
+void startSequencerPlaybackGroup(
+  byte stepIndex,
+  uint64_t stepDuration,
+  bool applyProbability = true,
+  bool transportPlayback = false);
 byte sequencerSelectedStepVelocity();
 void sendSequencerManagedNoteOff(int16_t pitchSteps, bool playbackNote);
 int getVisibleBrowserEntryMenuIndex(bool firstVisible);
 const SequencerToolKey* getSequencerToolKey(byte buttonIndex);
 bool transposeSelectedSequencerStep(int16_t pitchStepDelta);
 void handleSequencerToolAction(SequencerToolAction action);
+bool sequencerStepHasPlayableNoteData(byte stepIndex);
+int8_t findSequencerTieSourceStep(byte stepIndex, byte activeStepCount);
+int findActiveSequencerTransportPlaybackGroup(byte sourceStep);
+void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration);
+int8_t getSequencerOverlayNoteSourceStep();
+bool shouldDisplaySequencerTie(int8_t stepIndex);
 
 const SequencerNamingKey sequencerNamingKeys[] = {
   { 1, SequencerNamingAction::InsertChar, 'A' },
@@ -576,6 +591,7 @@ void applySequencerStepLedState() {
     bool playing = (sequencerPlayingStep == step);
     bool accented = isSequencerAccentStep(step);
     bool selectionLit = !selected || isSequencerSelectionLit();
+    bool programmedStep = isSequencerProgrammedStep(step);
     int16_t primaryPitchSteps = sequencerPrimaryPitchSteps(step);
 
     if (!selectionLit) {
@@ -587,7 +603,7 @@ void applySequencerStepLedState() {
     // 1) empty/unset steps, 2) regular step colors, 3) note-colored steps.
     // Bugs in one path may not appear in the others, so debug the matching
     // branch instead of assuming all "white-looking" steps are note colors.
-    if (primaryPitchSteps == SEQUENCER_NO_PITCH) {
+    if (!programmedStep) {
       if (accented) {
         strip.setPixelColor(buttonIndex, getSequencerAccentedUnsetStepLedColor(selected || playing));
       } else {
@@ -600,6 +616,12 @@ void applySequencerStepLedState() {
     }
 
     if (sequencerStepColorMode == SEQUENCER_STEP_COLOR_REGULAR) {
+      strip.setPixelColor(buttonIndex, getSequencerRegularFilledStepLedColor(selected, playing, accented));
+      continue;
+    }
+
+    if (primaryPitchSteps == SEQUENCER_NO_PITCH) {
+      // Tied steps without a usable pitch source still stay visibly programmed.
       strip.setPixelColor(buttonIndex, getSequencerRegularFilledStepLedColor(selected, playing, accented));
       continue;
     }
@@ -1364,7 +1386,15 @@ void handleSequencerToolAction(SequencerToolAction action) {
       enterSequencerExactProbabilityEdit();
       return;
     case SequencerToolAction::Tie:
-      showSequencerStatusMessage("Tie", "Coming soon");
+      if (sequencerSelectedStep < 0) {
+        showSequencerStatusMessage("Tie", "Select step first");
+        return;
+      }
+      sequencerStepTie[sequencerSelectedStep] = !sequencerStepTie[sequencerSelectedStep];
+      setSequencerDirtyState(true);
+      sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
+      sequencerOverlayVisible = false;
+      sequencerOverlayDirty = true;
       return;
     case SequencerToolAction::Copy:
       enterSequencerCopyTargetSelect();
@@ -1597,6 +1627,7 @@ void snapshotUndoBufferFromStep(byte stepIndex) {
   sequencerUndoGatePercent = sequencerStepGatePercent[stepIndex];
   sequencerUndoVelocity = sequencerStepVelocity[stepIndex];
   sequencerUndoProbability = sequencerStepProbability[stepIndex];
+  sequencerUndoTie = sequencerStepTie[stepIndex];
 }
 
 void saveEditBufferToStep(byte stepIndex) {
@@ -1618,6 +1649,7 @@ void copySequencerStepData(byte sourceStep, byte destinationStep) {
   sequencerStepGatePercent[destinationStep] = sequencerStepGatePercent[sourceStep];
   sequencerStepVelocity[destinationStep] = sequencerStepVelocity[sourceStep];
   sequencerStepProbability[destinationStep] = sequencerStepProbability[sourceStep];
+  sequencerStepTie[destinationStep] = sequencerStepTie[sourceStep];
 }
 
 void restoreSelectedSequencerStepFromUndo() {
@@ -1634,10 +1666,24 @@ void restoreSelectedSequencerStepFromUndo() {
   sequencerStepGatePercent[sequencerSelectedStep] = sequencerUndoGatePercent;
   sequencerStepVelocity[sequencerSelectedStep] = sequencerUndoVelocity;
   sequencerStepProbability[sequencerSelectedStep] = sequencerUndoProbability;
+  sequencerStepTie[sequencerSelectedStep] = sequencerUndoTie;
   sequencerLengthPercentDisplay = sequencerUndoGatePercent;
   sequencerVelocityDisplay = sequencerUndoVelocity;
   sequencerProbabilityDisplay = sequencerUndoProbability;
   setSequencerDirtyState(true);
+}
+
+int8_t getSequencerOverlayNoteSourceStep() {
+  if (sequencerOverlayMode == SequencerOverlayMode::CopyTargetSelect && sequencerCopySourceStep >= 0) {
+    return sequencerCopySourceStep;
+  }
+  return sequencerSelectedStep;
+}
+
+bool shouldDisplaySequencerTie(int8_t stepIndex) {
+  return stepIndex >= 0 &&
+         stepIndex < SEQUENCER_STEP_COUNT &&
+         sequencerStepTie[stepIndex];
 }
 
 void toggleEditBufferNote(int16_t pitchSteps) {
@@ -1663,6 +1709,16 @@ int16_t sequencerPrimaryPitchSteps(byte stepIndex) {
   if (stepIndex >= SEQUENCER_STEP_COUNT) {
     return SEQUENCER_NO_PITCH;
   }
+  if (sequencerStepTie[stepIndex]) {
+    if (sequencerStepNoteCount[stepIndex] > 0) {
+      return sequencerStepPitchSteps[stepIndex][0];
+    }
+    int8_t sourceStep = findSequencerTieSourceStep(stepIndex, sequencerActiveStepCount());
+    if (sourceStep >= 0 && sequencerStepNoteCount[sourceStep] > 0) {
+      return sequencerStepPitchSteps[sourceStep][0];
+    }
+    return SEQUENCER_NO_PITCH;
+  }
   if (sequencerSelectedStep == stepIndex && sequencerOverlayMode == SequencerOverlayMode::AwaitingNote) {
     return (sequencerEditNoteCount > 0) ? sequencerEditPitchSteps[0] : SEQUENCER_NO_PITCH;
   }
@@ -1681,11 +1737,17 @@ void fillOverlayNoteLines(char* lineOne, size_t lineOneSize, char* lineTwo, size
   lineOne[0] = '\0';
   lineTwo[0] = '\0';
 
+  int8_t sourceStepIndex = getSequencerOverlayNoteSourceStep();
+  if (shouldDisplaySequencerTie(sourceStepIndex)) {
+    snprintf(lineOne, lineOneSize, "T");
+    return;
+  }
+
   const int16_t* sourceNotes = sequencerEditPitchSteps;
   byte sourceCount = sequencerEditNoteCount;
-  if (sequencerOverlayMode == SequencerOverlayMode::NoteAssigned && sequencerSelectedStep >= 0) {
-    sourceNotes = sequencerStepPitchSteps[sequencerSelectedStep];
-    sourceCount = sequencerStepNoteCount[sequencerSelectedStep];
+  if (sourceStepIndex >= 0 && sourceStepIndex < SEQUENCER_STEP_COUNT) {
+    sourceNotes = sequencerStepPitchSteps[sourceStepIndex];
+    sourceCount = sequencerStepNoteCount[sourceStepIndex];
   }
 
   if (sourceCount == 0) {
@@ -1709,6 +1771,11 @@ void fillOverviewStepLine(byte stepIndex, char* lineOut, size_t lineOutSize) {
   }
 
   snprintf(lineOut, lineOutSize, "%02u ", static_cast<unsigned>(stepIndex + 1));
+
+  if (shouldDisplaySequencerTie(stepIndex)) {
+    strncat(lineOut, "T", lineOutSize - strlen(lineOut) - 1);
+    return;
+  }
 
   if (sequencerStepNoteCount[stepIndex] == 0) {
     strncat(lineOut, "_", lineOutSize - strlen(lineOut) - 1);
@@ -1970,6 +2037,61 @@ byte sequencerActiveStepCount() {
   return activeStepCount;
 }
 
+bool sequencerStepHasPlayableNoteData(byte stepIndex) {
+  return stepIndex < SEQUENCER_STEP_COUNT &&
+         !sequencerStepTie[stepIndex] &&
+         sequencerStepNoteCount[stepIndex] > 0 &&
+         sequencerStepGatePercent[stepIndex] > 0;
+}
+
+bool isSequencerProgrammedStep(byte stepIndex) {
+  return stepIndex < SEQUENCER_STEP_COUNT &&
+         (sequencerStepTie[stepIndex] || sequencerStepNoteCount[stepIndex] > 0);
+}
+
+int8_t findSequencerTieSourceStep(byte stepIndex, byte activeStepCount) {
+  if (stepIndex == 0 || stepIndex >= activeStepCount) {
+    return -1;
+  }
+
+  for (int8_t sourceStep = static_cast<int8_t>(stepIndex - 1); sourceStep >= 0; sourceStep--) {
+    if (sequencerStepHasPlayableNoteData(static_cast<byte>(sourceStep))) {
+      return sourceStep;
+    }
+  }
+
+  return -1;
+}
+
+int findActiveSequencerTransportPlaybackGroup(byte sourceStep) {
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    const SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+    if (group.active && group.transportPlayback && group.sourceStep == sourceStep) {
+      return groupIndex;
+    }
+  }
+  return -1;
+}
+
+void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration) {
+  byte activeStepCount = sequencerActiveStepCount();
+  int8_t sourceStep = findSequencerTieSourceStep(stepIndex, activeStepCount);
+  if (sourceStep < 0) {
+    return;
+  }
+
+  int groupIndex = findActiveSequencerTransportPlaybackGroup(sourceStep);
+  if (groupIndex < 0) {
+    return;
+  }
+
+  SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+  uint64_t tieNoteOffAt = runTime + stepDuration;
+  if (group.noteOffAt < tieNoteOffAt) {
+    group.noteOffAt = tieNoteOffAt;
+  }
+}
+
 int8_t nextSequencerStep(byte activeStepCount) {
   if (activeStepCount <= 1) {
     return 0;
@@ -2047,6 +2169,8 @@ void stopSequencerPlaybackNote() {
       group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
     }
     group.noteCount = 0;
+    group.sourceStep = -1;
+    group.transportPlayback = false;
     group.noteOffAt = 0;
     group.active = false;
   }
@@ -2065,6 +2189,8 @@ void serviceSequencerPlaybackGroups() {
       group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
     }
     group.noteCount = 0;
+    group.sourceStep = -1;
+    group.transportPlayback = false;
     group.noteOffAt = 0;
     group.active = false;
   }
@@ -2074,12 +2200,21 @@ void advanceSequencerPlaybackStep(uint64_t stepDuration, bool applyProbability) 
   byte activeStepCount = sequencerActiveStepCount();
   sequencerPlayingStep = nextSequencerStep(activeStepCount);
 
-  byte noteCount = sequencerStepNoteCount[sequencerPlayingStep];
-  if (noteCount == 0) {
+  if (sequencerPlayingStep < 0) {
     return;
   }
 
-  startSequencerPlaybackGroup(static_cast<byte>(sequencerPlayingStep), stepDuration, applyProbability);
+  byte stepIndex = static_cast<byte>(sequencerPlayingStep);
+  if (sequencerStepTie[stepIndex]) {
+    continueSequencerTiePlayback(stepIndex, stepDuration);
+    return;
+  }
+
+  if (sequencerStepNoteCount[stepIndex] == 0) {
+    return;
+  }
+
+  startSequencerPlaybackGroup(stepIndex, stepDuration, applyProbability, true);
 }
 
 void serviceSequencerInternalMidiClock() {
@@ -2102,7 +2237,7 @@ void serviceSequencerInternalMidiClock() {
   }
 }
 
-void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability) {
+void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability, bool transportPlayback) {
   uint16_t gatePercent = sequencerStepGatePercent[stepIndex];
   byte noteCount = sequencerStepNoteCount[stepIndex];
   byte stepVelocity = sequencerStepVelocity[stepIndex];
@@ -2144,8 +2279,21 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
   SequencerPlaybackGroup& group = sequencerPlaybackGroups[freeGroupIndex];
   group.active = true;
   group.noteCount = 0;
+  group.sourceStep = transportPlayback ? static_cast<int8_t>(stepIndex) : -1;
+  group.transportPlayback = transportPlayback;
   uint64_t playbackStartedAt = runTime;
   group.noteOffAt = playbackStartedAt + ((stepDuration * gatePercent) / 100ULL);
+  if (transportPlayback) {
+    byte activeStepCount = sequencerActiveStepCount();
+    byte nextStepIndex = static_cast<byte>(stepIndex + 1);
+    // Keep the source note alive until the next tied step can extend it,
+    // otherwise short gates would end before Tie had a chance to continue it.
+    if (nextStepIndex < activeStepCount &&
+        findSequencerTieSourceStep(nextStepIndex, activeStepCount) == stepIndex &&
+        group.noteOffAt < (playbackStartedAt + stepDuration)) {
+      group.noteOffAt = playbackStartedAt + stepDuration;
+    }
+  }
   for (byte noteIndex = 0; noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
     group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
   }
@@ -2161,10 +2309,10 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
 }
 
 void previewSequencerStep(byte stepIndex) {
-  if (stepIndex >= SEQUENCER_STEP_COUNT) {
+  if (stepIndex >= SEQUENCER_STEP_COUNT || sequencerStepTie[stepIndex]) {
     return;
   }
-  startSequencerPlaybackGroup(stepIndex, sequencerStepDurationMicros(), false);
+  startSequencerPlaybackGroup(stepIndex, sequencerStepDurationMicros(), false, false);
 }
 
 void clearSelectedSequencerStep() {
@@ -2173,6 +2321,7 @@ void clearSelectedSequencerStep() {
   }
   clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
   saveEditBufferToStep(static_cast<byte>(sequencerSelectedStep));
+  sequencerStepTie[sequencerSelectedStep] = false;
   setSequencerDirtyState(true);
   sequencerOverlayMode = SequencerOverlayMode::StepCleared;
   sequencerOverlayDirty = true;
@@ -2193,6 +2342,7 @@ void resetSequencerState() {
     sequencerStepGatePercent[step] = 100;
     sequencerStepVelocity[step] = SEQUENCER_DEFAULT_VELOCITY;
     sequencerStepProbability[step] = SEQUENCER_DEFAULT_PROBABILITY;
+    sequencerStepTie[step] = false;
   }
   for (byte heldIndex = 0; heldIndex < SEQUENCER_MAX_MANAGED_HELD_NOTES; heldIndex++) {
     sequencerManagedHeldNotes[heldIndex] = SequencerManagedHeldNote{};
@@ -2205,6 +2355,7 @@ void resetSequencerState() {
   sequencerUndoGatePercent = 100;
   sequencerUndoVelocity = SEQUENCER_DEFAULT_VELOCITY;
   sequencerUndoProbability = SEQUENCER_DEFAULT_PROBABILITY;
+  sequencerUndoTie = false;
   sequencerSelectedStep = -1;
   sequencerCopySourceStep = -1;
   sequencerPlayingStep = -1;
@@ -2350,6 +2501,12 @@ bool loadSequencerFromFlash() {
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && probabilityValue >= 0 && probabilityValue <= 100) {
         sequencerStepProbability[stepNumber - 1] = static_cast<byte>(probabilityValue);
       }
+    } else if (key.startsWith("tie")) {
+      int stepNumber = key.substring(3).toInt();
+      int tieValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT) {
+        sequencerStepTie[stepNumber - 1] = (tieValue != 0);
+      }
     }
   }
 
@@ -2445,6 +2602,12 @@ bool loadSequencerFromPath(const char* path) {
       if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT && probabilityValue >= 0 && probabilityValue <= 100) {
         sequencerStepProbability[stepNumber - 1] = static_cast<byte>(probabilityValue);
       }
+    } else if (key.startsWith("tie")) {
+      int stepNumber = key.substring(3).toInt();
+      int tieValue = value.toInt();
+      if (stepNumber >= 1 && stepNumber <= SEQUENCER_STEP_COUNT) {
+        sequencerStepTie[stepNumber - 1] = (tieValue != 0);
+      }
     }
   }
 
@@ -2471,7 +2634,7 @@ bool saveSequencerToPath(const char* path) {
   }
 
   f.println("format=HBSEQ");
-  f.println("version=2");
+  f.println("version=3");
   f.println("noteFormat=stepsFromC");
   f.print("tempo=");
   f.println(sequencerTempo);
@@ -2505,6 +2668,10 @@ bool saveSequencerToPath(const char* path) {
     f.print(step + 1);
     f.print('=');
     f.println(sequencerStepProbability[step]);
+    f.print("tie");
+    f.print(step + 1);
+    f.print('=');
+    f.println(sequencerStepTie[step] ? 1 : 0);
   }
 
   f.close();
@@ -4494,8 +4661,18 @@ void updateSequencerTransport() {
     hideSequencerPerformanceMonitor();
   }
 
-  serviceSequencerPlaybackGroups();
   serviceSequencerInternalMidiClock();
+
+  if (sequencerTransportState == SEQUENCER_TRANSPORT_PLAY &&
+      !sequencerUsesExternalClock() &&
+      runTime >= sequencerNextStepAt) {
+    uint64_t stepDuration = sequencerStepDurationMicros();
+    sequencerCurrentStepStartedAt = sequencerNextStepAt;
+    sequencerNextStepAt += stepDuration;
+    advanceSequencerPlaybackStep(stepDuration);
+  }
+
+  serviceSequencerPlaybackGroups();
 
   if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
     return;
@@ -4504,15 +4681,6 @@ void updateSequencerTransport() {
   if (sequencerUsesExternalClock()) {
     return;
   }
-
-  if (runTime < sequencerNextStepAt) {
-    return;
-  }
-
-  uint64_t stepDuration = sequencerStepDurationMicros();
-  sequencerCurrentStepStartedAt = sequencerNextStepAt;
-  sequencerNextStepAt += stepDuration;
-  advanceSequencerPlaybackStep(stepDuration);
 }
 
 void handleSequencerExternalMidiClock() {
@@ -4541,6 +4709,7 @@ void handleSequencerExternalMidiClock() {
   uint64_t stepDuration = sequencerCurrentStepDurationMicros();
   sequencerCurrentStepStartedAt = runTime;
   advanceSequencerPlaybackStep(stepDuration);
+  serviceSequencerPlaybackGroups();
 }
 
 void handleSequencerExternalMidiStart() {
@@ -4551,6 +4720,7 @@ void handleSequencerExternalMidiStart() {
   setSequencerTransportState(SEQUENCER_TRANSPORT_PLAY, false, false);
   sequencerCurrentStepStartedAt = runTime;
   advanceSequencerPlaybackStep(sequencerCurrentStepDurationMicros());
+  serviceSequencerPlaybackGroups();
 }
 
 void handleSequencerExternalMidiStop() {

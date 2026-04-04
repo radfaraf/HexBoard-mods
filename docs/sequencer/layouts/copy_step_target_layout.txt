@@ -18,11 +18,15 @@ Current behavior:
 
 - the screen shows the source step number and its current step data
 - tapping a step pad copies the source step's notes, length, velocity, and
-  probability into that destination step
+  probability, and Tie into that destination step
 - the destination step becomes the selected step after the copy
-- the destination step then returns to the normal edit overlay
+- the destination step then returns to the tools picker
 - pressing the tools button exits back to the tools picker without copying
 - pressing the encoder also exits back to the tools picker without copying
+
+Display notes:
+
+- if the source step is tied, the note row shows `T` instead of note labels
 
 Display behavior:
 

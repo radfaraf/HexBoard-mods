@@ -37,11 +37,12 @@ Current behavior:
 - Prob opens the exact probability screen for the selected step
 - Oct+ transposes the selected step up 1 current tuning cycle and stays in the picker
 - Oct- transposes the selected step down 1 current tuning cycle and stays in the picker
-- Tie currently shows a placeholder status message
+- Tie toggles the selected step's Tie flag and stays in the picker
 - Copy opens destination-step selection and copies notes, length, velocity,
-  and probability into the tapped destination step, then returns to the tools
-  picker on that destination step
+  probability, and Tie into the tapped destination step, then returns to the
+  tools picker on that destination step
 - Step note labels follow the current tuning naming style.
+- If the selected step is tied, the note row shows `T` instead of note labels.
 
 LED behavior while the picker is open:
 

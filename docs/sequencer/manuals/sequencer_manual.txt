@@ -286,7 +286,7 @@ different tunings later without changing the file format again.
 The blue action key on the far right of the second row has two jobs:
 
 - short press: undo the currently selected step back to the state it had when
-  you selected it, including notes, length, velocity, and probability
+  you selected it, including notes, length, velocity, probability, and Tie
 - hold for about 1 second: clear the selected step
 
 After a clear, the screen reminds you that the blue key can undo the erase.
@@ -329,11 +329,12 @@ Current behavior:
   the picker so you can apply another tool immediately
 - Oct-: transposes all notes in the selected step down 1 current tuning cycle and stays
   in the picker so you can apply another tool immediately
-- Tie: placeholder for future tie behavior
+- Tie: toggles the selected step's Tie flag and stays in the picker
 - Copy: opens destination selection, then copies notes, length, velocity, and
-  probability into the tapped destination step, then reopens the tools picker
-  on that destination step for further editing
+  probability, and Tie into the tapped destination step, then reopens the
+  tools picker on that destination step for further editing
 - Cancel/Finished: exits the tool picker when you are done
+- If the selected step is tied, the note row shows `T` instead of note labels.
 
 
 10.3 Step velocity
@@ -397,6 +398,41 @@ Probability does not affect:
 - manual note audition while entering notes
 
 
+10.5 Tie
+
+Tie is a saved per-step continuation flag for transport playback.
+
+How to edit Tie:
+
+- select a step
+- open the step tools picker
+- choose Tie
+
+Tie behavior:
+
+- a tied step does not send a new note-on during transport playback
+- the tied step continues the nearest earlier eligible non-tied step from the
+  same pattern pass
+- the tied step ignores its own stored note, length, velocity, and probability
+  values during transport playback
+- if no valid earlier source note is active when the tied step is reached, the
+  tied step is silent
+- Tie does not wrap from the end of the pattern back to step 1 in v1
+
+Display behavior:
+
+- tied steps show `T` in note-oriented overlays instead of note labels
+- the 8-step overview pages also show `T` by itself for tied steps
+
+Storage and editing behavior:
+
+- Tie is stored per step in the sequence file
+- Tie is included in step undo
+- Tie is included when Copy copies one step to another
+- the step's stored notes remain saved internally even while Tie is on
+- Tap Preview and manual step preview stay silent on tied steps
+
+
 11. Overview Screen
 
 Press the second-row 9th key to open the note overview.
@@ -405,6 +441,7 @@ Press the second-row 9th key to open the note overview.
 - Press the same key again to move to the next page.
 - Pages cycle through the 32-step pattern.
 - Empty steps show as underscores.
+- Tied steps show `T`.
 
 The overview is meant as a quick readout of what is in the pattern without
 entering edit mode for each step.
@@ -497,6 +534,8 @@ Seq Lights controls:
   accented step with note = high
   selected step with note = high
   playing step with note = highest
+- A tied step uses the same programmed-step brightness behavior as a step with
+  a note.
 - In Note mode, programmed steps use note-based colors with that brightness
   ladder.
 - In Regular mode, programmed steps use the selected Step Hue with that
@@ -786,6 +825,7 @@ The current save file stores:
 - the gate/length value for each step
 - the velocity value for each step
 - the probability value for each step
+- the Tie flag for each step
 
 Tap Preview is a general sequencer setting and is not stored per sequence
 file. It is saved with the board profile and Auto-Save settings system.
@@ -801,7 +841,8 @@ system.
 Color Options settings are shared with Keyboard mode and are also saved with
 the board profile and Auto-Save settings system.
 
-Current sequence files are saved as `version=2` with `noteFormat=stepsFromC`.
+Current sequence files are saved as `version=3` with `noteFormat=stepsFromC`.
+Older files that do not contain Tie fields load with Tie off on every step.
 
 
 20. Current Limits

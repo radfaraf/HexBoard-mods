@@ -53,11 +53,15 @@ sequence files.
 
 
 ID: SEQ-LIMIT-006
-Title: Placeholder Tool Limit
+Title: Tie v1 Scope Limit
 Status: Active
 Area: Limits
 Priority: Medium
 
 Requirement:
-The current step tools picker shall treat Tie as a placeholder rather than a
-fully implemented editing tool.
+The current Tie implementation shall stay within the v1 scope.
+
+Details:
+- Tie shall not wrap across the loop boundary.
+- Tie does not yet include Slide, accent-specific behavior, or broader
+  articulation modeling.

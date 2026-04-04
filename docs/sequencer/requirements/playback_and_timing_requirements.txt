@@ -251,6 +251,10 @@ Requirement:
 Tap Preview and manual step preview shall ignore step probability and always
 audition the step's stored notes when preview is triggered.
 
+Details:
+- Tied steps are the exception: Tap Preview and manual step preview shall stay
+  silent when Tie is enabled on the selected step.
+
 
 ID: SEQ-PLAY-020
 Title: Tuning-Aware Playback
@@ -314,3 +318,37 @@ Priority: High
 Requirement:
 When Clock Source is External MIDI, incoming MIDI Start and Stop messages
 shall control sequencer transport.
+
+
+ID: SEQ-PLAY-025
+Title: Tie Transport Behavior
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+A step with Tie enabled shall not emit a new MIDI note-on during transport
+playback.
+
+Details:
+- A tied step shall continue the nearest earlier eligible non-tied step from
+  the same pattern pass.
+- The tied step's own stored note, length, velocity, and probability values
+  shall be ignored during transport playback while Tie is enabled.
+- If no eligible earlier source step is active when the tied step is reached,
+  the tied step shall be silent.
+
+
+ID: SEQ-PLAY-026
+Title: Tie Loop Boundary Scope
+Status: Active
+Area: Playback
+Priority: Medium
+
+Requirement:
+Tie v1 shall not wrap across the loop boundary.
+
+Details:
+- Step 1 shall not continue a note from the end of the pattern.
+- Wraparound Tie, Slide, and other 303-style articulation extensions remain
+  future work.

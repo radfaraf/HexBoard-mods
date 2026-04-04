@@ -57,7 +57,7 @@ The second-row last button shall act as the blue action key.
 
 Details:
 - A short press shall undo the currently selected step back to the state it had
-  when selected, including notes, length, velocity, and probability.
+  when selected, including notes, length, velocity, probability, and Tie.
 - A hold of about 1 second shall clear the selected step.
 
 
@@ -158,10 +158,13 @@ Details:
 - Prob opens exact probability entry.
 - Oct+ transposes the selected step up one current tuning cycle.
 - Oct- transposes the selected step down one current tuning cycle.
-- Tie is a placeholder for future tie behavior.
+- Tie toggles a saved per-step Tie flag for the selected step and leaves the
+  picker open.
+- A tied step remains editable and copyable, but transport playback treats it
+  as a continuation of an earlier step rather than a new note start.
 - Copy opens destination-step selection and copies notes, length, velocity, and
-  probability into the chosen destination step, then returns to the tools
-  picker on that destination step.
+  probability, and Tie into the chosen destination step, then returns to the
+  tools picker on that destination step.
 - Cancel/Finished exits the tools picker.
 - The picker's tool buttons shall be mapped to lower rows so the 4 step rows
   remain available above them.

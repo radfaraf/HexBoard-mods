@@ -18,6 +18,7 @@ Notes:
 - Each press advances to the next page of 8 steps.
 - Pages cycle through the full 32-step pattern.
 - _ means the step is empty.
+- T means the step is tied and displays no note labels of its own.
 - Chord notes are displayed left to right in ascending order.
 - In 12 EDO, note labels use note names like `C4`.
 - In other tunings, note labels use `step.octave` labels like `7.4`.

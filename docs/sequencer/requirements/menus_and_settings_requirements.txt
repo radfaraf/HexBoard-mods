@@ -106,6 +106,8 @@ Details:
   accented step with note = high
   selected step with note = high
   playing step with note = highest.
+- A tied step shall use the same programmed-step brightness behavior as a step
+  with a note.
 - In Step Color = Note, programmed steps shall use note-based colors with that
   brightness ladder.
 - In Step Color = Regular, programmed steps shall use the selected Step Hue

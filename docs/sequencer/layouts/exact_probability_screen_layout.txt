@@ -23,6 +23,7 @@ Controls:
 - turning the encoder moves through:
   0, 5, 10, 15, ... 100
 - encoder press saves and returns to the tools picker
+- if the selected step is tied, the note row shows `T` instead of note labels
 
 LED behavior while the screen is open:
 

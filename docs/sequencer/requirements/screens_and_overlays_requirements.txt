@@ -14,6 +14,8 @@ Details:
 - The overlay shall show a compact info line in the form L ...% V ... P ...%.
 - The overlay shall show the selected step notes in ascending order.
 - Step note labels shall follow the current tuning naming style.
+- If the selected step has Tie enabled, the note area shall show `T` instead of
+  note labels.
 
 
 ID: SEQ-UI-002
@@ -62,6 +64,8 @@ currently available tool labels.
 
 Details:
 - Step note labels shall follow the current tuning naming style.
+- If the selected step has Tie enabled, the note area shall show `T` instead of
+  note labels.
 - While this overlay is open, the normal sequencer step LEDs shall remain
   visible.
 - The tool buttons shall move to lower rows so the top 4 step rows remain free
@@ -75,9 +79,9 @@ Area: UI
 Priority: High
 
 Requirement:
-The exact length overlay shall show the selected step number, the current
-numeric value with a blinking underscore cursor, the keypad layout, and a save
-instruction.
+The exact length overlay shall show the selected step number, the current value,
+a separate new-entry value with a blinking underscore cursor, the keypad
+layout, and a save instruction.
 
 Details:
 - The top 4 sequencer step rows shall remain visible while the exact-length
@@ -103,6 +107,8 @@ Details:
   button hints.
 - While this overlay is open, all keys remain dark.
 - The helper text shall instruct the user to press the encoder to save.
+- If the selected step has Tie enabled, the note area shall show `T` instead of
+  note labels.
 
 
 ID: SEQ-UI-012
@@ -121,6 +127,8 @@ Details:
   lit button hints.
 - While this overlay is open, all keys remain dark.
 - The helper text shall instruct the user to press the encoder to save.
+- If the selected step has Tie enabled, the note area shall show `T` instead of
+  note labels.
 
 
 ID: SEQ-UI-007
@@ -136,6 +144,7 @@ pattern.
 Details:
 - Empty steps show underscores.
 - Note labels follow the current tuning naming style.
+- A tied step shall show `T` by itself with no appended note labels.
 
 
 ID: SEQ-UI-008
@@ -181,7 +190,7 @@ Priority: Medium
 
 Requirement:
 The sequencer shall use temporary status overlays for actions such as save,
-revert, erase, and tie placeholder actions.
+revert, erase, and other short workflow messages.
 
 
 ID: SEQ-UI-013

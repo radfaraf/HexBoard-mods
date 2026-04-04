@@ -111,6 +111,7 @@ Details:
   file if present.
 - If no current or legacy file exists, the sequencer resets to a blank default
   sequence state.
+- Revert shall restore saved Tie flags along with the other saved step data.
 
 
 ID: SEQ-FILE-010
@@ -197,7 +198,8 @@ Details:
 - If a file is loaded, the title is Seq-FILENAME.
 - If a file is loaded and unsaved changes exist, the title is Seq-*FILENAME.
 - Save and Revert clear the dirty state.
-- Editing notes, length, velocity, or sequencer settings sets the dirty state.
+- Editing notes, length, velocity, probability, Tie, or sequencer settings sets
+  the dirty state.
 
 
 ID: SEQ-FILE-017
@@ -212,9 +214,11 @@ type, direction, tuning-relative pitch steps per step, gate or length per
 step, and velocity per step.
 
 Details:
-- Current files are written as version 2.
+- Current files are written as version 3.
 - Current files declare noteFormat=stepsFromC.
 - Sequence files also store per-step probability.
+- Sequence files also store per-step Tie flags.
+- Older files that do not contain Tie fields shall load with all Tie flags off.
 - Tap Preview, Clock Source, Send Clock, and Send Transport are general
   sequencer settings and are not stored per sequence file.
 - Those general sequencer settings shall be stored in the board profile
