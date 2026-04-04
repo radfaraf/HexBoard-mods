@@ -259,9 +259,8 @@ bool sequencerStorageInitialized = false;
 int8_t sequencerCopySourceStep = -1;
 uint16_t sequencerLengthPercentDisplay = 100;
 uint16_t sequencerExactLengthOriginal = 100;
-char sequencerExactLengthBuffer[5] = "100";
-byte sequencerExactLengthLength = 3;
-bool sequencerExactLengthReplaceOnNextDigit = true;
+char sequencerExactLengthBuffer[5] = "";
+byte sequencerExactLengthLength = 0;
 byte sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerProbabilityDisplay = SEQUENCER_DEFAULT_PROBABILITY;
@@ -1092,10 +1091,9 @@ void enterSequencerExactLengthEdit() {
     return;
   }
   sequencerExactLengthOriginal = sequencerStepGatePercent[sequencerSelectedStep];
-  snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "%u",
-           static_cast<unsigned>(sequencerExactLengthOriginal));
-  sequencerExactLengthLength = static_cast<byte>(strlen(sequencerExactLengthBuffer));
-  sequencerExactLengthReplaceOnNextDigit = true;
+  sequencerExactLengthBuffer[0] = '\0';
+  sequencerExactLengthLength = 0;
+  sequencerLengthPercentDisplay = sequencerExactLengthOriginal;
   sequencerOverlayMode = SequencerOverlayMode::ExactLengthEdit;
   sequencerOverlayUntil = 0;
   sequencerOverlayVisible = false;
@@ -1105,7 +1103,7 @@ void enterSequencerExactLengthEdit() {
 void exitSequencerExactLengthEdit(bool saveChanges) {
   if (sequencerSelectedStep >= 0) {
     uint16_t finalValue = sequencerExactLengthOriginal;
-    if (saveChanges) {
+    if (saveChanges && sequencerExactLengthLength > 0) {
       finalValue = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
     }
     if (finalValue > 1000) {
@@ -1237,19 +1235,11 @@ void insertSequencerExactLengthChar(char character) {
   if (character < '0' || character > '9') {
     return;
   }
-  if (sequencerExactLengthReplaceOnNextDigit) {
-    sequencerExactLengthBuffer[0] = character;
-    sequencerExactLengthBuffer[1] = '\0';
-    sequencerExactLengthLength = 1;
-    sequencerExactLengthReplaceOnNextDigit = false;
-  } else if (sequencerExactLengthLength >= 4) {
+  if (sequencerExactLengthLength >= 4) {
     return;
-  } else if (sequencerExactLengthLength == 1 && sequencerExactLengthBuffer[0] == '0') {
-    sequencerExactLengthBuffer[0] = character;
-  } else {
-    sequencerExactLengthBuffer[sequencerExactLengthLength++] = character;
-    sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
   }
+  sequencerExactLengthBuffer[sequencerExactLengthLength++] = character;
+  sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
   uint16_t value = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
   if (value > 1000) {
     snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "1000");
@@ -1261,18 +1251,17 @@ void insertSequencerExactLengthChar(char character) {
 }
 
 void backspaceSequencerExactLengthChar() {
-  sequencerExactLengthReplaceOnNextDigit = false;
-  if (sequencerExactLengthLength <= 1) {
-    snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "0");
-    sequencerExactLengthLength = 1;
-    sequencerLengthPercentDisplay = 0;
-    sequencerOverlayDirty = true;
+  if (sequencerExactLengthLength == 0) {
     return;
   }
 
   sequencerExactLengthLength--;
   sequencerExactLengthBuffer[sequencerExactLengthLength] = '\0';
-  sequencerLengthPercentDisplay = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
+  if (sequencerExactLengthLength > 0) {
+    sequencerLengthPercentDisplay = static_cast<uint16_t>(atoi(sequencerExactLengthBuffer));
+  } else {
+    sequencerLengthPercentDisplay = sequencerExactLengthOriginal;
+  }
   sequencerOverlayDirty = true;
 }
 
@@ -2235,9 +2224,8 @@ void resetSequencerState() {
   sequencerOverviewPage = 0;
   sequencerLengthPercentDisplay = 100;
   sequencerExactLengthOriginal = 100;
-  snprintf(sequencerExactLengthBuffer, sizeof(sequencerExactLengthBuffer), "100");
-  sequencerExactLengthLength = 3;
-  sequencerExactLengthReplaceOnNextDigit = true;
+  sequencerExactLengthBuffer[0] = '\0';
+  sequencerExactLengthLength = 0;
   sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
   sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
   sequencerProbabilityDisplay = SEQUENCER_DEFAULT_PROBABILITY;
@@ -4077,27 +4065,42 @@ void drawSequencerOverlay() {
     sequencerOverlayDirty = false;
 
     char headerLabel[20];
-    char valueLabel[8];
+    char currentLabel[16];
+    char newLabel[16];
+    char currentValueLabel[5];
+    char newValueLabel[6];
     snprintf(headerLabel, sizeof(headerLabel), "Exact #%02d", sequencerSelectedStep + 1);
-    snprintf(valueLabel, sizeof(valueLabel), "%s", sequencerExactLengthBuffer);
+    snprintf(currentLabel, sizeof(currentLabel), "Current:");
+    snprintf(currentValueLabel, sizeof(currentValueLabel), "%u", static_cast<unsigned>(sequencerExactLengthOriginal));
+    if (sequencerExactLengthLength > 0) {
+      snprintf(newValueLabel, sizeof(newValueLabel), "%s", sequencerExactLengthBuffer);
+    } else {
+      snprintf(newValueLabel, sizeof(newValueLabel), "");
+    }
+    snprintf(newLabel, sizeof(newLabel), "New:");
     bool showCursor = ((runTime / 400000ULL) % 2ULL) == 0ULL;
-    size_t valueLength = strlen(valueLabel);
-    if (showCursor && valueLength < 4) {
-      valueLabel[valueLength] = '_';
-      valueLabel[valueLength + 1] = '\0';
+    size_t newLength = strlen(newValueLabel);
+    if (showCursor && newLength < sizeof(newValueLabel) - 1) {
+      newValueLabel[newLength] = '_';
+      newValueLabel[newLength + 1] = '\0';
     }
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
-    u8g2.drawStr(20, 18, headerLabel);
-    u8g2.drawStr(40, 40, valueLabel);
+    u8g2.drawStr(20, 12, headerLabel);
+    u8g2.drawStr(8, 24, currentLabel);
+    u8g2.drawStr(8, 46, newLabel);
+
+    u8g2.setFont(u8g2_font_logisoso16_tf);
+    u8g2.drawStr(64, 28, currentValueLabel);
+    u8g2.drawStr(64, 50, newValueLabel);
 
     u8g2.setFont(u8g2_font_5x8_tf);
-    u8g2.drawStr(8, 60, "0 1 2 3 4");
-    u8g2.drawStr(8, 74, "5 6 7 8 9");
-    u8g2.drawStr(8, 88, "<- CANCEL");
-    u8g2.drawStr(8, 106, "Press encoder");
-    u8g2.drawStr(8, 118, "to save");
+    u8g2.drawStr(8, 66, "0 1 2 3 4");
+    u8g2.drawStr(8, 80, "5 6 7 8 9");
+    u8g2.drawStr(8, 94, "<- CANCEL");
+    u8g2.drawStr(8, 110, "Press encoder");
+    u8g2.drawStr(8, 122, "to save");
     u8g2.sendBuffer();
     return;
   }

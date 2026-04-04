@@ -9,7 +9,11 @@ Screen layout:
 
   Exact #13
 
-  250_
+  Current:
+       200
+
+  New:
+       250_
 
   0 1 2 3 4
   5 6 7 8 9
@@ -24,7 +28,10 @@ Notes:
 
 - A blinking underscore shows the current input position.
 - Number keys insert digits directly.
-- The first digit typed replaces the current value.
+- The screen keeps the current value visible and uses a separate `New:` field
+  for typed digits.
+- The header is shifted upward so the current and new values can use a larger
+  numeric font.
 - Up to 4 digits are allowed.
 - The top 4 sequencer step rows stay visible while this keypad is open.
 - The keypad itself moves to the lower part of the board:
@@ -33,4 +40,6 @@ Notes:
   - eighth-row first key: <-
   - lower cancel area: CANCEL
 - Only the exact-length keypad keys are lit blue in the lower board area.
-- Pressing the encoder saves and returns to the tools picker.
+- Pressing the encoder saves the `New:` value when present, or leaves the
+  current value unchanged when `New:` is blank, then returns to the tools
+  picker.

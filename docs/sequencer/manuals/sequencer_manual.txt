@@ -167,17 +167,21 @@ Choosing Len from the step tools picker opens the exact length screen.
 In exact length mode:
 
 - number keys are used to enter the value directly
-- the first digit typed replaces the currently shown value
+- the OLED shows the current saved value and a separate new-entry field
+- typing digits fills the `New:` field without overwriting the `Current:` field
 - up to 4 digits are allowed
 - the exact-length keypad moves to the lower part of the board so the top 4
   sequencer step rows remain visible
 - <- removes the previous digit and is on the eighth-row first key
 - CANCEL exits exact length entry without saving and uses the same lower cancel
   area as the tools picker
-- pressing the encoder saves and returns to the tools picker
+- pressing the encoder saves the `New:` value when one was entered, or keeps
+  the current value if `New:` is blank, then returns to the tools picker
 
 The exact length screen shows this keypad-style layout:
 
+- Current: 0200
+- New: 0250
 - 0 1 2 3 4
 - 5 6 7 8 9
 - <-
