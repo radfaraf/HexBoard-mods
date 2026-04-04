@@ -26,6 +26,11 @@ Notes:
 - Number keys insert digits directly.
 - The first digit typed replaces the current value.
 - Up to 4 digits are allowed.
-- <- removes the previous digit and is on the third-row first key.
-- CANCEL exits without saving and is on the fifth-row first key.
+- The top 4 sequencer step rows stay visible while this keypad is open.
+- The keypad itself moves to the lower part of the board:
+  - sixth row: 0 1 2 3 4
+  - seventh row: 5 6 7 8 9
+  - eighth-row first key: <-
+  - lower cancel area: CANCEL
+- Only the exact-length keypad keys are lit blue in the lower board area.
 - Pressing the encoder saves and returns to the tools picker.

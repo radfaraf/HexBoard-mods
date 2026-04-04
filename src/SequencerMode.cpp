@@ -341,6 +341,10 @@ void sequencerBrowserIndicatorCallback();
 void sequencerBrowserDeleteFolderCallback();
 void sequencerBrowserRenameFolderCallback();
 bool isSequencerAccentStep(byte stepIndex);
+int8_t sequencerStepToButtonIndex(byte stepIndex);
+int16_t sequencerPrimaryPitchSteps(byte stepIndex);
+bool isSequencerSelectionLit();
+byte sequencerActiveStepCount();
 float sequencerStepHueValue(byte hueSetting);
 uint32_t getSequencerAccentedUnsetStepLedColor(bool selected);
 byte getSequencerProgrammedStepLightLevel(bool selected, bool playing, bool accented);
@@ -509,18 +513,18 @@ const SequencerNamingKey sequencerNamingKeys[] = {
 };
 
 const SequencerNamingKey sequencerExactLengthKeys[] = {
-  { 1, SequencerNamingAction::InsertChar, '0' },
-  { 2, SequencerNamingAction::InsertChar, '1' },
-  { 3, SequencerNamingAction::InsertChar, '2' },
-  { 4, SequencerNamingAction::InsertChar, '3' },
-  { 5, SequencerNamingAction::InsertChar, '4' },
-  { 10, SequencerNamingAction::InsertChar, '5' },
-  { 11, SequencerNamingAction::InsertChar, '6' },
-  { 12, SequencerNamingAction::InsertChar, '7' },
-  { 13, SequencerNamingAction::InsertChar, '8' },
-  { 14, SequencerNamingAction::InsertChar, '9' },
-  { 21, SequencerNamingAction::Backspace, '\0' },
-  { 41, SequencerNamingAction::Cancel, '\0' }
+  { 50, SequencerNamingAction::InsertChar, '0' },
+  { 51, SequencerNamingAction::InsertChar, '1' },
+  { 52, SequencerNamingAction::InsertChar, '2' },
+  { 53, SequencerNamingAction::InsertChar, '3' },
+  { 54, SequencerNamingAction::InsertChar, '4' },
+  { 61, SequencerNamingAction::InsertChar, '5' },
+  { 62, SequencerNamingAction::InsertChar, '6' },
+  { 63, SequencerNamingAction::InsertChar, '7' },
+  { 64, SequencerNamingAction::InsertChar, '8' },
+  { 65, SequencerNamingAction::InsertChar, '9' },
+  { 70, SequencerNamingAction::Backspace, '\0' },
+  { SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX, SequencerNamingAction::Cancel, '\0' }
 };
 
 const SequencerToolKey sequencerToolKeys[] = {
@@ -554,6 +558,55 @@ void refreshSequencerMenuTitle() {
              sequencerDirty ? "*" : "", displayName);
   }
   menuPageSequencer.setTitle(sequencerMenuTitle);
+}
+
+void applySequencerStepLedState() {
+  byte activeStepCount = sequencerActiveStepCount();
+  for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
+    int8_t buttonIndex = sequencerStepToButtonIndex(step);
+    if (buttonIndex < 0) {
+      continue;
+    }
+
+    if (step >= activeStepCount) {
+      strip.setPixelColor(buttonIndex, 0);
+      continue;
+    }
+
+    bool selected = (sequencerSelectedStep == step);
+    bool playing = (sequencerPlayingStep == step);
+    bool accented = isSequencerAccentStep(step);
+    bool selectionLit = !selected || isSequencerSelectionLit();
+    int16_t primaryPitchSteps = sequencerPrimaryPitchSteps(step);
+
+    if (!selectionLit) {
+      strip.setPixelColor(buttonIndex, 0);
+      continue;
+    }
+
+    // Sequencer step LEDs split into three visual paths:
+    // 1) empty/unset steps, 2) regular step colors, 3) note-colored steps.
+    // Bugs in one path may not appear in the others, so debug the matching
+    // branch instead of assuming all "white-looking" steps are note colors.
+    if (primaryPitchSteps == SEQUENCER_NO_PITCH) {
+      if (accented) {
+        strip.setPixelColor(buttonIndex, getSequencerAccentedUnsetStepLedColor(selected || playing));
+      } else {
+        const bool highlighted = selected || playing;
+        // Sequencer mapping requires empty non-accented steps to stay fully off
+        // unless they are selected/playing.
+        strip.setPixelColor(buttonIndex, highlighted ? getSequencerUnsetStepLedColor(true) : 0);
+      }
+      continue;
+    }
+
+    if (sequencerStepColorMode == SEQUENCER_STEP_COLOR_REGULAR) {
+      strip.setPixelColor(buttonIndex, getSequencerRegularFilledStepLedColor(selected, playing, accented));
+      continue;
+    }
+
+    strip.setPixelColor(buttonIndex, getSequencerNoteStepLedColor(primaryPitchSteps, selected, playing, accented));
+  }
 }
 
 void selectSequencerStepForEditing(byte stepIndex, SequencerOverlayMode nextOverlayMode) {
@@ -4363,6 +4416,8 @@ void applySequencerLedOverrides() {
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
     }
+    // Keep the step rows visible while the exact-length keypad moves to the lower board area.
+    applySequencerStepLedState();
     for (const SequencerNamingKey& key : sequencerExactLengthKeys) {
       if (key.buttonIndex < ledCount) {
         strip.setPixelColor(key.buttonIndex, activeColor);
@@ -4406,54 +4461,7 @@ void applySequencerLedOverrides() {
     getSequencerUtilityLedColor(sequencerOverlayMode == SequencerOverlayMode::FunctionPicker ||
                                 toolsPromptActive));
 
-  byte activeStepCount = sequencerActiveStepCount();
-  for (byte step = 0; step < SEQUENCER_STEP_COUNT; step++) {
-    int8_t buttonIndex = sequencerStepToButtonIndex(step);
-    if (buttonIndex < 0) {
-      continue;
-    }
-
-    if (step >= activeStepCount) {
-      strip.setPixelColor(buttonIndex, 0);
-      continue;
-    }
-
-    uint32_t colorCode = 0;
-    bool selected = (sequencerSelectedStep == step);
-    bool playing = (sequencerPlayingStep == step);
-    bool accented = isSequencerAccentStep(step);
-    bool selectionLit = !selected || isSequencerSelectionLit();
-    int16_t primaryPitchSteps = sequencerPrimaryPitchSteps(step);
-
-    if (!selectionLit) {
-      strip.setPixelColor(buttonIndex, 0);
-      continue;
-    }
-
-    // Sequencer step LEDs split into three visual paths:
-    // 1) empty/unset steps, 2) regular step colors, 3) note-colored steps.
-    // Bugs in one path may not appear in the others, so debug the matching
-    // branch instead of assuming all "white-looking" steps are note colors.
-    if (primaryPitchSteps == SEQUENCER_NO_PITCH) {
-      if (accented) {
-        strip.setPixelColor(buttonIndex, getSequencerAccentedUnsetStepLedColor(selected || playing));
-      } else {
-        const bool highlighted = selected || playing;
-        // Sequencer mapping requires empty non-accented steps to stay fully off
-        // unless they are selected/playing.
-        strip.setPixelColor(buttonIndex, highlighted ? getSequencerUnsetStepLedColor(true) : 0);
-      }
-      continue;
-    }
-
-    if (sequencerStepColorMode == SEQUENCER_STEP_COLOR_REGULAR) {
-      strip.setPixelColor(buttonIndex, getSequencerRegularFilledStepLedColor(selected, playing, accented));
-      continue;
-    }
-
-    colorCode = getSequencerNoteStepLedColor(primaryPitchSteps, selected, playing, accented);
-    strip.setPixelColor(buttonIndex, colorCode);
-  }
+  applySequencerStepLedState();
 
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
     uint32_t activeColor = getSequencerConfirmLedColor();

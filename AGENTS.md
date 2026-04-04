@@ -10,6 +10,13 @@ mode-specific documentation for Codex to follow.
 - Prefer keeping Keyboard-related logic in `src/HexBoard.ino`.
 - Prefer keeping Sequencer-related logic in `src/SequencerMode.cpp` and `src/SequencerMode.h`.
 - Only leave bridge/helper code in `src/HexBoard.ino` when it is truly needed for shared board access or integration.
+- When adding shared helpers in `src/SequencerMode.cpp`, either place them after
+  the internal functions they call or add explicit forward declarations in the
+  existing prototype block near the top of the file.
+- Before finishing a `src/SequencerMode.cpp` refactor that adds new helper
+  functions, scan for any new calls to file-local functions that are defined
+  later in the file and add prototypes for them if needed. ArduinoIDE builds
+  can fail on these ordering issues even when the code change itself is small.
 
 ## Project Skills
 

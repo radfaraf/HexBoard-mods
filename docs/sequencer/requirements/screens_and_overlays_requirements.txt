@@ -80,8 +80,11 @@ numeric value with a blinking underscore cursor, the keypad layout, and a save
 instruction.
 
 Details:
-- Backspace is on the third-row first key.
-- Cancel is on the fifth-row first key.
+- The top 4 sequencer step rows shall remain visible while the exact-length
+  keypad is open.
+- The exact-length keypad shall move to the lower board area.
+- Backspace is on the eighth-row first key.
+- Cancel uses the same lower cancel area as the tools picker.
 
 
 ID: SEQ-UI-006
