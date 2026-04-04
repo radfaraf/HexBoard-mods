@@ -481,6 +481,8 @@ byte sequencerSelectedStepVelocity();
 void sendSequencerManagedNoteOff(int16_t pitchSteps, bool playbackNote);
 int getVisibleBrowserEntryMenuIndex(bool firstVisible);
 const SequencerToolKey* getSequencerToolKey(byte buttonIndex);
+int sequencerDisplayedOctaveForPitchSteps(int16_t pitchSteps);
+bool canTransposeSelectedSequencerStep(int16_t pitchStepDelta);
 bool transposeSelectedSequencerStep(int16_t pitchStepDelta);
 void handleSequencerToolAction(SequencerToolAction action);
 bool sequencerStepHasPlayableNoteData(byte stepIndex);
@@ -1303,8 +1305,41 @@ const SequencerToolKey* getSequencerToolKey(byte buttonIndex) {
   return nullptr;
 }
 
+int sequencerDisplayedOctaveForPitchSteps(int16_t pitchSteps) {
+  const int displayedPitch = static_cast<int>(pitchSteps) + getSequencerCurrentTranspose();
+  int cycleLength = static_cast<int>(getSequencerTuningCycleLength());
+  if (cycleLength <= 0) {
+    cycleLength = 12;
+  }
+  const int stepInCycle = positiveMod(displayedPitch, cycleLength);
+  return ((displayedPitch - stepInCycle) / cycleLength) + 4;
+}
+
+bool canTransposeSelectedSequencerStep(int16_t pitchStepDelta) {
+  if (sequencerSelectedStep < 0 || sequencerEditNoteCount == 0) {
+    return false;
+  }
+
+  for (byte i = 0; i < sequencerEditNoteCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
+    const int32_t transposed = static_cast<int32_t>(sequencerEditPitchSteps[i]) + pitchStepDelta;
+    if (transposed < -32768 || transposed > 32767) {
+      return false;
+    }
+
+    const int octave = sequencerDisplayedOctaveForPitchSteps(static_cast<int16_t>(transposed));
+    if (octave < 0 || octave > 9) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool transposeSelectedSequencerStep(int16_t pitchStepDelta) {
   if (sequencerSelectedStep < 0 || sequencerEditNoteCount == 0) {
+    return false;
+  }
+  if (!canTransposeSelectedSequencerStep(pitchStepDelta)) {
     return false;
   }
 
@@ -1368,6 +1403,10 @@ void handleSequencerToolAction(SequencerToolAction action) {
         showSequencerStatusMessage("Step empty", "Add notes first");
         return;
       }
+      if (!canTransposeSelectedSequencerStep(getSequencerTuningCycleLength())) {
+        showSequencerStatusMessage("Oct+", "Range 0-9");
+        return;
+      }
       if (transposeSelectedSequencerStep(getSequencerTuningCycleLength())) {
         sequencerOverlayMode = SequencerOverlayMode::FunctionPicker;
         sequencerOverlayVisible = false;
@@ -1379,6 +1418,10 @@ void handleSequencerToolAction(SequencerToolAction action) {
     case SequencerToolAction::OctaveDown:
       if (sequencerEditNoteCount == 0) {
         showSequencerStatusMessage("Step empty", "Add notes first");
+        return;
+      }
+      if (!canTransposeSelectedSequencerStep(-static_cast<int16_t>(getSequencerTuningCycleLength()))) {
+        showSequencerStatusMessage("Oct-", "Range 0-9");
         return;
       }
       if (transposeSelectedSequencerStep(-static_cast<int16_t>(getSequencerTuningCycleLength()))) {

@@ -67,6 +67,7 @@ Step Tools Picker
 - Len opens exact length entry for the selected step.
 - Oct+ transposes the selected step up 1 tuning cycle and stays in the tools screen.
 - Oct- transposes the selected step down 1 tuning cycle and stays in the tools screen.
+- Oct+ and Oct- are limited to displayed octave range 0 through 9.
 - Vel opens exact velocity entry for the selected step.
 - Prob opens exact probability entry for the selected step.
 - Tie toggles a per-step continuation flag and stays in the tools screen.

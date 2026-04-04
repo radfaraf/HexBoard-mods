@@ -158,6 +158,8 @@ Details:
 - Prob opens exact probability entry.
 - Oct+ transposes the selected step up one current tuning cycle.
 - Oct- transposes the selected step down one current tuning cycle.
+- Oct+ and Oct- shall not move any selected-step note outside displayed octave
+  range 0 through 9.
 - Tie toggles a saved per-step Tie flag for the selected step and leaves the
   picker open.
 - A tied step remains editable and copyable, but transport playback treats it
