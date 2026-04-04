@@ -160,7 +160,8 @@ Details:
 - Oct- transposes the selected step down one current tuning cycle.
 - Tie is a placeholder for future tie behavior.
 - Copy opens destination-step selection and copies notes, length, velocity, and
-  probability into the chosen destination step.
+  probability into the chosen destination step, then returns to the tools
+  picker on that destination step.
 - Cancel/Finished exits the tools picker.
 - The picker's tool buttons shall be mapped to lower rows so the 4 step rows
   remain available above them.

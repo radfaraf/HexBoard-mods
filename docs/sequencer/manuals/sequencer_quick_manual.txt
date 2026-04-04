@@ -69,7 +69,8 @@ Step Tools Picker
 - Prob opens exact probability entry for the selected step.
 - Tie is still a placeholder entry for now.
 - Copy opens target-step selection and copies the source step's notes, length,
-  velocity, and probability into the tapped destination step.
+  velocity, and probability into the tapped destination step, then keeps the
+  tools picker open on that destination step.
 - Cancel/Finished closes the picker when you are done.
 
 Step Velocity

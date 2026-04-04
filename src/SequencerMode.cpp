@@ -3738,19 +3738,9 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     byte targetStep = static_cast<byte>(destinationStep);
     snapshotUndoBufferFromStep(targetStep);
     copySequencerStepData(sourceStep, targetStep);
-    sequencerSelectedStep = destinationStep;
-    loadEditBufferFromStep(targetStep);
-    sequencerLengthPercentDisplay = sequencerStepGatePercent[targetStep];
-    sequencerVelocityDisplay = sequencerStepVelocity[targetStep];
-    sequencerProbabilityDisplay = sequencerStepProbability[targetStep];
-    sequencerExactLengthOriginal = sequencerLengthPercentDisplay;
-    sequencerExactVelocityOriginal = sequencerVelocityDisplay;
-    sequencerExactProbabilityOriginal = sequencerProbabilityDisplay;
     setSequencerDirtyState(true);
-    exitSequencerCopyTargetSelect(false);
-    sequencerOverlayMode = SequencerOverlayMode::AwaitingNote;
-    sequencerOverlayVisible = false;
-    sequencerOverlayDirty = true;
+    exitSequencerCopyTargetSelect(true);
+    selectSequencerStepForEditing(targetStep, SequencerOverlayMode::FunctionPicker);
     return;
   }
 

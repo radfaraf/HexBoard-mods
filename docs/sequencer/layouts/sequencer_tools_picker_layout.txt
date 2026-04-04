@@ -39,7 +39,8 @@ Current behavior:
 - Oct- transposes the selected step down 1 current tuning cycle and stays in the picker
 - Tie currently shows a placeholder status message
 - Copy opens destination-step selection and copies notes, length, velocity,
-  and probability into the tapped destination step
+  and probability into the tapped destination step, then returns to the tools
+  picker on that destination step
 - Step note labels follow the current tuning naming style.
 
 LED behavior while the picker is open:

@@ -324,8 +324,8 @@ Current behavior:
   in the picker so you can apply another tool immediately
 - Tie: placeholder for future tie behavior
 - Copy: opens destination selection, then copies notes, length, velocity, and
-  probability into the tapped destination step and leaves that destination step
-  selected for further editing
+  probability into the tapped destination step, then reopens the tools picker
+  on that destination step for further editing
 - Cancel/Finished: exits the tool picker when you are done
 
 
