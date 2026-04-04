@@ -1,0 +1,4 @@
+interface:
+  display_name: "HexBoard Persistence Guard"
+  short_description: "Guard HexBoard persistence decisions and touchpoints."
+  default_prompt: "Use $hexboard-persistence-guard whenever this task touches settings, profiles, Auto-Save, save/load behavior, startup restore, defaults, migrations, or any question about where a value should be stored. Classify the value as profile, saved document/sequence, or runtime-only before implementation and list the required code and documentation touchpoints."

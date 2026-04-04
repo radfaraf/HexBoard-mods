@@ -11,6 +11,17 @@ mode-specific documentation for Codex to follow.
 - Prefer keeping Sequencer-related logic in `src/SequencerMode.cpp` and `src/SequencerMode.h`.
 - Only leave bridge/helper code in `src/HexBoard.ino` when it is truly needed for shared board access or integration.
 
+## Project Skills
+
+- Repo-owned Codex skill copies live in `codex-skills/`.
+- Keep project-specific skills in that folder so they stay versioned with the firmware and docs.
+- Treat the repo copies as the project source of truth when reading or updating project skills.
+- Current project-owned skills:
+  - `codex-skills/hexboard-persistence-guard/`
+  - `codex-skills/hexboard-key-menu-builder/`
+- When a task matches one of those skills, prefer reading the repo copy even if another installed copy exists elsewhere.
+- When a project skill is intentionally updated, keep its related references and `agents/openai.yaml` in sync in the same pass.
+
 ## Code Commenting Preference
 
 - Add short comments to new or changed code when the purpose is not obvious.

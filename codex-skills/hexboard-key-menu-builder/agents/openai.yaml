@@ -1,0 +1,4 @@
+interface:
+  display_name: "HexBoard Key Menu Builder"
+  short_description: "Plan and build HexBoard key-driven menus."
+  default_prompt: "Use $hexboard-key-menu-builder to design or modify a HexBoard key-driven menu, ask the important implementation questions, and list the code and documentation touchpoints before editing."
