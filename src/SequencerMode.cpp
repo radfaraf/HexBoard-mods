@@ -1311,7 +1311,10 @@ int sequencerDisplayedOctaveForPitchSteps(int16_t pitchSteps) {
   if (cycleLength <= 0) {
     cycleLength = 12;
   }
-  const int stepInCycle = positiveMod(displayedPitch, cycleLength);
+  int stepInCycle = displayedPitch % cycleLength;
+  if (stepInCycle < 0) {
+    stepInCycle += cycleLength;
+  }
   return ((displayedPitch - stepInCycle) / cycleLength) + 4;
 }
 
