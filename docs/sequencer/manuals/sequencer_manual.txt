@@ -332,6 +332,9 @@ Current behavior:
 - Oct-: transposes all notes in the selected step down 1 current tuning cycle and stays
   in the picker so you can apply another tool immediately
 - Oct+ and Oct- are limited to displayed octave range 0 through 9
+- If Oct+ or Oct- hits that range limit, the range message closes back to the tools picker.
+- While that tools range message is visible, further key presses do not trigger
+  normal keyboard actions and only extend the message timeout.
 - Tie: toggles the selected step's Tie flag and stays in the picker
 - Copy: opens destination selection, then copies notes, length, velocity, and
   probability, and Tie into the tapped destination step, then reopens the

@@ -218,6 +218,7 @@ struct SequencerToolKey {
 
 int8_t sequencerSelectedStep = -1;
 SequencerOverlayMode sequencerOverlayMode = SequencerOverlayMode::Hidden;
+SequencerOverlayMode sequencerOverlayReturnMode = SequencerOverlayMode::Hidden;
 uint64_t sequencerOverlayUntil = 0;
 bool sequencerOverlayVisible = false;
 bool sequencerOverlayDirty = false;
@@ -300,6 +301,7 @@ uint64_t sequencerExternalStepDuration = 0;
 uint64_t sequencerNextMidiClockAt = 0;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
+void showSequencerStatusMessageAndReturn(const char* lineOne, const char* lineTwo, SequencerOverlayMode returnMode);
 void showSequencerPersistentStatusMessage(const char* lineOne, const char* lineTwo);
 bool rememberSequencerCurrentPath();
 void extractSequencerDisplayName(const char* path, char* out, size_t outSize);
@@ -1403,11 +1405,11 @@ void handleSequencerToolAction(SequencerToolAction action) {
       return;
     case SequencerToolAction::OctaveUp:
       if (sequencerEditNoteCount == 0) {
-        showSequencerStatusMessage("Step empty", "Add notes first");
+        showSequencerStatusMessageAndReturn("Step empty", "Add notes first", SequencerOverlayMode::FunctionPicker);
         return;
       }
       if (!canTransposeSelectedSequencerStep(getSequencerTuningCycleLength())) {
-        showSequencerStatusMessage("Oct+", "Range 0-9");
+        showSequencerStatusMessageAndReturn("Oct+", "Range 0-9", SequencerOverlayMode::FunctionPicker);
         return;
       }
       if (transposeSelectedSequencerStep(getSequencerTuningCycleLength())) {
@@ -1415,16 +1417,16 @@ void handleSequencerToolAction(SequencerToolAction action) {
         sequencerOverlayVisible = false;
         sequencerOverlayDirty = true;
       } else {
-        showSequencerStatusMessage("Oct+", "Step unchanged");
+        showSequencerStatusMessageAndReturn("Oct+", "Step unchanged", SequencerOverlayMode::FunctionPicker);
       }
       return;
     case SequencerToolAction::OctaveDown:
       if (sequencerEditNoteCount == 0) {
-        showSequencerStatusMessage("Step empty", "Add notes first");
+        showSequencerStatusMessageAndReturn("Step empty", "Add notes first", SequencerOverlayMode::FunctionPicker);
         return;
       }
       if (!canTransposeSelectedSequencerStep(-static_cast<int16_t>(getSequencerTuningCycleLength()))) {
-        showSequencerStatusMessage("Oct-", "Range 0-9");
+        showSequencerStatusMessageAndReturn("Oct-", "Range 0-9", SequencerOverlayMode::FunctionPicker);
         return;
       }
       if (transposeSelectedSequencerStep(-static_cast<int16_t>(getSequencerTuningCycleLength()))) {
@@ -1432,7 +1434,7 @@ void handleSequencerToolAction(SequencerToolAction action) {
         sequencerOverlayVisible = false;
         sequencerOverlayDirty = true;
       } else {
-        showSequencerStatusMessage("Oct-", "Step unchanged");
+        showSequencerStatusMessageAndReturn("Oct-", "Step unchanged", SequencerOverlayMode::FunctionPicker);
       }
       return;
     case SequencerToolAction::Probability:
@@ -1440,7 +1442,7 @@ void handleSequencerToolAction(SequencerToolAction action) {
       return;
     case SequencerToolAction::Tie:
       if (sequencerSelectedStep < 0) {
-        showSequencerStatusMessage("Tie", "Select step first");
+        showSequencerStatusMessageAndReturn("Tie", "Select step first", SequencerOverlayMode::FunctionPicker);
         return;
       }
       sequencerStepTie[sequencerSelectedStep] = !sequencerStepTie[sequencerSelectedStep];
@@ -3292,15 +3294,22 @@ void showSequencerStatusMessage(const char* lineOne, const char* lineTwo) {
   snprintf(sequencerStatusLineOne, sizeof(sequencerStatusLineOne), "%s", lineOne);
   snprintf(sequencerStatusLineTwo, sizeof(sequencerStatusLineTwo), "%s", lineTwo);
   sequencerOverlayMode = SequencerOverlayMode::StatusMessage;
+  sequencerOverlayReturnMode = SequencerOverlayMode::Hidden;
   sequencerOverlayUntil = runTime + SEQUENCER_NOTE_CONFIRM_MICROS;
   sequencerOverlayVisible = false;
   sequencerOverlayDirty = true;
+}
+
+void showSequencerStatusMessageAndReturn(const char* lineOne, const char* lineTwo, SequencerOverlayMode returnMode) {
+  showSequencerStatusMessage(lineOne, lineTwo);
+  sequencerOverlayReturnMode = returnMode;
 }
 
 void showSequencerPersistentStatusMessage(const char* lineOne, const char* lineTwo) {
   snprintf(sequencerStatusLineOne, sizeof(sequencerStatusLineOne), "%s", lineOne);
   snprintf(sequencerStatusLineTwo, sizeof(sequencerStatusLineTwo), "%s", lineTwo);
   sequencerOverlayMode = SequencerOverlayMode::StatusMessage;
+  sequencerOverlayReturnMode = SequencerOverlayMode::Hidden;
   sequencerOverlayUntil = static_cast<uint64_t>(-1);
   sequencerOverlayVisible = false;
   sequencerOverlayDirty = true;
@@ -3889,6 +3898,16 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
     return;
   }
 
+  // Tools-range/status messages should be modal so repeated presses do not leak
+  // into lower-keyboard note actions before we return to the picker.
+  if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage &&
+      sequencerOverlayReturnMode == SequencerOverlayMode::FunctionPicker) {
+    if (pressed) {
+      sequencerOverlayUntil = runTime + SEQUENCER_NOTE_CONFIRM_MICROS;
+    }
+    return;
+  }
+
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
     if (!pressed) {
       return;
@@ -4467,7 +4486,15 @@ void drawSequencerOverlay() {
       sequencerOverlayVisible = false;
       sequencerOverlayDirty = true;
       return;
+    } else if (sequencerOverlayMode == SequencerOverlayMode::StatusMessage &&
+               sequencerOverlayReturnMode != SequencerOverlayMode::Hidden) {
+      sequencerOverlayMode = sequencerOverlayReturnMode;
+      sequencerOverlayReturnMode = SequencerOverlayMode::Hidden;
+      sequencerOverlayVisible = false;
+      sequencerOverlayDirty = true;
+      return;
     }
+    sequencerOverlayReturnMode = SequencerOverlayMode::Hidden;
     sequencerOverlayMode = SequencerOverlayMode::Hidden;
     sequencerOverlayVisible = false;
     sequencerOverlayDirty = false;
