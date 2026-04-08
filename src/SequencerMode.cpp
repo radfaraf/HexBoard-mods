@@ -460,6 +460,41 @@ uint32_t getSequencerNoteStepLedColor(int16_t pitchSteps, bool selected, bool pl
   return scaleSequencerLinearColor(referenceColor, level);
 }
 
+bool isSequencerTransportPlaybackPitchActive(int16_t boardPitchSteps) {
+  if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
+    return false;
+  }
+
+  for (byte heldIndex = 0; heldIndex < SEQUENCER_MAX_MANAGED_HELD_NOTES; heldIndex++) {
+    const SequencerManagedHeldNote& heldNote = sequencerManagedHeldNotes[heldIndex];
+    if (!heldNote.active || heldNote.playbackCount == 0) {
+      continue;
+    }
+    if (heldNote.pitchSteps == boardPitchSteps) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void applySequencerTransportPlaybackNoteLedState() {
+  uint16_t ledCount = strip.numPixels();
+  for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
+    int16_t pitchSteps = SEQUENCER_NO_PITCH;
+    if (!getButtonPitchStepsForSequencer(static_cast<byte>(buttonIndex), pitchSteps)) {
+      continue;
+    }
+    if (!isSequencerTransportPlaybackPitchActive(pitchSteps)) {
+      continue;
+    }
+
+    uint32_t color = 0;
+    if (getBoardLedColorForPitchSteps(pitchSteps, true, color)) {
+      strip.setPixelColor(buttonIndex, color);
+    }
+  }
+}
+
 const uint16_t sequencerGateChoices[SEQUENCER_GATE_CHOICE_COUNT] = {
   0, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000
 };
@@ -2951,8 +2986,13 @@ void revertSequencerMenuCallback() {
   if (!guardSequencerStorageForUsbBackup("Stop session first")) {
     return;
   }
-  if (sequencerCurrentSequencePath[0] != '\0' && loadSequencerFromPath(sequencerCurrentSequencePath)) {
-    showSequencerPathStatusMessage("Reverted", sequencerCurrentSequencePath);
+  if (sequencerCurrentSequencePath[0] != '\0') {
+    if (loadSequencerFromPath(sequencerCurrentSequencePath)) {
+      showSequencerPathStatusMessage("Prev save loaded:", sequencerCurrentSequencePath);
+    } else {
+      // Keep the failing file name visible so Revert explains which save could not be restored.
+      showSequencerPathStatusMessage("Error loading:", sequencerCurrentSequencePath);
+    }
   } else if (LittleFS.exists(SEQUENCER_LEGACY_STORAGE_PATH) && loadSequencerFromFlash()) {
     showSequencerStatusMessage("Reverted", "Legacy sequence");
   } else {
@@ -4715,6 +4755,9 @@ void applySequencerLedOverrides() {
                                 toolsPromptActive));
 
   applySequencerStepLedState();
+  // Transport playback highlights the lower keyboard pitches for the full
+  // held duration, including ties that extend an earlier source note.
+  applySequencerTransportPlaybackNoteLedState();
 
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {
     uint32_t activeColor = getSequencerMediumBlueActionLedColor();

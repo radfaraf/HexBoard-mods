@@ -333,6 +333,8 @@ playback.
 Details:
 - A tied step shall continue the nearest earlier eligible non-tied step from
   the same pattern pass.
+- The lower playable keyboard LEDs shall keep the continued source pitch lit
+  for the full held duration while that tied playback remains active.
 - The tied step's own stored note, length, velocity, and probability values
   shall be ignored during transport playback while Tie is enabled.
 - If no eligible earlier source step is active when the tied step is reached,

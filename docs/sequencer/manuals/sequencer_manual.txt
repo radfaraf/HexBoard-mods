@@ -419,6 +419,8 @@ Tie behavior:
 - a tied step does not send a new note-on during transport playback
 - the tied step continues the nearest earlier eligible non-tied step from the
   same pattern pass
+- the lower playable keyboard keeps the carried note lit for the full held
+  duration while that tied continuation remains active
 - the tied step ignores its own stored note, length, velocity, and probability
   values during transport playback
 - if no valid earlier source note is active when the tied step is reached, the
@@ -542,6 +544,8 @@ Seq Lights controls:
   playing step with note = highest
 - A tied step uses the same programmed-step brightness behavior as a step with
   a note.
+- During transport playback, the lower playable keyboard lights the currently
+  sounding notes for their full held duration, including tied continuations.
 - In Note mode, programmed steps use note-based colors with that brightness
   ladder.
 - In Regular mode, programmed steps use the selected Step Hue with that

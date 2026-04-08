@@ -108,6 +108,8 @@ Details:
   playing step with note = highest.
 - A tied step shall use the same programmed-step brightness behavior as a step
   with a note.
+- During transport playback, the lower playable keyboard LEDs shall light the
+  notes that are currently sounding for their full held duration.
 - In Step Color = Note, programmed steps shall use note-based colors with that
   brightness ladder.
 - In Step Color = Regular, programmed steps shall use the selected Step Hue

@@ -147,6 +147,8 @@ Playback
   MIDI or OB Synth
 - Sequencer note entry, preview, and playback follow the current Keyboard
   tuning and transpose.
+- During transport playback, the lower playable keyboard lights the notes that
+  are currently sounding for their full held duration.
 - A tied step does not retrigger a note during transport playback.
 - A tied step continues the nearest earlier eligible non-tied step from the
   same pattern pass when that source note is still active.
@@ -200,6 +202,8 @@ Seq Lights
   playing step with note = highest
 - A tied step uses the same programmed-step brightness behavior as a step with
   a note.
+- During transport playback, the lower playable keyboard lights the currently
+  sounding notes, including ties that keep an earlier note held.
 - In Note mode, programmed steps use note-based colors with that brightness
   ladder.
 - In Regular mode, programmed steps use the selected Step Hue with that
