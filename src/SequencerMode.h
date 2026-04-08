@@ -62,6 +62,7 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed);
 void setupSequencerMenu();
 void drawSequencerOverlay();
 void applySequencerLedOverrides();
+bool isSequencerShortcutValueEditActive();
 bool handleSequencerRotaryTurn(int8_t direction);
 bool handleSequencerEncoderClick();
 void updateSequencerTransport();

@@ -152,6 +152,10 @@ struct SequencerPlaybackGroup {
   byte noteCount = 0;
   int8_t sourceStep = -1;
   bool transportPlayback = false;
+  bool pendingExternalGateSync = false;
+  bool pendingExternalTieBoundary = false;
+  uint16_t gatePercent = 100;
+  uint64_t startedAt = 0;
   uint64_t noteOffAt = 0;
 };
 
@@ -298,6 +302,8 @@ bool sequencerPerformanceStorageValid = false;
 byte sequencerExternalClockCount = 0;
 uint64_t sequencerExternalClockLastAt = 0;
 uint64_t sequencerExternalStepDuration = 0;
+uint64_t sequencerExternalPulseMicrosAccum = 0;
+byte sequencerExternalPulseIntervalCount = 0;
 uint64_t sequencerNextMidiClockAt = 0;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
@@ -526,6 +532,11 @@ bool sequencerStepHasPlayableNoteData(byte stepIndex);
 int8_t findSequencerTieSourceStep(byte stepIndex, byte activeStepCount);
 int findActiveSequencerTransportPlaybackGroup(byte sourceStep);
 void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration);
+void clearSequencerPlaybackGroup(SequencerPlaybackGroup& group, bool stopNotes = true);
+bool doesNextSequencerStepContinueSource(byte stepIndex, byte activeStepCount);
+void updatePendingExternalGateSyncEstimate();
+void resolvePendingExternalGateSync(uint64_t stepDuration);
+void resolvePendingExternalTieBoundaries(byte activeStepCount);
 int8_t getSequencerOverlayNoteSourceStep();
 bool shouldDisplaySequencerTie(int8_t stepIndex);
 
@@ -2005,6 +2016,8 @@ void resetSequencerClockSyncState() {
   sequencerExternalClockCount = 0;
   sequencerExternalClockLastAt = 0;
   sequencerExternalStepDuration = 0;
+  sequencerExternalPulseMicrosAccum = 0;
+  sequencerExternalPulseIntervalCount = 0;
   sequencerNextMidiClockAt = 0;
 }
 
@@ -2140,7 +2153,7 @@ bool isSequencerProgrammedStep(byte stepIndex) {
 }
 
 int8_t findSequencerTieSourceStep(byte stepIndex, byte activeStepCount) {
-  if (stepIndex == 0 || stepIndex >= activeStepCount) {
+  if (stepIndex == 0 || stepIndex >= activeStepCount || !sequencerStepTie[stepIndex]) {
     return -1;
   }
 
@@ -2163,6 +2176,37 @@ int findActiveSequencerTransportPlaybackGroup(byte sourceStep) {
   return -1;
 }
 
+void clearSequencerPlaybackGroup(SequencerPlaybackGroup& group, bool stopNotes) {
+  if (stopNotes) {
+    for (byte noteIndex = 0; noteIndex < group.noteCount; noteIndex++) {
+      if (group.pitchSteps[noteIndex] != SEQUENCER_NO_PITCH) {
+        sendSequencerManagedNoteOff(group.pitchSteps[noteIndex], true);
+      }
+      group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
+    }
+  } else {
+    for (byte noteIndex = 0; noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
+      group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
+    }
+  }
+
+  group.noteCount = 0;
+  group.sourceStep = -1;
+  group.transportPlayback = false;
+  group.pendingExternalGateSync = false;
+  group.pendingExternalTieBoundary = false;
+  group.gatePercent = 100;
+  group.startedAt = 0;
+  group.noteOffAt = 0;
+  group.active = false;
+}
+
+bool doesNextSequencerStepContinueSource(byte stepIndex, byte activeStepCount) {
+  byte nextStepIndex = static_cast<byte>(stepIndex + 1);
+  return nextStepIndex < activeStepCount &&
+         findSequencerTieSourceStep(nextStepIndex, activeStepCount) == stepIndex;
+}
+
 void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration) {
   byte activeStepCount = sequencerActiveStepCount();
   int8_t sourceStep = findSequencerTieSourceStep(stepIndex, activeStepCount);
@@ -2176,6 +2220,12 @@ void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration) {
   }
 
   SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+  if (sequencerUsesExternalClock()) {
+    group.pendingExternalTieBoundary = true;
+    group.noteOffAt = 0;
+    return;
+  }
+
   uint64_t tieNoteOffAt = runTime + stepDuration;
   if (group.noteOffAt < tieNoteOffAt) {
     group.noteOffAt = tieNoteOffAt;
@@ -2252,37 +2302,20 @@ void stopSequencerPlaybackNote() {
     if (!group.active) {
       continue;
     }
-    for (byte noteIndex = 0; noteIndex < group.noteCount; noteIndex++) {
-      if (group.pitchSteps[noteIndex] != SEQUENCER_NO_PITCH) {
-        sendSequencerManagedNoteOff(group.pitchSteps[noteIndex], true);
-      }
-      group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
-    }
-    group.noteCount = 0;
-    group.sourceStep = -1;
-    group.transportPlayback = false;
-    group.noteOffAt = 0;
-    group.active = false;
+    clearSequencerPlaybackGroup(group, true);
   }
 }
 
 void serviceSequencerPlaybackGroups() {
   for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
     SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
-    if (!group.active || runTime < group.noteOffAt) {
+    if (!group.active ||
+        (group.pendingExternalGateSync && group.noteOffAt == 0) ||
+        group.pendingExternalTieBoundary ||
+        runTime < group.noteOffAt) {
       continue;
     }
-    for (byte noteIndex = 0; noteIndex < group.noteCount; noteIndex++) {
-      if (group.pitchSteps[noteIndex] != SEQUENCER_NO_PITCH) {
-        sendSequencerManagedNoteOff(group.pitchSteps[noteIndex], true);
-      }
-      group.pitchSteps[noteIndex] = SEQUENCER_NO_PITCH;
-    }
-    group.noteCount = 0;
-    group.sourceStep = -1;
-    group.transportPlayback = false;
-    group.noteOffAt = 0;
-    group.active = false;
+    clearSequencerPlaybackGroup(group, true);
   }
 }
 
@@ -2327,6 +2360,66 @@ void serviceSequencerInternalMidiClock() {
   }
 }
 
+void updatePendingExternalGateSyncEstimate() {
+  if (sequencerExternalPulseIntervalCount == 0) {
+    return;
+  }
+
+  uint64_t estimatedStepDuration =
+    (sequencerExternalPulseMicrosAccum * SEQUENCER_MIDI_CLOCKS_PER_STEP) / sequencerExternalPulseIntervalCount;
+  if (estimatedStepDuration == 0) {
+    return;
+  }
+
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+    if (!group.active || !group.pendingExternalGateSync) {
+      continue;
+    }
+    group.noteOffAt = group.startedAt + ((estimatedStepDuration * group.gatePercent) / 100ULL);
+  }
+}
+
+void resolvePendingExternalGateSync(uint64_t stepDuration) {
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+    if (!group.active || !group.pendingExternalGateSync) {
+      continue;
+    }
+    group.pendingExternalGateSync = false;
+    uint64_t resolvedNoteOffAt = group.startedAt + ((stepDuration * group.gatePercent) / 100ULL);
+    if (resolvedNoteOffAt > 0) {
+      group.noteOffAt = resolvedNoteOffAt;
+    }
+  }
+}
+
+void resolvePendingExternalTieBoundaries(byte activeStepCount) {
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+    if (!group.active || !group.pendingExternalTieBoundary) {
+      continue;
+    }
+    if (group.startedAt >= sequencerCurrentStepStartedAt) {
+      // Notes started on this boundary should be resolved on the next one.
+      continue;
+    }
+
+    bool currentStepContinuesSource =
+      (sequencerPlayingStep >= 0 &&
+       sequencerStepTie[static_cast<byte>(sequencerPlayingStep)] &&
+       findSequencerTieSourceStep(static_cast<byte>(sequencerPlayingStep), activeStepCount) == group.sourceStep);
+
+    if (currentStepContinuesSource) {
+      group.noteOffAt = 0;
+      continue;
+    }
+
+    group.pendingExternalTieBoundary = false;
+    group.noteOffAt = runTime;
+  }
+}
+
 void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool applyProbability, bool transportPlayback) {
   uint16_t gatePercent = sequencerStepGatePercent[stepIndex];
   byte noteCount = sequencerStepNoteCount[stepIndex];
@@ -2358,12 +2451,7 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
         freeGroupIndex = groupIndex;
       }
     }
-    SequencerPlaybackGroup& oldestGroup = sequencerPlaybackGroups[freeGroupIndex];
-    for (byte noteIndex = 0; noteIndex < oldestGroup.noteCount; noteIndex++) {
-      if (oldestGroup.pitchSteps[noteIndex] != SEQUENCER_NO_PITCH) {
-        sendSequencerManagedNoteOff(oldestGroup.pitchSteps[noteIndex], true);
-      }
-    }
+    clearSequencerPlaybackGroup(sequencerPlaybackGroups[freeGroupIndex], true);
   }
 
   SequencerPlaybackGroup& group = sequencerPlaybackGroups[freeGroupIndex];
@@ -2372,15 +2460,29 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
   group.sourceStep = transportPlayback ? static_cast<int8_t>(stepIndex) : -1;
   group.transportPlayback = transportPlayback;
   uint64_t playbackStartedAt = runTime;
+  group.pendingExternalGateSync = false;
+  group.pendingExternalTieBoundary = false;
+  group.gatePercent = gatePercent;
+  group.startedAt = playbackStartedAt;
   group.noteOffAt = playbackStartedAt + ((stepDuration * gatePercent) / 100ULL);
   if (transportPlayback) {
     byte activeStepCount = sequencerActiveStepCount();
-    byte nextStepIndex = static_cast<byte>(stepIndex + 1);
-    // Keep the source note alive until the next tied step can extend it,
-    // otherwise short gates would end before Tie had a chance to continue it.
-    if (nextStepIndex < activeStepCount &&
-        findSequencerTieSourceStep(nextStepIndex, activeStepCount) == stepIndex &&
-        group.noteOffAt < (playbackStartedAt + stepDuration)) {
+    bool nextStepContinuesSource = doesNextSequencerStepContinueSource(stepIndex, activeStepCount);
+    if (sequencerUsesExternalClock() && nextStepContinuesSource) {
+      // External ties follow real step boundaries rather than predicted
+      // durations so jitter cannot release the note before the next tie step.
+      group.pendingExternalTieBoundary = true;
+      group.noteOffAt = 0;
+    } else if (sequencerUsesExternalClock() && sequencerExternalStepDuration == 0) {
+      // The first external transport step starts before we know the real step
+      // length, so defer its initial gate timing until the first measured
+      // boundary arrives.
+      group.pendingExternalGateSync = true;
+      group.noteOffAt = 0;
+    } else if (nextStepContinuesSource &&
+               group.noteOffAt < (playbackStartedAt + stepDuration)) {
+      // Keep the source note alive until the next tied step can extend it,
+      // otherwise short gates would end before Tie had a chance to continue it.
       group.noteOffAt = playbackStartedAt + stepDuration;
     }
   }
@@ -3204,11 +3306,8 @@ bool commitSequencerNaming() {
     return false;
   }
   if (sequencerNamingLength == 0) {
-    showSequencerStatusMessage("Name Empty", "Enter a name");
-    sequencerOverlayMode = SequencerOverlayMode::Naming;
-    sequencerOverlayUntil = 0;
-    sequencerOverlayVisible = false;
-    sequencerOverlayDirty = true;
+    // Show the validation error before returning to the naming overlay.
+    showSequencerStatusMessageAndReturn("Name Empty", "Enter a name", SequencerOverlayMode::Naming);
     return true;
   }
 
@@ -3232,11 +3331,7 @@ bool commitSequencerNaming() {
     }
 
     if (LittleFS.exists(targetPath)) {
-      showSequencerStatusMessage("Name Exists", "Pick another");
-      sequencerOverlayMode = SequencerOverlayMode::Naming;
-      sequencerOverlayUntil = 0;
-      sequencerOverlayVisible = false;
-      sequencerOverlayDirty = true;
+      showSequencerStatusMessageAndReturn("Name Exists", "Pick another", SequencerOverlayMode::Naming);
       return true;
     }
 
@@ -3250,10 +3345,7 @@ bool commitSequencerNaming() {
         showSequencerPathStatusMessage("Renamed", targetPath);
         return true;
       }
-      showSequencerStatusMessage("Error Rename", "File failed");
-      sequencerOverlayMode = SequencerOverlayMode::Naming;
-      sequencerOverlayVisible = false;
-      sequencerOverlayDirty = true;
+      showSequencerStatusMessageAndReturn("Error Rename", "File failed", SequencerOverlayMode::Naming);
       return true;
     } else if (saveSequencerToPath(targetPath)) {
       setSequencerCurrentPath(targetPath);
@@ -3265,10 +3357,7 @@ bool commitSequencerNaming() {
       return true;
     }
 
-    showSequencerStatusMessage("Error Saving", "Save New failed");
-    sequencerOverlayMode = SequencerOverlayMode::Naming;
-    sequencerOverlayVisible = false;
-    sequencerOverlayDirty = true;
+    showSequencerStatusMessageAndReturn("Error Saving", "Save New failed", SequencerOverlayMode::Naming);
     return true;
   }
 
@@ -3284,19 +3373,12 @@ bool commitSequencerNaming() {
     joinSequencerPath(sequencerBrowserPath, sequencerNamingBuffer, targetPath, sizeof(targetPath));
   }
   if (LittleFS.exists(targetPath)) {
-    showSequencerStatusMessage("Name Exists", "Pick another");
-    sequencerOverlayMode = SequencerOverlayMode::Naming;
-    sequencerOverlayUntil = 0;
-    sequencerOverlayVisible = false;
-    sequencerOverlayDirty = true;
+    showSequencerStatusMessageAndReturn("Name Exists", "Pick another", SequencerOverlayMode::Naming);
     return true;
   }
   if (sequencerNamingTarget == SequencerNamingTarget::RenameFolder) {
     if (!LittleFS.rename(sequencerRenameSourcePath, targetPath)) {
-      showSequencerStatusMessage("Error Rename", "Folder failed");
-      sequencerOverlayMode = SequencerOverlayMode::Naming;
-      sequencerOverlayVisible = false;
-      sequencerOverlayDirty = true;
+      showSequencerStatusMessageAndReturn("Error Rename", "Folder failed", SequencerOverlayMode::Naming);
       return true;
     }
 
@@ -3315,10 +3397,7 @@ bool commitSequencerNaming() {
   }
 
   if (!LittleFS.mkdir(targetPath)) {
-    showSequencerStatusMessage("Error Folder", "Create failed");
-    sequencerOverlayMode = SequencerOverlayMode::Naming;
-    sequencerOverlayVisible = false;
-    sequencerOverlayDirty = true;
+    showSequencerStatusMessageAndReturn("Error Folder", "Create failed", SequencerOverlayMode::Naming);
     return true;
   }
 
@@ -3752,6 +3831,26 @@ void applySequencerPersistentSettings(const SequencerPersistentSettings& values)
       sequencerNextMidiClockAt = runTime;
     }
   }
+}
+
+bool isSequencerShortcutValueEditActive() {
+  // Command-button encoder shortcuts should use "top increases / lower
+  // decreases" anywhere a rotary turn edits a value instead of navigating rows.
+  if (sequencerOverlayMode == SequencerOverlayMode::PerformanceMonitor ||
+      sequencerOverlayMode == SequencerOverlayMode::CopyTargetSelect ||
+      sequencerOverlayMode == SequencerOverlayMode::FunctionPicker ||
+      isSequencerNamingActive() ||
+      sequencerOverlayMode == SequencerOverlayMode::ExactLengthEdit) {
+    return false;
+  }
+  if (menu.getCurrentMenuPage() == &menuPageSequencerBrowser) {
+    return false;
+  }
+  if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit ||
+      sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
+    return true;
+  }
+  return sequencerSelectedStep >= 0;
 }
 
 bool handleSequencerRotaryTurn(int8_t direction) {
@@ -4816,9 +4915,9 @@ void handleSequencerExternalMidiClock() {
 
   if (sequencerExternalClockLastAt != 0 && runTime > sequencerExternalClockLastAt) {
     uint64_t pulseDuration = runTime - sequencerExternalClockLastAt;
-    uint64_t stepDuration = pulseDuration * SEQUENCER_MIDI_CLOCKS_PER_STEP;
-    if (stepDuration > 0) {
-      sequencerExternalStepDuration = stepDuration;
+    if (pulseDuration > 0 && sequencerExternalPulseIntervalCount < 255) {
+      sequencerExternalPulseMicrosAccum += pulseDuration;
+      sequencerExternalPulseIntervalCount++;
     }
   }
   sequencerExternalClockLastAt = runTime;
@@ -4827,14 +4926,34 @@ void handleSequencerExternalMidiClock() {
     return;
   }
 
+  updatePendingExternalGateSyncEstimate();
+
   sequencerExternalClockCount = static_cast<byte>((sequencerExternalClockCount + 1) % SEQUENCER_MIDI_CLOCKS_PER_STEP);
   if (sequencerExternalClockCount != 0) {
     return;
   }
 
   uint64_t stepDuration = sequencerCurrentStepDurationMicros();
+  if (sequencerCurrentStepStartedAt != 0 && runTime > sequencerCurrentStepStartedAt) {
+    // Measure the full time between external step boundaries. Using only the
+    // most recent MIDI-clock pulse makes tied holds wobble under USB jitter.
+    uint64_t measuredStepDuration = runTime - sequencerCurrentStepStartedAt;
+    if (measuredStepDuration > 0) {
+      sequencerExternalStepDuration = measuredStepDuration;
+      stepDuration = measuredStepDuration;
+    }
+  }
+
+  resolvePendingExternalGateSync(stepDuration);
+
+  sequencerExternalPulseMicrosAccum = 0;
+  sequencerExternalPulseIntervalCount = 0;
+
   sequencerCurrentStepStartedAt = runTime;
   advanceSequencerPlaybackStep(stepDuration);
+
+  resolvePendingExternalTieBoundaries(sequencerActiveStepCount());
+
   serviceSequencerPlaybackGroups();
 }
 
@@ -4863,4 +4982,7 @@ void handleSequencerExternalMidiContinue() {
   }
 
   setSequencerTransportState(SEQUENCER_TRANSPORT_PLAY, false, false);
+  sequencerCurrentStepStartedAt = runTime;
+  advanceSequencerPlaybackStep(sequencerCurrentStepDurationMicros());
+  serviceSequencerPlaybackGroups();
 }

@@ -7957,6 +7957,29 @@ bool menuShortcutButtonsEnabled() {
   return menu.readyForKey() && isBoardButtonPressed(assignCmd[6]);
 }
 
+bool menuShortcutUsesValueDirection() {
+  if (menu.isEditMode()) {
+    return true;
+  }
+  return !isKeyboardMode() && isSequencerShortcutValueEditActive();
+}
+
+int8_t menuShortcutSequencerDirection(bool isTopShortcutButton) {
+  if (menuShortcutUsesValueDirection()) {
+    return isTopShortcutButton ? 1 : -1;
+  }
+  return isTopShortcutButton ? -1 : 1;
+}
+
+byte menuShortcutMenuKey(bool isTopShortcutButton) {
+  // Keep button shortcuts aligned with the documented split:
+  // top/up during navigation, top/increase during value edits.
+  if (menuShortcutUsesValueDirection()) {
+    return isTopShortcutButton ? GEM_KEY_DOWN : GEM_KEY_UP;
+  }
+  return isTopShortcutButton ? GEM_KEY_UP : GEM_KEY_DOWN;
+}
+
 void readHexes() {
   // Simplified button reading to reduce time it takes to read. Stil uses slower Arduino digitalRead and digitalWrite.
   /* for (byte r = 0; r < ROWCOUNT; r++) {      // Iterate through each of the row pins on the multiplexing chip.
@@ -8021,19 +8044,13 @@ void readHexes() {
     if (pressed) {
       bool isTopShortcutButton = (buttonIndex == assignCmd[0]);
       if (!isKeyboardMode()) {
-        int8_t direction = isTopShortcutButton ? -1 : 1;
+        int8_t direction = menuShortcutSequencerDirection(isTopShortcutButton);
         if (handleSequencerRotaryTurn(direction)) {
           screenTime = 0;
           return true;
         }
       }
-      if (menu.isEditMode()) {
-        // Keep "top button increases / bottom button decreases" while editing values.
-        menu.registerKeyPress(isTopShortcutButton ? GEM_KEY_DOWN : GEM_KEY_UP);
-      } else {
-        // Keep standard "top button up / bottom button down" menu navigation.
-        menu.registerKeyPress(isTopShortcutButton ? GEM_KEY_UP : GEM_KEY_DOWN);
-      }
+      menu.registerKeyPress(menuShortcutMenuKey(isTopShortcutButton));
       screenTime = 0;
     }
     return true;
