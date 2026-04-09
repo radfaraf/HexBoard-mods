@@ -4,8 +4,7 @@ Used for:
 
 - Save New
 - Create Folder
-- Rename File
-- Rename Folder
+- Rename from Rename or Delete
 
 Screen layout:
 

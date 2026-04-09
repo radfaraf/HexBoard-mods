@@ -8,10 +8,6 @@ Examples:
   Save:Basslines
   Folder:Ideas
   RenDel:Drums
-  RenFile:Sequences
-  RenFold:Folder 001
-  DelFile:Sequences
-  DelFold:Folder 002
 
 Common structure:
 
@@ -44,12 +40,6 @@ Create Folder mode:
   ..
   [folders only]
 
-Rename Folder mode:
-
-  Rename This Folder
-  ..
-  [folders only]
-
 Rename or Delete mode:
 
   This Folder...   [hidden at /Sequences]
@@ -60,36 +50,16 @@ Rename or Delete mode:
   Selecting a file opens a separate Rename/Delete/Cancel action page.
   Selecting This Folder... opens that same action page for the current folder.
 
-Delete Folder mode:
-
-  Delete This Folder
-  ..
-  [folders only]
-
-  Selecting Delete This Folder opens a separate delete confirmation page.
-
 Load mode:
 
   ..
   [folders and files]
 
-Rename File mode:
-
-  ..
-  [folders and files]
-
-Delete File mode:
-
-  ..
-  [folders and files]
-
-  Selecting a file opens a separate delete confirmation page.
-
 Notes:
 
 - Folders can be entered by selecting them.
-- Files can be loaded, renamed, or queued for delete confirmation depending on
-  the current mode.
+- Files can be loaded or opened in the Rename/Delete/Cancel action page
+  depending on the current mode.
 - Rename or Delete keeps folder navigation in the browser and only opens its
   action page for files or the current-folder target row.
 - The root folder is /Sequences.

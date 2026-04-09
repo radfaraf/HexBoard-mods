@@ -497,11 +497,7 @@ MIDI Sync submenu:
 File Management submenu:
 
 - Rename or Delete
-- Rename File
-- Rename Folder
 - Create Folder
-- Delete File
-- Delete Folder
 - USB Backup
 
 Color Options submenu:
@@ -639,46 +635,17 @@ Browser behavior:
 - `Rename` opens the existing naming workflow for that file or folder
 - `Delete` opens the existing delete confirmation page for that file or folder
 - `Cancel` returns to the browser
+- after choosing `Delete`, the confirmation page shows the target name and
+  requires `Yes, Delete` or `Cancel`
+- folder deletion is recursive, so deleting a folder removes its contents
 
-15.2 Rename File
-
-- browse to a file
-- select it
-- naming mode opens with the current file name filled in
-
-15.3 Rename Folder
-
-- browse folders
-- enter the folder you want
-- choose Rename This Folder
-
-15.4 Create Folder
+15.2 Create Folder
 
 - browse to the parent folder
 - choose Create Here
 - naming mode opens
 
-15.5 Delete File
-
-- browse to a file
-- select it to open a delete confirmation page
-- the confirmation page shows the file name and asks whether to delete it
-- scroll to `Yes, Delete` or `Cancel`, then press the encoder to confirm your
-  choice
-
-15.6 Delete Folder
-
-- browse to the folder
-- enter it
-- choose Delete This Folder to open a delete confirmation page
-- the confirmation page shows the folder name and warns that its contents will
-  also be deleted
-- scroll to `Yes, Delete` or `Cancel`, then press the encoder to confirm your
-  choice
-
-Folder deletion is recursive, so deleting a folder removes its contents.
-
-15.7 USB Backup
+15.3 USB Backup
 
 - open File Management, then choose USB Backup
 - choose Start Session
@@ -770,8 +737,7 @@ Naming mode is used for:
 
 - Save New
 - Create Folder
-- Rename File
-- Rename Folder
+- Rename from Rename or Delete
 
 16.1 Character layout
 

@@ -37,11 +37,7 @@ The File Management submenu shall include the current file-management actions.
 
 Details:
 - Rename or Delete
-- Rename File
-- Rename Folder
 - Create Folder
-- Delete File
-- Delete Folder
 - USB Backup
 
 
