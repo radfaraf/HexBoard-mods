@@ -169,7 +169,9 @@ Menu Items
 - Revert: reloads the last saved version of the current sequence.
 - Seq Lights:
   Accent Every, Step Color, Step Hue
-- Color Options: opens the shared LED color settings page
+- Color Options: opens the shared LED color settings page; its Animation
+  setting also affects the lower keyboard note lights that transport playback
+  triggers
 - Playback Settings:
   Steps, Direction, Tempo, Play Type, MIDI Sync
 - Playback Settings > MIDI Sync:

@@ -28,7 +28,9 @@ extern uint64_t screenTime;
 extern uint64_t runTime;
 extern Adafruit_NeoPixel strip;
 extern RP2040 rp2040;
+extern uint32_t applyNotePixelColor(byte x);
 extern void setLEDcolorCodes();
+extern bool isKeyboardMode();
 extern volatile bool isrProfilingEnabled;
 extern volatile uint32_t isrProfileAvgUs;
 extern volatile uint32_t isrProfileCount;
@@ -144,6 +146,13 @@ enum class SequencerOverlayMode : uint8_t {
   CopyTargetSelect = 13
 };
 
+struct SequencerPlaybackExternalClockState {
+  bool pendingGateSync = false;
+  bool pendingTieBoundary = false;
+  uint16_t gatePercent = 100;
+  uint64_t startedAt = 0;
+};
+
 struct SequencerPlaybackGroup {
   bool active = false;
   int16_t pitchSteps[SEQUENCER_MAX_NOTES_PER_STEP] = {
@@ -152,11 +161,16 @@ struct SequencerPlaybackGroup {
   byte noteCount = 0;
   int8_t sourceStep = -1;
   bool transportPlayback = false;
-  bool pendingExternalGateSync = false;
-  bool pendingExternalTieBoundary = false;
-  uint16_t gatePercent = 100;
-  uint64_t startedAt = 0;
+  SequencerPlaybackExternalClockState externalClock = {};
   uint64_t noteOffAt = 0;
+};
+
+struct SequencerExternalClockState {
+  byte pulseCount = 0;
+  uint64_t lastPulseAt = 0;
+  uint64_t stepDuration = 0;
+  uint64_t pulseMicrosAccum = 0;
+  byte pulseIntervalCount = 0;
 };
 
 struct SequencerManagedHeldNote {
@@ -164,6 +178,8 @@ struct SequencerManagedHeldNote {
   int16_t pitchSteps = SEQUENCER_NO_PITCH;
   byte auditionCount = 0;
   byte playbackCount = 0;
+  uint64_t playbackLedActivatedAt = 0;
+  uint32_t playbackLedActivationEpoch = 0;
   SequencerTunedNoteHandle handle = {};
 };
 
@@ -241,6 +257,7 @@ byte sequencerUndoVelocity = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerUndoProbability = SEQUENCER_DEFAULT_PROBABILITY;
 bool sequencerUndoTie = false;
 SequencerManagedHeldNote sequencerManagedHeldNotes[SEQUENCER_MAX_MANAGED_HELD_NOTES] = {};
+uint32_t sequencerTransportPlaybackLedEpoch = 1;
 int8_t sequencerPlayingStep = -1;
 SequencerPlaybackGroup sequencerPlaybackGroups[SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS] = {};
 uint64_t sequencerNextStepAt = 0;
@@ -299,11 +316,9 @@ uint32_t sequencerPerformanceHeapTotalBytes = 0;
 uint64_t sequencerPerformanceStorageUsedBytes = 0;
 uint64_t sequencerPerformanceStorageTotalBytes = 0;
 bool sequencerPerformanceStorageValid = false;
-byte sequencerExternalClockCount = 0;
-uint64_t sequencerExternalClockLastAt = 0;
-uint64_t sequencerExternalStepDuration = 0;
-uint64_t sequencerExternalPulseMicrosAccum = 0;
-byte sequencerExternalPulseIntervalCount = 0;
+// External-clock playback has two phases: a first-step estimate before a full
+// boundary is known, then steady-state timing on real MIDI clock boundaries.
+SequencerExternalClockState sequencerExternalClock = {};
 uint64_t sequencerNextMidiClockAt = 0;
 
 void showSequencerStatusMessage(const char* lineOne, const char* lineTwo);
@@ -483,21 +498,50 @@ bool isSequencerTransportPlaybackPitchActive(int16_t boardPitchSteps) {
   return false;
 }
 
+const SequencerManagedHeldNote* findSequencerTransportPlaybackLedNoteInternal(byte buttonIndex) {
+  if (isKeyboardMode()) {
+    return nullptr;
+  }
+
+  int16_t pitchSteps = SEQUENCER_NO_PITCH;
+  if (!getButtonPitchStepsForSequencer(buttonIndex, pitchSteps)) {
+    return nullptr;
+  }
+
+  for (byte heldIndex = 0; heldIndex < SEQUENCER_MAX_MANAGED_HELD_NOTES; heldIndex++) {
+    const SequencerManagedHeldNote& heldNote = sequencerManagedHeldNotes[heldIndex];
+    if (!heldNote.active || heldNote.playbackCount == 0 || heldNote.pitchSteps != pitchSteps) {
+      continue;
+    }
+    return &heldNote;
+  }
+  return nullptr;
+}
+
+bool isSequencerTransportPlaybackLedActiveInternal(byte buttonIndex) {
+  return findSequencerTransportPlaybackLedNoteInternal(buttonIndex) != nullptr;
+}
+
+bool didSequencerTransportPlaybackLedJustStartInternal(byte buttonIndex) {
+  const SequencerManagedHeldNote* heldNote = findSequencerTransportPlaybackLedNoteInternal(buttonIndex);
+  return heldNote != nullptr && heldNote->playbackLedActivationEpoch == sequencerTransportPlaybackLedEpoch;
+}
+
+uint64_t getSequencerTransportPlaybackLedTimePressedInternal(byte buttonIndex) {
+  const SequencerManagedHeldNote* heldNote = findSequencerTransportPlaybackLedNoteInternal(buttonIndex);
+  if (heldNote == nullptr) {
+    return 0;
+  }
+  return heldNote->playbackLedActivatedAt;
+}
+
 void applySequencerTransportPlaybackNoteLedState() {
   uint16_t ledCount = strip.numPixels();
   for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
-    int16_t pitchSteps = SEQUENCER_NO_PITCH;
-    if (!getButtonPitchStepsForSequencer(static_cast<byte>(buttonIndex), pitchSteps)) {
+    if (!isSequencerTransportPlaybackLedActiveInternal(static_cast<byte>(buttonIndex))) {
       continue;
     }
-    if (!isSequencerTransportPlaybackPitchActive(pitchSteps)) {
-      continue;
-    }
-
-    uint32_t color = 0;
-    if (getBoardLedColorForPitchSteps(pitchSteps, true, color)) {
-      strip.setPixelColor(buttonIndex, color);
-    }
+    strip.setPixelColor(buttonIndex, applyNotePixelColor(static_cast<byte>(buttonIndex)));
   }
 }
 
@@ -534,6 +578,8 @@ int findActiveSequencerTransportPlaybackGroup(byte sourceStep);
 void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration);
 void clearSequencerPlaybackGroup(SequencerPlaybackGroup& group, bool stopNotes = true);
 bool doesNextSequencerStepContinueSource(byte stepIndex, byte activeStepCount);
+void recordSequencerExternalClockPulse();
+bool advanceSequencerExternalClockState(uint64_t& stepDuration);
 void updatePendingExternalGateSyncEstimate();
 void resolvePendingExternalGateSync(uint64_t stepDuration);
 void resolvePendingExternalTieBoundaries(byte activeStepCount);
@@ -2013,11 +2059,7 @@ uint64_t sequencerStepDurationMicros() {
 }
 
 void resetSequencerClockSyncState() {
-  sequencerExternalClockCount = 0;
-  sequencerExternalClockLastAt = 0;
-  sequencerExternalStepDuration = 0;
-  sequencerExternalPulseMicrosAccum = 0;
-  sequencerExternalPulseIntervalCount = 0;
+  sequencerExternalClock = SequencerExternalClockState{};
   sequencerNextMidiClockAt = 0;
 }
 
@@ -2034,8 +2076,8 @@ bool sequencerShouldSendMidiTransport() {
 }
 
 uint64_t sequencerCurrentStepDurationMicros() {
-  if (sequencerUsesExternalClock() && sequencerExternalStepDuration > 0) {
-    return sequencerExternalStepDuration;
+  if (sequencerUsesExternalClock() && sequencerExternalClock.stepDuration > 0) {
+    return sequencerExternalClock.stepDuration;
   }
   return sequencerStepDurationMicros();
 }
@@ -2094,6 +2136,10 @@ void sendSequencerManagedNoteOn(int16_t pitchSteps, bool playbackNote, byte velo
   }
 
   byte& heldCount = playbackNote ? heldNote.playbackCount : heldNote.auditionCount;
+  if (playbackNote && heldCount == 0) {
+    heldNote.playbackLedActivatedAt = runTime;
+    heldNote.playbackLedActivationEpoch = sequencerTransportPlaybackLedEpoch;
+  }
   if (heldCount < 255) {
     heldCount++;
   }
@@ -2193,10 +2239,7 @@ void clearSequencerPlaybackGroup(SequencerPlaybackGroup& group, bool stopNotes) 
   group.noteCount = 0;
   group.sourceStep = -1;
   group.transportPlayback = false;
-  group.pendingExternalGateSync = false;
-  group.pendingExternalTieBoundary = false;
-  group.gatePercent = 100;
-  group.startedAt = 0;
+  group.externalClock = SequencerPlaybackExternalClockState{};
   group.noteOffAt = 0;
   group.active = false;
 }
@@ -2221,7 +2264,7 @@ void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration) {
 
   SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
   if (sequencerUsesExternalClock()) {
-    group.pendingExternalTieBoundary = true;
+    group.externalClock.pendingTieBoundary = true;
     group.noteOffAt = 0;
     return;
   }
@@ -2310,8 +2353,8 @@ void serviceSequencerPlaybackGroups() {
   for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
     SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
     if (!group.active ||
-        (group.pendingExternalGateSync && group.noteOffAt == 0) ||
-        group.pendingExternalTieBoundary ||
+        (group.externalClock.pendingGateSync && group.noteOffAt == 0) ||
+        group.externalClock.pendingTieBoundary ||
         runTime < group.noteOffAt) {
       continue;
     }
@@ -2360,34 +2403,75 @@ void serviceSequencerInternalMidiClock() {
   }
 }
 
+void recordSequencerExternalClockPulse() {
+  if (sequencerExternalClock.lastPulseAt != 0 && runTime > sequencerExternalClock.lastPulseAt) {
+    uint64_t pulseDuration = runTime - sequencerExternalClock.lastPulseAt;
+    if (pulseDuration > 0 && sequencerExternalClock.pulseIntervalCount < 255) {
+      sequencerExternalClock.pulseMicrosAccum += pulseDuration;
+      sequencerExternalClock.pulseIntervalCount++;
+    }
+  }
+  sequencerExternalClock.lastPulseAt = runTime;
+}
+
+bool advanceSequencerExternalClockState(uint64_t& stepDuration) {
+  updatePendingExternalGateSyncEstimate();
+
+  sequencerExternalClock.pulseCount =
+    static_cast<byte>((sequencerExternalClock.pulseCount + 1) % SEQUENCER_MIDI_CLOCKS_PER_STEP);
+  if (sequencerExternalClock.pulseCount != 0) {
+    return false;
+  }
+
+  stepDuration = sequencerCurrentStepDurationMicros();
+  if (sequencerCurrentStepStartedAt != 0 && runTime > sequencerCurrentStepStartedAt) {
+    // Measure the full time between external step boundaries. Using only the
+    // most recent MIDI-clock pulse makes tied holds wobble under USB jitter.
+    uint64_t measuredStepDuration = runTime - sequencerCurrentStepStartedAt;
+    if (measuredStepDuration > 0) {
+      sequencerExternalClock.stepDuration = measuredStepDuration;
+      stepDuration = measuredStepDuration;
+    }
+  }
+
+  resolvePendingExternalGateSync(stepDuration);
+
+  sequencerExternalClock.pulseMicrosAccum = 0;
+  sequencerExternalClock.pulseIntervalCount = 0;
+  return true;
+}
+
 void updatePendingExternalGateSyncEstimate() {
-  if (sequencerExternalPulseIntervalCount == 0) {
+  if (sequencerExternalClock.pulseIntervalCount == 0) {
     return;
   }
 
   uint64_t estimatedStepDuration =
-    (sequencerExternalPulseMicrosAccum * SEQUENCER_MIDI_CLOCKS_PER_STEP) / sequencerExternalPulseIntervalCount;
+    (sequencerExternalClock.pulseMicrosAccum * SEQUENCER_MIDI_CLOCKS_PER_STEP) /
+    sequencerExternalClock.pulseIntervalCount;
   if (estimatedStepDuration == 0) {
     return;
   }
 
   for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
     SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
-    if (!group.active || !group.pendingExternalGateSync) {
+    if (!group.active || !group.externalClock.pendingGateSync) {
       continue;
     }
-    group.noteOffAt = group.startedAt + ((estimatedStepDuration * group.gatePercent) / 100ULL);
+    group.noteOffAt =
+      group.externalClock.startedAt + ((estimatedStepDuration * group.externalClock.gatePercent) / 100ULL);
   }
 }
 
 void resolvePendingExternalGateSync(uint64_t stepDuration) {
   for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
     SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
-    if (!group.active || !group.pendingExternalGateSync) {
+    if (!group.active || !group.externalClock.pendingGateSync) {
       continue;
     }
-    group.pendingExternalGateSync = false;
-    uint64_t resolvedNoteOffAt = group.startedAt + ((stepDuration * group.gatePercent) / 100ULL);
+    group.externalClock.pendingGateSync = false;
+    uint64_t resolvedNoteOffAt =
+      group.externalClock.startedAt + ((stepDuration * group.externalClock.gatePercent) / 100ULL);
     if (resolvedNoteOffAt > 0) {
       group.noteOffAt = resolvedNoteOffAt;
     }
@@ -2397,10 +2481,10 @@ void resolvePendingExternalGateSync(uint64_t stepDuration) {
 void resolvePendingExternalTieBoundaries(byte activeStepCount) {
   for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
     SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
-    if (!group.active || !group.pendingExternalTieBoundary) {
+    if (!group.active || !group.externalClock.pendingTieBoundary) {
       continue;
     }
-    if (group.startedAt >= sequencerCurrentStepStartedAt) {
+    if (group.externalClock.startedAt >= sequencerCurrentStepStartedAt) {
       // Notes started on this boundary should be resolved on the next one.
       continue;
     }
@@ -2415,7 +2499,7 @@ void resolvePendingExternalTieBoundaries(byte activeStepCount) {
       continue;
     }
 
-    group.pendingExternalTieBoundary = false;
+    group.externalClock.pendingTieBoundary = false;
     group.noteOffAt = runTime;
   }
 }
@@ -2460,10 +2544,9 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
   group.sourceStep = transportPlayback ? static_cast<int8_t>(stepIndex) : -1;
   group.transportPlayback = transportPlayback;
   uint64_t playbackStartedAt = runTime;
-  group.pendingExternalGateSync = false;
-  group.pendingExternalTieBoundary = false;
-  group.gatePercent = gatePercent;
-  group.startedAt = playbackStartedAt;
+  group.externalClock = SequencerPlaybackExternalClockState{};
+  group.externalClock.gatePercent = gatePercent;
+  group.externalClock.startedAt = playbackStartedAt;
   group.noteOffAt = playbackStartedAt + ((stepDuration * gatePercent) / 100ULL);
   if (transportPlayback) {
     byte activeStepCount = sequencerActiveStepCount();
@@ -2471,13 +2554,13 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
     if (sequencerUsesExternalClock() && nextStepContinuesSource) {
       // External ties follow real step boundaries rather than predicted
       // durations so jitter cannot release the note before the next tie step.
-      group.pendingExternalTieBoundary = true;
+      group.externalClock.pendingTieBoundary = true;
       group.noteOffAt = 0;
-    } else if (sequencerUsesExternalClock() && sequencerExternalStepDuration == 0) {
+    } else if (sequencerUsesExternalClock() && sequencerExternalClock.stepDuration == 0) {
       // The first external transport step starts before we know the real step
       // length, so defer its initial gate timing until the first measured
       // boundary arrives.
-      group.pendingExternalGateSync = true;
+      group.externalClock.pendingGateSync = true;
       group.noteOffAt = 0;
     } else if (nextStepContinuesSource &&
                group.noteOffAt < (playbackStartedAt + stepDuration)) {
@@ -3794,6 +3877,18 @@ void refreshSequencerBrowserMenu(bool resetSelection) {
 
 }  // namespace
 
+bool isSequencerTransportPlaybackLedActive(byte buttonIndex) {
+  return isSequencerTransportPlaybackLedActiveInternal(buttonIndex);
+}
+
+bool didSequencerTransportPlaybackLedJustStart(byte buttonIndex) {
+  return didSequencerTransportPlaybackLedJustStartInternal(buttonIndex);
+}
+
+uint64_t getSequencerTransportPlaybackLedTimePressed(byte buttonIndex) {
+  return getSequencerTransportPlaybackLedTimePressedInternal(buttonIndex);
+}
+
 SequencerPersistentSettings getSequencerPersistentSettings() {
   SequencerPersistentSettings values;
   values.tapPreview = sequencerTapPreview;
@@ -4870,6 +4965,11 @@ void applySequencerLedOverrides() {
 }
 
 void updateSequencerTransport() {
+  sequencerTransportPlaybackLedEpoch++;
+  if (sequencerTransportPlaybackLedEpoch == 0) {
+    sequencerTransportPlaybackLedEpoch = 1;
+  }
+
   if (sequencerConfirmHeld && sequencerSelectedStep >= 0) {
     uint64_t heldMicros = runTime - sequencerConfirmPressedAt;
     if (heldMicros >= SEQUENCER_CLEAR_HOLD_MICROS) {
@@ -4913,41 +5013,16 @@ void handleSequencerExternalMidiClock() {
     return;
   }
 
-  if (sequencerExternalClockLastAt != 0 && runTime > sequencerExternalClockLastAt) {
-    uint64_t pulseDuration = runTime - sequencerExternalClockLastAt;
-    if (pulseDuration > 0 && sequencerExternalPulseIntervalCount < 255) {
-      sequencerExternalPulseMicrosAccum += pulseDuration;
-      sequencerExternalPulseIntervalCount++;
-    }
-  }
-  sequencerExternalClockLastAt = runTime;
+  recordSequencerExternalClockPulse();
 
   if (sequencerTransportState != SEQUENCER_TRANSPORT_PLAY) {
     return;
   }
 
-  updatePendingExternalGateSyncEstimate();
-
-  sequencerExternalClockCount = static_cast<byte>((sequencerExternalClockCount + 1) % SEQUENCER_MIDI_CLOCKS_PER_STEP);
-  if (sequencerExternalClockCount != 0) {
+  uint64_t stepDuration = 0;
+  if (!advanceSequencerExternalClockState(stepDuration)) {
     return;
   }
-
-  uint64_t stepDuration = sequencerCurrentStepDurationMicros();
-  if (sequencerCurrentStepStartedAt != 0 && runTime > sequencerCurrentStepStartedAt) {
-    // Measure the full time between external step boundaries. Using only the
-    // most recent MIDI-clock pulse makes tied holds wobble under USB jitter.
-    uint64_t measuredStepDuration = runTime - sequencerCurrentStepStartedAt;
-    if (measuredStepDuration > 0) {
-      sequencerExternalStepDuration = measuredStepDuration;
-      stepDuration = measuredStepDuration;
-    }
-  }
-
-  resolvePendingExternalGateSync(stepDuration);
-
-  sequencerExternalPulseMicrosAccum = 0;
-  sequencerExternalPulseIntervalCount = 0;
 
   sequencerCurrentStepStartedAt = runTime;
   advanceSequencerPlaybackStep(stepDuration);

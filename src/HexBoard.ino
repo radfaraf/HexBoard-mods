@@ -2282,7 +2282,7 @@ uint32_t applyNotePixelColor(byte x) {
     return h[x].LEDcodeAnim;
   } else if ((animationType != ANIMATE_NONE)
           && (animationType != ANIMATE_MIDI_IN)
-          && h[x].MIDIch) {
+          && isBoardLedAnimationSourceActive(x)) {
     return h[x].LEDcodePlay;
   } else if (h[x].inScale) {
     return h[x].LEDcodeRest;
@@ -4845,12 +4845,41 @@ int8_t vertical[] = { 0, -1, -1, 0, 1, 1 };
 int8_t horizontal[] = { 2, 1, -1, -2, -1, 1 };
 
 uint64_t animFrame(byte x) {
-  if (h[x].timePressed) {  // 2^20 microseconds is close enough to 1 second
-    return 1 + (((runTime - h[x].timePressed) * animationFPS) >> 20);
+  uint64_t timePressed = h[x].timePressed;
+  if (!isKeyboardMode()) {
+    uint64_t sequencerTimePressed = getSequencerTransportPlaybackLedTimePressed(x);
+    if (sequencerTimePressed != 0) {
+      timePressed = sequencerTimePressed;
+    }
+  }
+  if (timePressed) {  // 2^20 microseconds is close enough to 1 second
+    return 1 + (((runTime - timePressed) * animationFPS) >> 20);
   } else {
     return 0;
   }
 }
+
+bool isBoardLedAnimationSourceActive(byte x) {
+  if (h[x].MIDIch) {
+    return true;
+  }
+  if (!isKeyboardMode()) {
+    int16_t sequencerPitchSteps = 0;
+    if (getButtonPitchStepsForSequencer(x, sequencerPitchSteps) && isBoardButtonPressed(x)) {
+      return true;
+    }
+    return isSequencerTransportPlaybackLedActive(x);
+  }
+  return false;
+}
+
+bool isBoardLedAnimationSourceNewPress(byte x) {
+  if (h[x].btnState == BTN_STATE_NEWPRESS) {
+    return true;
+  }
+  return !isKeyboardMode() && didSequencerTransportPlaybackLedJustStart(x);
+}
+
 void flagToAnimate(int8_t r, int8_t c) {
   if (!((r < 0) || (r >= ROWCOUNT)
         || (c < 0) || (c >= (2 * COLCOUNT))
@@ -4860,9 +4889,9 @@ void flagToAnimate(int8_t r, int8_t c) {
 }
 void animateMirror() {
   for (byte i = 0; i < LED_COUNT; i++) {                     // check every hex
-    if ((!(h[i].isCmd)) && (h[i].MIDIch)) {                  // that is a held note
+    if ((!(h[i].isCmd)) && isBoardLedAnimationSourceActive(i)) {  // that is a held note
       for (byte j = 0; j < LED_COUNT; j++) {                 // compare to every hex
-        if ((!(h[j].isCmd)) && (!(h[j].MIDIch))) {           // that is a note not being played
+        if ((!(h[j].isCmd)) && (!isBoardLedAnimationSourceActive(j))) {  // that is a note not being played
           int16_t temp = h[i].stepsFromC - h[j].stepsFromC;  // look at difference between notes
           if (animationType == ANIMATE_OCTAVE) {             // set octave diff to zero if need be
             temp = positiveMod(temp, current.tuning().cycleLength);
@@ -4890,8 +4919,8 @@ void animateOrbit() {           //BETTER ORBIT
   const byte SLOW_FACTOR = 1;   // Slowdown factor for animation
 
   for (byte i = 0; i < LED_COUNT; i++) {     // Check every hex
-    if ((!(h[i].isCmd)) && (h[i].MIDIch) &&  // That is a held note
-        ((h[i].inScale) || (!scaleLock))) {  // And is in scale or scale is unlocked
+    if ((!(h[i].isCmd)) && isBoardLedAnimationSourceActive(i) &&  // That is a held note
+        ((h[i].inScale) || (!scaleLock))) {                       // And is in scale or scale is unlocked
 
       byte frame = animFrame(i) / SLOW_FACTOR;  // Slow down the animation
       byte currentStep = frame % 12;            // Determine position in the 12-light orbit
@@ -4935,7 +4964,7 @@ void animateStaticBeams() {
       continue;
     }
 
-    if (h[i].btnState == BTN_STATE_NEWPRESS) {  // Button was just pressed
+    if (isBoardLedAnimationSourceNewPress(i)) {  // Button was just pressed
       uint64_t clockValue = readClock();        // Get system clock
 
       // Choose a new random direction, excluding the last one
@@ -4948,7 +4977,7 @@ void animateStaticBeams() {
       lastDirection[i] = newDirection;  // Store new direction
     }
 
-    if (h[i].btnState == BTN_STATE_HELD || h[i].btnState == BTN_STATE_NEWPRESS) {  // Active button
+    if (isBoardLedAnimationSourceActive(i) || isBoardLedAnimationSourceNewPress(i)) {  // Active button
       byte baseDirection = lastDirection[i] * 2;                                   // Convert to hex direction (0, 2, or 4)
       byte oppositeDirection = (baseDirection + 3) % 6;                            // Opposite direction
 

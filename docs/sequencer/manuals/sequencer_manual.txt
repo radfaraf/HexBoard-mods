@@ -519,6 +519,8 @@ Seq Lights submenu:
 
 These are the same shared color settings used in Keyboard mode.
 
+- Animation also affects the lower playable keyboard note lights that
+  Sequencer transport playback triggers for currently sounding notes.
 - Rest Bright controls normal resting note brightness and regular sequencer
   step-light brightness.
 - Dim Bright controls out-of-scale note brightness only while Scale Lock is Off.

@@ -29,6 +29,9 @@ struct SequencerPersistentSettings {
 
 bool getButtonPitchStepsForSequencer(byte buttonIndex, int16_t& pitchSteps);
 bool isBoardButtonPressed(byte buttonIndex);
+bool isSequencerTransportPlaybackLedActive(byte buttonIndex);
+bool didSequencerTransportPlaybackLedJustStart(byte buttonIndex);
+uint64_t getSequencerTransportPlaybackLedTimePressed(byte buttonIndex);
 bool getBoardLedColorForPitchSteps(int16_t pitchSteps, bool highlighted, uint32_t& colorOut);
 bool getBoardSelectedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut);
 bool getBoardSelectedAccentedLedColorForPitchSteps(int16_t pitchSteps, uint32_t& colorOut);

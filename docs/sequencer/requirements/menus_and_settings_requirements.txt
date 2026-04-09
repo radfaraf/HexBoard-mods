@@ -70,6 +70,8 @@ Details:
   Keyboard Color Options menu.
 - Changing a Color Options setting from Keyboard mode or Sequencer mode shall
   update the same shared value.
+- Animation shall also control the lower playable keyboard LEDs that Sequencer
+  transport playback triggers for currently sounding notes.
 - Rest Bright shall control normal resting note brightness and regular
   sequencer step-light brightness.
 - Dim Bright shall control out-of-scale note brightness only while Scale Lock
