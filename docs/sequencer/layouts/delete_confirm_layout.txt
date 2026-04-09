@@ -8,10 +8,19 @@ Title:
 
 Current OLED layout:
 
-  Delete file: or Delete folder:
-  [target name]
-  This cannot undo.
-  Choose action.
+  Delete file:
+  [file name]
+  This cannot be
+  undone.
+  Yes, Delete
+  Cancel
+
+  or
+
+  Delete folder:
+  [folder name]
+  This cannot be
+  undone.
   Yes, Delete
   Cancel
 

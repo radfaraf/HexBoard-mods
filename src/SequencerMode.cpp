@@ -3306,12 +3306,18 @@ void refreshSequencerDeleteConfirmMenu() {
     sequencerDeletePromptLineOne,
     sizeof(sequencerDeletePromptLineOne),
     sequencerDeleteTargetIsFolder ? "Delete folder:" : "Delete file:");
-  copySequencerString(sequencerDeletePromptLineTwo, sizeof(sequencerDeletePromptLineTwo), displayName);
+  copySequencerString(
+    sequencerDeletePromptLineTwo,
+    sizeof(sequencerDeletePromptLineTwo),
+    displayName);
   copySequencerString(
     sequencerDeletePromptLineThree,
     sizeof(sequencerDeletePromptLineThree),
-    sequencerDeleteTargetIsFolder ? "with contents?" : "This cannot undo.");
-  copySequencerString(sequencerDeletePromptLineFour, sizeof(sequencerDeletePromptLineFour), "Choose action.");
+    "This cannot be");
+  copySequencerString(
+    sequencerDeletePromptLineFour,
+    sizeof(sequencerDeletePromptLineFour),
+    "undone.");
 
   menuItemSequencerDeletePromptOne.setTitle(sequencerDeletePromptLineOne);
   menuItemSequencerDeletePromptTwo.setTitle(sequencerDeletePromptLineTwo);
@@ -3859,9 +3865,9 @@ GEMItem menuItemSequencerUsbBackupStopPromptFour("Continue?", usbBackupStopPromp
 GEMItem menuItemSequencerUsbBackupStopYes("Yes, Stop", confirmUsbBackupStopMenuCallback);
 GEMItem menuItemSequencerUsbBackupStopNo("No, Stay", cancelUsbBackupStopMenuCallback);
 GEMItem menuItemSequencerDeletePromptOne("Delete file:", sequencerDeletePromptMenuCallback);
-GEMItem menuItemSequencerDeletePromptTwo("", sequencerDeletePromptMenuCallback);
-GEMItem menuItemSequencerDeletePromptThree("This cannot undo.", sequencerDeletePromptMenuCallback);
-GEMItem menuItemSequencerDeletePromptFour("Choose action.", sequencerDeletePromptMenuCallback);
+GEMItem menuItemSequencerDeletePromptTwo("This cannot be", sequencerDeletePromptMenuCallback);
+GEMItem menuItemSequencerDeletePromptThree("undone.", sequencerDeletePromptMenuCallback);
+GEMItem menuItemSequencerDeletePromptFour("", sequencerDeletePromptMenuCallback);
 GEMItem menuItemSequencerDeleteYes("Yes, Delete", confirmSequencerDeleteMenuCallback);
 GEMItem menuItemSequencerDeleteCancel("Cancel", cancelSequencerDeleteMenuCallback);
 GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
