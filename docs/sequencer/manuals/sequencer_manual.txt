@@ -496,6 +496,7 @@ MIDI Sync submenu:
 
 File Management submenu:
 
+- Rename or Delete
 - Rename File
 - Rename Folder
 - Create Folder
@@ -625,25 +626,39 @@ Browser behavior:
 
 15. Renaming, Creating, And Deleting Files
 
-15.1 Rename File
+15.1 Rename or Delete
+
+- open File Management, then choose Rename or Delete
+- browse folders and files together
+- selecting a folder enters it
+- when not at the root `/Sequences` folder, `This Folder...` targets the
+  current folder itself
+- selecting a file or `This Folder...` opens an action page for that target
+- the action page shows the target name and offers `Rename`, `Delete`, and
+  `Cancel`
+- `Rename` opens the existing naming workflow for that file or folder
+- `Delete` opens the existing delete confirmation page for that file or folder
+- `Cancel` returns to the browser
+
+15.2 Rename File
 
 - browse to a file
 - select it
 - naming mode opens with the current file name filled in
 
-15.2 Rename Folder
+15.3 Rename Folder
 
 - browse folders
 - enter the folder you want
 - choose Rename This Folder
 
-15.3 Create Folder
+15.4 Create Folder
 
 - browse to the parent folder
 - choose Create Here
 - naming mode opens
 
-15.4 Delete File
+15.5 Delete File
 
 - browse to a file
 - select it to open a delete confirmation page
@@ -651,7 +666,7 @@ Browser behavior:
 - scroll to `Yes, Delete` or `Cancel`, then press the encoder to confirm your
   choice
 
-15.5 Delete Folder
+15.6 Delete Folder
 
 - browse to the folder
 - enter it
@@ -663,7 +678,7 @@ Browser behavior:
 
 Folder deletion is recursive, so deleting a folder removes its contents.
 
-15.6 USB Backup
+15.7 USB Backup
 
 - open File Management, then choose USB Backup
 - choose Start Session

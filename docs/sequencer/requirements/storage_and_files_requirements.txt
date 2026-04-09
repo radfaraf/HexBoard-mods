@@ -151,6 +151,17 @@ The system shall support Rename File, Rename Folder, Create Folder, Delete File,
 Delete Folder, and USB Backup actions through the file management workflow.
 
 Details:
+- The system shall also provide a `Rename or Delete` browser mode that combines
+  file and folder targeting without removing the dedicated rename/delete modes.
+- In Rename or Delete mode, selecting a folder shall enter that folder.
+- In Rename or Delete mode, the current folder shall be targetable through a
+  `This Folder...` action whenever the browser is not at `/Sequences`.
+- In Rename or Delete mode, selecting a file or `This Folder...` shall open an
+  action page with `Rename`, `Delete`, and `Cancel`.
+- Choosing `Rename` from that action page shall route into the existing file or
+  folder rename workflow for the selected target.
+- Choosing `Delete` from that action page shall route into the existing delete
+  confirmation workflow for the selected target.
 - In Delete File mode, selecting a file shall open a confirmation page before
   deletion.
 - In Delete Folder mode, selecting Delete This Folder shall open a confirmation

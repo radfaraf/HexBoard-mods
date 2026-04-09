@@ -177,8 +177,11 @@ Menu Items
 - Playback Settings > MIDI Sync:
   Clock Source, Send Clock, Send Transport
 - File Management:
-  Rename File, Rename Folder, Create Folder, Delete File, Delete Folder,
-  USB Backup
+  Rename or Delete, Rename File, Rename Folder, Create Folder, Delete File,
+  Delete Folder, USB Backup
+- Rename or Delete opens a combined browser where folders still open normally,
+  files open a Rename/Delete/Cancel chooser, and the current folder can be
+  targeted through `This Folder...`.
 - Delete File and Delete Folder now open a confirmation page that shows the
   target and requires choosing `Yes, Delete` or `Cancel`.
 - Tap Preview: audition step contents when a step is tapped

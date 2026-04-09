@@ -6,6 +6,7 @@ Title:
 
 Menu order:
 
+  Rename or Delete
   Rename File
   Rename Folder
   Create Folder
@@ -17,6 +18,7 @@ Notes:
 
 - This submenu exists to keep the main Sequencer menu less cluttered.
 - Rename and delete actions open browser-based workflows.
+- Rename or Delete opens a combined browser plus a separate action picker.
 - Delete actions now add a separate confirmation page before anything is
   removed.
 - Create Folder opens a folder-only browser flow.

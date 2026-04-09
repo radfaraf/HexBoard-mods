@@ -7,6 +7,7 @@ Examples:
   Load:Sequences
   Save:Basslines
   Folder:Ideas
+  RenDel:Drums
   RenFile:Sequences
   RenFold:Folder 001
   DelFile:Sequences
@@ -49,6 +50,16 @@ Rename Folder mode:
   ..
   [folders only]
 
+Rename or Delete mode:
+
+  This Folder...   [hidden at /Sequences]
+  ..
+  [folders and files]
+
+  Selecting a folder enters it.
+  Selecting a file opens a separate Rename/Delete/Cancel action page.
+  Selecting This Folder... opens that same action page for the current folder.
+
 Delete Folder mode:
 
   Delete This Folder
@@ -79,5 +90,7 @@ Notes:
 - Folders can be entered by selecting them.
 - Files can be loaded, renamed, or queued for delete confirmation depending on
   the current mode.
+- Rename or Delete keeps folder navigation in the browser and only opens its
+  action page for files or the current-folder target row.
 - The root folder is /Sequences.
 - Turning the encoder past the first or last real file row changes page.
