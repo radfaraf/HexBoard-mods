@@ -21,6 +21,7 @@ extern GEMPage menuPageSequencerMidiSync;
 extern GEMPage menuPageSequencerUsbBackup;
 extern GEMPage menuPageSequencerUsbBackupExitConfirm;
 extern GEMPage menuPageSequencerUsbBackupStopConfirm;
+extern GEMPage menuPageSequencerDeleteConfirm;
 extern GEMPage menuPageSequencerLights;
 extern U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2;
 extern bool screenSaverOn;
@@ -301,6 +302,12 @@ byte sequencerBrowserEntryCount = 0;
 byte sequencerBrowserOffset = 0;
 char sequencerBrowserPageTitle[20] = "Sequences";
 char sequencerBrowserEntryTitles[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT][SEQUENCER_BROWSER_TITLE_LENGTH] = {};
+char sequencerDeletePromptLineOne[SEQUENCER_BROWSER_TITLE_LENGTH] = "";
+char sequencerDeletePromptLineTwo[SEQUENCER_BROWSER_TITLE_LENGTH] = "";
+char sequencerDeletePromptLineThree[SEQUENCER_BROWSER_TITLE_LENGTH] = "";
+char sequencerDeletePromptLineFour[SEQUENCER_BROWSER_TITLE_LENGTH] = "";
+char sequencerDeleteTargetPath[SEQUENCER_MAX_PATH_LENGTH] = "";
+bool sequencerDeleteTargetIsFolder = false;
 SequencerNamingTarget sequencerNamingTarget = SequencerNamingTarget::None;
 char sequencerNamingBuffer[SEQUENCER_NAME_EDIT_MAX_LENGTH + 1] = "";
 byte sequencerNamingLength = 0;
@@ -395,8 +402,19 @@ extern GEMItem menuItemSequencerUsbBackupStopPromptThree;
 extern GEMItem menuItemSequencerUsbBackupStopPromptFour;
 extern GEMItem menuItemSequencerUsbBackupStopYes;
 extern GEMItem menuItemSequencerUsbBackupStopNo;
+extern GEMItem menuItemSequencerDeletePromptOne;
+extern GEMItem menuItemSequencerDeletePromptTwo;
+extern GEMItem menuItemSequencerDeletePromptThree;
+extern GEMItem menuItemSequencerDeletePromptFour;
+extern GEMItem menuItemSequencerDeleteYes;
+extern GEMItem menuItemSequencerDeleteCancel;
 void setSequencerTransportState(byte newState, bool redrawMenu = true, bool sendMidi = true);
 void refreshSequencerUsbBackupMenu(bool redrawMenu = true);
+void openSequencerDeleteConfirm(const char* targetPath, bool isFolder);
+void refreshSequencerDeleteConfirmMenu();
+void sequencerDeletePromptMenuCallback();
+void confirmSequencerDeleteMenuCallback();
+void cancelSequencerDeleteMenuCallback();
 void usbBackupStatusMenuCallback();
 void startUsbBackupMenuCallback();
 void stopUsbBackupMenuCallback();
@@ -3191,6 +3209,8 @@ void openSequencerBrowser(SequencerBrowserMode browserMode) {
   if (!guardSequencerStorageForUsbBackup("Stop session first")) {
     return;
   }
+  sequencerDeleteTargetPath[0] = '\0';
+  sequencerDeleteTargetIsFolder = false;
   sequencerBrowserMode = browserMode;
   sequencerBrowserOffset = 0;
   if (sequencerCurrentSequencePath[0] != '\0') {
@@ -3275,6 +3295,90 @@ void sequencerBrowserMoreBelowCallback() {
 void sequencerBrowserIndicatorCallback() {
 }
 
+void refreshSequencerDeleteConfirmMenu() {
+  char displayName[SEQUENCER_BROWSER_TITLE_LENGTH];
+  extractSequencerDisplayName(sequencerDeleteTargetPath, displayName, sizeof(displayName));
+  if (displayName[0] == '\0') {
+    copySequencerString(displayName, sizeof(displayName), sequencerDeleteTargetIsFolder ? "Folder" : "File");
+  }
+
+  copySequencerString(
+    sequencerDeletePromptLineOne,
+    sizeof(sequencerDeletePromptLineOne),
+    sequencerDeleteTargetIsFolder ? "Delete folder:" : "Delete file:");
+  copySequencerString(sequencerDeletePromptLineTwo, sizeof(sequencerDeletePromptLineTwo), displayName);
+  copySequencerString(
+    sequencerDeletePromptLineThree,
+    sizeof(sequencerDeletePromptLineThree),
+    sequencerDeleteTargetIsFolder ? "with contents?" : "This cannot undo.");
+  copySequencerString(sequencerDeletePromptLineFour, sizeof(sequencerDeletePromptLineFour), "Choose action.");
+
+  menuItemSequencerDeletePromptOne.setTitle(sequencerDeletePromptLineOne);
+  menuItemSequencerDeletePromptTwo.setTitle(sequencerDeletePromptLineTwo);
+  menuItemSequencerDeletePromptThree.setTitle(sequencerDeletePromptLineThree);
+  menuItemSequencerDeletePromptFour.setTitle(sequencerDeletePromptLineFour);
+  menuPageSequencerDeleteConfirm.setTitle(sequencerDeleteTargetIsFolder ? "Delete Folder?" : "Delete File?");
+}
+
+void openSequencerDeleteConfirm(const char* targetPath, bool isFolder) {
+  copySequencerString(sequencerDeleteTargetPath, sizeof(sequencerDeleteTargetPath), targetPath);
+  sequencerDeleteTargetIsFolder = isFolder;
+  refreshSequencerDeleteConfirmMenu();
+  menu.setMenuPageCurrent(menuPageSequencerDeleteConfirm);
+  menuPageSequencerDeleteConfirm.setCurrentMenuItemIndex(4);
+  menu.drawMenu();
+}
+
+void sequencerDeletePromptMenuCallback() {
+}
+
+void confirmSequencerDeleteMenuCallback() {
+  if (sequencerDeleteTargetPath[0] == '\0') {
+    cancelSequencerDeleteMenuCallback();
+    return;
+  }
+
+  char deletedPath[SEQUENCER_MAX_PATH_LENGTH];
+  copySequencerString(deletedPath, sizeof(deletedPath), sequencerDeleteTargetPath);
+  bool deletedFolder = sequencerDeleteTargetIsFolder;
+  sequencerDeleteTargetPath[0] = '\0';
+  sequencerDeleteTargetIsFolder = false;
+
+  if (deletedFolder) {
+    char parentPath[SEQUENCER_MAX_PATH_LENGTH];
+    extractSequencerParentPath(deletedPath, parentPath, sizeof(parentPath));
+    clearSequencerCurrentPathIfDeleted(deletedPath, true);
+    if (deleteSequencerFolderRecursive(deletedPath)) {
+      copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), parentPath);
+      sequencerBrowserOffset = 0;
+      refreshSequencerBrowserMenu();
+      showSequencerPathStatusMessage("Deleted", deletedPath);
+      return;
+    }
+    menu.setMenuPageCurrent(menuPageSequencerBrowser);
+    menu.drawMenu();
+    showSequencerStatusMessage("Error Delete", "Folder failed");
+    return;
+  }
+
+  clearSequencerCurrentPathIfDeleted(deletedPath, false);
+  if (LittleFS.remove(deletedPath)) {
+    refreshSequencerBrowserMenu(false);
+    showSequencerPathStatusMessage("Deleted", deletedPath);
+  } else {
+    menu.setMenuPageCurrent(menuPageSequencerBrowser);
+    menu.drawMenu();
+    showSequencerStatusMessage("Error Delete", "File failed");
+  }
+}
+
+void cancelSequencerDeleteMenuCallback() {
+  sequencerDeleteTargetPath[0] = '\0';
+  sequencerDeleteTargetIsFolder = false;
+  menu.setMenuPageCurrent(menuPageSequencerBrowser);
+  menu.drawMenu();
+}
+
 void sequencerBrowserEntryCallback(GEMCallbackData callbackData) {
   int entryIndex = callbackData.valInt;
   if (entryIndex < 0 || entryIndex >= SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT) {
@@ -3300,17 +3404,7 @@ void sequencerBrowserEntryCallback(GEMCallbackData callbackData) {
     menu.drawMenu();
     showSequencerPathStatusMessage("Loaded", entry.path);
   } else if (sequencerBrowserMode == SequencerBrowserMode::DeleteFile) {
-    char deletedPath[SEQUENCER_MAX_PATH_LENGTH];
-    copySequencerString(deletedPath, sizeof(deletedPath), entry.path);
-    clearSequencerCurrentPathIfDeleted(deletedPath, false);
-    if (LittleFS.remove(deletedPath)) {
-      refreshSequencerBrowserMenu(false);
-      showSequencerPathStatusMessage("Deleted", deletedPath);
-    } else {
-      menu.setMenuPageCurrent(menuPageSequencerBrowser);
-      menu.drawMenu();
-      showSequencerStatusMessage("Error Delete", "File failed");
-    }
+    openSequencerDeleteConfirm(entry.path, false);
   } else if (sequencerBrowserMode == SequencerBrowserMode::RenameFile) {
     startSequencerRename(SequencerNamingTarget::RenameSequence, entry.path);
   } else {
@@ -3358,23 +3452,7 @@ void sequencerBrowserDeleteFolderCallback() {
   if (sequencerBrowserMode != SequencerBrowserMode::DeleteFolder || sequencerPathIsRoot(sequencerBrowserPath)) {
     return;
   }
-
-  char folderPath[SEQUENCER_MAX_PATH_LENGTH];
-  char parentPath[SEQUENCER_MAX_PATH_LENGTH];
-  copySequencerString(folderPath, sizeof(folderPath), sequencerBrowserPath);
-  extractSequencerParentPath(folderPath, parentPath, sizeof(parentPath));
-
-  clearSequencerCurrentPathIfDeleted(folderPath, true);
-  if (deleteSequencerFolderRecursive(folderPath)) {
-    copySequencerString(sequencerBrowserPath, sizeof(sequencerBrowserPath), parentPath);
-    sequencerBrowserOffset = 0;
-    refreshSequencerBrowserMenu();
-    showSequencerPathStatusMessage("Deleted", folderPath);
-  } else {
-    menu.setMenuPageCurrent(menuPageSequencerBrowser);
-    menu.drawMenu();
-    showSequencerStatusMessage("Error Delete", "Folder failed");
-  }
+  openSequencerDeleteConfirm(sequencerBrowserPath, true);
 }
 
 void sequencerBrowserRenameFolderCallback() {
@@ -3780,6 +3858,12 @@ GEMItem menuItemSequencerUsbBackupStopPromptThree("any transfer.", usbBackupStop
 GEMItem menuItemSequencerUsbBackupStopPromptFour("Continue?", usbBackupStopPromptMenuCallback);
 GEMItem menuItemSequencerUsbBackupStopYes("Yes, Stop", confirmUsbBackupStopMenuCallback);
 GEMItem menuItemSequencerUsbBackupStopNo("No, Stay", cancelUsbBackupStopMenuCallback);
+GEMItem menuItemSequencerDeletePromptOne("Delete file:", sequencerDeletePromptMenuCallback);
+GEMItem menuItemSequencerDeletePromptTwo("", sequencerDeletePromptMenuCallback);
+GEMItem menuItemSequencerDeletePromptThree("This cannot undo.", sequencerDeletePromptMenuCallback);
+GEMItem menuItemSequencerDeletePromptFour("Choose action.", sequencerDeletePromptMenuCallback);
+GEMItem menuItemSequencerDeleteYes("Yes, Delete", confirmSequencerDeleteMenuCallback);
+GEMItem menuItemSequencerDeleteCancel("Cancel", cancelSequencerDeleteMenuCallback);
 GEMItem* sequencerBrowserEntryItems[SEQUENCER_BROWSER_VISIBLE_ENTRY_COUNT] = {
   &menuItemSequencerBrowserEntry0,
   &menuItemSequencerBrowserEntry1,
@@ -4094,6 +4178,7 @@ GEMPage menuPageSequencerBrowser("Load", menuPageSequencer);
 GEMPage menuPageSequencerUsbBackup("USB Backup", menuPageSequencerFiles);
 GEMPage menuPageSequencerUsbBackupExitConfirm("Leave Backup?", menuPageSequencerUsbBackup);
 GEMPage menuPageSequencerUsbBackupStopConfirm("Stop Session?", menuPageSequencerUsbBackup);
+GEMPage menuPageSequencerDeleteConfirm("Delete?", menuPageSequencerBrowser);
 
 void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   if (isUsbBackupActive()) {
@@ -4429,6 +4514,12 @@ void setupSequencerMenu() {
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopPromptFour);
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopYes);
   menuPageSequencerUsbBackupStopConfirm.addMenuItem(menuItemSequencerUsbBackupStopNo);
+  menuPageSequencerDeleteConfirm.addMenuItem(menuItemSequencerDeletePromptOne);
+  menuPageSequencerDeleteConfirm.addMenuItem(menuItemSequencerDeletePromptTwo);
+  menuPageSequencerDeleteConfirm.addMenuItem(menuItemSequencerDeletePromptThree);
+  menuPageSequencerDeleteConfirm.addMenuItem(menuItemSequencerDeletePromptFour);
+  menuPageSequencerDeleteConfirm.addMenuItem(menuItemSequencerDeleteYes);
+  menuPageSequencerDeleteConfirm.addMenuItem(menuItemSequencerDeleteCancel);
   refreshSequencerUsbBackupMenu(false);
 }
 

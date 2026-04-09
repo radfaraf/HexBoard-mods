@@ -55,6 +55,8 @@ Delete Folder mode:
   ..
   [folders only]
 
+  Selecting Delete This Folder opens a separate delete confirmation page.
+
 Load mode:
 
   ..
@@ -70,9 +72,12 @@ Delete File mode:
   ..
   [folders and files]
 
+  Selecting a file opens a separate delete confirmation page.
+
 Notes:
 
 - Folders can be entered by selecting them.
-- Files can be loaded, renamed, or deleted depending on the current mode.
+- Files can be loaded, renamed, or queued for delete confirmation depending on
+  the current mode.
 - The root folder is /Sequences.
 - Turning the encoder past the first or last real file row changes page.

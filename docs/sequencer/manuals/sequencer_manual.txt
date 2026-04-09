@@ -646,13 +646,20 @@ Browser behavior:
 15.4 Delete File
 
 - browse to a file
-- select it to delete it
+- select it to open a delete confirmation page
+- the confirmation page shows the file name and asks whether to delete it
+- scroll to `Yes, Delete` or `Cancel`, then press the encoder to confirm your
+  choice
 
 15.5 Delete Folder
 
 - browse to the folder
 - enter it
-- choose Delete This Folder
+- choose Delete This Folder to open a delete confirmation page
+- the confirmation page shows the folder name and warns that its contents will
+  also be deleted
+- scroll to `Yes, Delete` or `Cancel`, then press the encoder to confirm your
+  choice
 
 Folder deletion is recursive, so deleting a folder removes its contents.
 
