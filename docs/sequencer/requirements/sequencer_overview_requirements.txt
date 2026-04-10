@@ -47,7 +47,7 @@ Area: Core
 Priority: High
 
 Requirement:
-Each step shall store up to 4 notes.
+Each step shall store up to 6 notes.
 
 Details:
 - Stored notes shall use tuning-relative pitch-step values instead of raw MIDI

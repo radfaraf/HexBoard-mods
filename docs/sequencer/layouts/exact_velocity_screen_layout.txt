@@ -12,6 +12,7 @@ Current OLED layout:
   Vel #13
   L 150% V 96 P 75%
   C3 E3 G3
+  B3 D4 F4
   96
 
   Turn +/-5
@@ -22,7 +23,9 @@ Controls:
 - turning the encoder moves through:
   0, 5, 10, 15, ... 125, 127
 - encoder press saves and returns to the tools picker
-- if the selected step is tied, the note row shows `T` instead of note labels
+- the note area stays on one line when the labels fit and wraps only when
+  needed
+- if the selected step is tied, the note area shows `T` instead of note labels
 
 LED behavior while the screen is open:
 

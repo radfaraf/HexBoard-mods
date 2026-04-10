@@ -7,13 +7,16 @@ Main edit screen while a step is selected:
   L 150% V 96 P 75%
 
   C3 E3 G3
+  B3 D4 F4
 
 Notes:
 
 - The top line shows the selected step number.
 - The next line shows the compact length, velocity, and probability readout.
-- The notes are shown on one row, sorted lowest to highest.
-- If the selected step is tied, the note row shows `T` instead of note labels.
+- Up to 6 notes can be shown, sorted lowest to highest.
+- The note area stays on one row when the labels fit and wraps only when
+  needed.
+- If the selected step is tied, the note area shows `T` instead of note labels.
 - In 12 EDO, note labels use note names like `C3`.
 - In other tunings, note labels use `step.octave` labels like `7.4`.
 - This screen is used while editing notes in the selected step.
@@ -26,6 +29,7 @@ Quick length overlay while turning the encoder with a selected step:
   Length 200%
 
   C3 E3 G3
+  B3 D4 F4
 
 Clear feedback:
 

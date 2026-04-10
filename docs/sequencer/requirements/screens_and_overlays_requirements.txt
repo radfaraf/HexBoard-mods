@@ -12,7 +12,9 @@ Selecting a step shall show an edit overlay for that step.
 Details:
 - The header shall use the form Edit #NN.
 - The overlay shall show a compact info line in the form L ...% V ... P ...%.
-- The overlay shall show the selected step notes in ascending order.
+- The overlay shall show the selected step notes in ascending order across one
+  or two OLED note lines.
+- Steps whose note labels fit on one line shall not reserve a blank second line.
 - Step note labels shall follow the current tuning naming style.
 - If the selected step has Tie enabled, the note area shall show `T` instead of
   note labels.
@@ -59,11 +61,13 @@ Priority: High
 
 Requirement:
 The step tools overlay shall show the selected step number, the compact length
-length, velocity, and probability line, the selected step notes, and the
+length, velocity, and probability line, the selected step notes across one or
+two OLED note lines, and the
 currently available tool labels.
 
 Details:
 - Step note labels shall follow the current tuning naming style.
+- Steps whose note labels fit on one line shall not reserve a blank second line.
 - If the selected step has Tie enabled, the note area shall show `T` instead of
   note labels.
 - While this overlay is open, the normal sequencer step LEDs shall remain
@@ -105,14 +109,16 @@ Priority: High
 
 Requirement:
 The exact velocity overlay shall show the selected step number, the compact
-length, velocity, and probability line, the selected step notes, the large
-current velocity value, and the short encoder instructions.
+length, velocity, and probability line, the selected step notes across one or
+two OLED note lines, the large current velocity value, and the short encoder
+instructions.
 
 Details:
 - Exact velocity editing is encoder-driven and does not require dedicated lit
   button hints.
 - While this overlay is open, all keys remain dark.
 - The helper text shall instruct the user to press the encoder to save.
+- Steps whose note labels fit on one line shall not reserve a blank second line.
 - If the selected step has Tie enabled, the note area shall show `T` instead of
   note labels.
 
@@ -125,14 +131,16 @@ Priority: High
 
 Requirement:
 The exact probability overlay shall show the selected step number, the compact
-length, velocity, and probability line, the selected step notes, the large
-current probability value, and the short encoder instructions.
+length, velocity, and probability line, the selected step notes across one or
+two OLED note lines, the large current probability value, and the short
+encoder instructions.
 
 Details:
 - Exact probability editing is encoder-driven and does not require dedicated
   lit button hints.
 - While this overlay is open, all keys remain dark.
 - The helper text shall instruct the user to press the encoder to save.
+- Steps whose note labels fit on one line shall not reserve a blank second line.
 - If the selected step has Tie enabled, the note area shall show `T` instead of
   note labels.
 
@@ -144,12 +152,15 @@ Area: UI
 Priority: High
 
 Requirement:
-The overview overlay shall show 8 steps per page and page through the 32-step
-pattern.
+The overview overlay shall pack in as many steps as fit on screen and page
+through the 32-step pattern.
 
 Details:
 - Empty steps show underscores.
 - Note labels follow the current tuning naming style.
+- Steps that fit on one line shall not reserve a blank second line.
+- Steps may use a second indented line when needed so all stored notes remain
+  visible.
 - A tied step shall show `T` by itself with no appended note labels.
 
 

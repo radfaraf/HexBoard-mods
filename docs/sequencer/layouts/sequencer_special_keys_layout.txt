@@ -23,7 +23,7 @@ Always-on special keys:
 
 - Second-row 2nd-to-last button:
   Overview
-  - pages through the 8-step overview screen
+  - pages through the packed overview screen
   - stays lit white while idle
   - becomes brighter white while the overview is open
 

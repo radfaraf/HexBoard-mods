@@ -44,6 +44,9 @@ Step Editing
   or remove notes from that step.
 - The edit screen shows a compact info line for the selected step:
   `L ...% V ... P ...%`, then the notes.
+- The note area stays on one line when the labels fit and only uses a second
+  line when needed.
+- Each step can hold up to 6 notes.
 - Step notes are kept sorted from lowest to highest.
 - In 12 EDO, note labels use normal note names like `C3`.
 - In other tunings, note labels use `step.octave` style labels like `7.4`.
@@ -55,6 +58,8 @@ Step Tools Picker
 - Press the last button on the third row with a step selected to open tools.
 - The tools screen shows the selected step number, a compact
   `L ...% V ... P ...%` line, and the current notes.
+- The current note area stays on one line when the labels fit and wraps only
+  when needed.
 - The tool buttons move to the lower part of the board so the 4 step rows stay
   visible at the top while the picker is open.
 - Tool selection keys light blue at the sequencer medium light level.
@@ -332,7 +337,9 @@ When naming a file or folder, the board shows this entry layout:
 Status And Display
 
 - The selected step blinks.
-- The overview screen shows 8 steps at a time.
+- The overview screen packs in as many steps as fit on screen.
+- Steps that fit on one line stay compact.
+- Large chords can wrap onto a second indented overview line for the same step.
 - Empty steps are dark when idle.
 - If `DisplayNotes` is enabled, the lower playable keyboard in Sequencer mode
   can show `Now Playing` only when no step is selected.

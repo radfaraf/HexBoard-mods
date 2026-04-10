@@ -13,6 +13,7 @@ Current OLED layout:
   Tools #13
   L 150% V 96 P 75%
   C3 E3 G3
+  B3 D4 F4
   Len Vel Oct+ Oct-
   Prob Tie Copy
   Cancel/Finished
@@ -42,7 +43,9 @@ Current behavior:
   probability, and Tie into the tapped destination step, then returns to the
   tools picker on that destination step
 - Step note labels follow the current tuning naming style.
-- If the selected step is tied, the note row shows `T` instead of note labels.
+- The note area stays on one line when the labels fit and wraps only when
+  needed.
+- If the selected step is tied, the note area shows `T` instead of note labels.
 
 LED behavior while the picker is open:
 

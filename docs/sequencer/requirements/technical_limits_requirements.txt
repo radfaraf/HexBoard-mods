@@ -27,7 +27,7 @@ Area: Limits
 Priority: High
 
 Requirement:
-The current Sequencer implementation shall support up to 4 notes per step.
+The current Sequencer implementation shall support up to 6 notes per step.
 
 
 ID: SEQ-LIMIT-004

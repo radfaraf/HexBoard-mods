@@ -75,6 +75,7 @@ When a step is selected:
 - the Edit overlay appears
 - the Edit overlay shows the selected step number, a compact `L ...% V ... P ...%`
   line, and the notes
+- the note area stays on one line when the labels fit and wraps only when needed
 - note keys add or remove notes from that step immediately
 - the step stores notes sorted from lowest to highest
 - the step can be length-edited immediately with the encoder
@@ -107,8 +108,9 @@ storing raw MIDI note numbers.
 
 6.2 Chords
 
-- Each step can hold up to 4 notes.
+- Each step can hold up to 6 notes.
 - Notes are displayed in ascending order.
+- Selected-step note displays use one or two lines depending on chord size.
 - In 12 EDO, note labels use normal note names like `C3`.
 - In other tunings, note labels use `step.octave` labels like `7.4`.
 - Playback sends all notes in the step together.
@@ -312,7 +314,8 @@ The picker screen shows:
 
 - Tools #step number
 - the selected step's compact `L ...% V ... P ...%` line
-- the selected step's current notes
+- the selected step's current notes, wrapping to a second note line only when
+  the labels no longer fit
 - Len Vel Oct+ Oct-
 - Prob Tie Copy
 - Cancel/Finished
@@ -340,7 +343,7 @@ Current behavior:
   probability, and Tie into the tapped destination step, then reopens the
   tools picker on that destination step for further editing
 - Cancel/Finished: exits the tool picker when you are done
-- If the selected step is tied, the note row shows `T` instead of note labels.
+- If the selected step is tied, the note area shows `T` instead of note labels.
 
 
 10.3 Step velocity
@@ -430,7 +433,7 @@ Tie behavior:
 Display behavior:
 
 - tied steps show `T` in note-oriented overlays instead of note labels
-- the 8-step overview pages also show `T` by itself for tied steps
+- overview pages also show `T` by itself for tied steps
 
 Storage and editing behavior:
 
@@ -445,9 +448,11 @@ Storage and editing behavior:
 
 Press the second-row 9th key to open the note overview.
 
-- It shows 8 steps per page.
+- It packs in as many steps as fit on screen.
 - Press the same key again to move to the next page.
 - Pages cycle through the 32-step pattern.
+- Steps that fit on one line stay compact.
+- Chords that need more room continue onto a second indented line for that step.
 - Empty steps show as underscores.
 - Tied steps show `T`.
 
@@ -849,7 +854,7 @@ Older files that do not contain Tie fields load with Tie off on every step.
 
 - 1 track
 - 32 steps
-- 4 notes maximum per step
+- 6 notes maximum per step
 - naming uses uppercase letters plus a small set of extra characters
 - backup and restore are available over a dedicated USB serial session
 - there is still no direct computer-drive mode for the sequence files

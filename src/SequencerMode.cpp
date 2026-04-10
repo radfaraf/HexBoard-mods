@@ -53,9 +53,9 @@ constexpr byte SEQUENCER_OVERVIEW_BUTTON_INDEX = 18;
 constexpr byte SEQUENCER_CONFIRM_BUTTON_INDEX = 19;
 constexpr byte SEQUENCER_FUNCTION_BUTTON_INDEX = 29;
 constexpr byte SEQUENCER_FUNCTION_CANCEL_BUTTON_INDEX = 102;
-constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 4;
-constexpr byte SEQUENCER_MAX_MANAGED_HELD_NOTES = 80;
-constexpr byte SEQUENCER_OVERVIEW_STEPS_PER_PAGE = 8;
+constexpr byte SEQUENCER_MAX_NOTES_PER_STEP = 6;
+// Six-note steps plus overlapping playback/tap-preview layers need more held-note headroom.
+constexpr byte SEQUENCER_MAX_MANAGED_HELD_NOTES = 128;
 constexpr byte SEQUENCER_OVERLAY_CONTRAST = 63;
 constexpr int16_t SEQUENCER_NO_PITCH = INT16_MIN;
 constexpr byte SEQUENCER_DEFAULT_VELOCITY = 96;
@@ -123,6 +123,11 @@ constexpr size_t SEQUENCER_MAX_PATH_LENGTH = 255;
 constexpr size_t SEQUENCER_BROWSER_TITLE_LENGTH = 28;
 constexpr size_t SEQUENCER_MENU_TITLE_LENGTH = 48;
 constexpr size_t SEQUENCER_NAME_EDIT_MAX_LENGTH = 20;
+constexpr int SEQUENCER_OVERVIEW_FIRST_LINE_Y = 12;
+constexpr int SEQUENCER_OVERVIEW_MAX_BASELINE_Y = 120;
+constexpr int SEQUENCER_OVERVIEW_SECOND_LINE_OFFSET = 12;
+constexpr int SEQUENCER_OVERVIEW_SINGLE_STEP_ADVANCE = 14;
+constexpr int SEQUENCER_OVERVIEW_DOUBLE_STEP_ADVANCE = 24;
 
 int16_t sequencerStepPitchSteps[SEQUENCER_STEP_COUNT][SEQUENCER_MAX_NOTES_PER_STEP] = {};
 byte sequencerStepNoteCount[SEQUENCER_STEP_COUNT] = {};
@@ -158,7 +163,8 @@ struct SequencerPlaybackExternalClockState {
 struct SequencerPlaybackGroup {
   bool active = false;
   int16_t pitchSteps[SEQUENCER_MAX_NOTES_PER_STEP] = {
-    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
+    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH,
+    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
   };
   byte noteCount = 0;
   int8_t sourceStep = -1;
@@ -244,11 +250,13 @@ bool sequencerOverlayDirty = false;
 char sequencerStatusLineOne[24] = "";
 char sequencerStatusLineTwo[24] = "";
 int16_t sequencerEditPitchSteps[SEQUENCER_MAX_NOTES_PER_STEP] = {
-  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
+  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH,
+  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
 };
 byte sequencerEditNoteCount = 0;
 int16_t sequencerUndoPitchSteps[SEQUENCER_MAX_NOTES_PER_STEP] = {
-  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
+  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH,
+  SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
 };
 byte sequencerUndoNoteCount = 0;
 uint16_t sequencerUndoGatePercent = 100;
@@ -290,7 +298,7 @@ byte sequencerVelocityDisplay = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerExactVelocityOriginal = SEQUENCER_DEFAULT_VELOCITY;
 byte sequencerProbabilityDisplay = SEQUENCER_DEFAULT_PROBABILITY;
 byte sequencerExactProbabilityOriginal = SEQUENCER_DEFAULT_PROBABILITY;
-byte sequencerOverviewPage = 0;
+byte sequencerOverviewStartStep = 0;
 char sequencerCurrentSequencePath[SEQUENCER_MAX_PATH_LENGTH] = "";
 char sequencerMenuTitle[SEQUENCER_MENU_TITLE_LENGTH] = "Sequencer";
 char sequencerBrowserPath[SEQUENCER_MAX_PATH_LENGTH] = "";
@@ -616,6 +624,10 @@ void resolvePendingExternalGateSync(uint64_t stepDuration);
 void resolvePendingExternalTieBoundaries(byte activeStepCount);
 int8_t getSequencerOverlayNoteSourceStep();
 bool shouldDisplaySequencerTie(int8_t stepIndex);
+bool appendSequencerNoteLabel(char* line, size_t lineSize, const char* label);
+byte countSequencerOverviewStepsThatFit(byte firstStep);
+bool appendOverviewLabelToLine(char* line, size_t lineSize, const char* label);
+bool appendOverlayLabelToLine(char* line, size_t lineSize, const char* label);
 
 const SequencerNamingKey sequencerNamingKeys[] = {
   { 1, SequencerNamingAction::InsertChar, 'A' },
@@ -1471,7 +1483,8 @@ bool transposeSelectedSequencerStep(int16_t pitchStepDelta) {
   }
 
   int16_t transposedNotes[SEQUENCER_MAX_NOTES_PER_STEP] = {
-    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
+    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH,
+    SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH, SEQUENCER_NO_PITCH
   };
   byte transposedCount = 0;
 
@@ -1752,6 +1765,66 @@ void formatSequencerStepNote(char* out, size_t outSize, int16_t pitchSteps) {
   formatBoardPitchStepsForSequencer(pitchSteps, out, outSize);
 }
 
+bool appendSequencerNoteLabel(char* line, size_t lineSize, const char* label) {
+  if (line == nullptr || lineSize == 0 || label == nullptr || label[0] == '\0') {
+    return false;
+  }
+
+  size_t lineLength = strlen(line);
+  size_t labelLength = strlen(label);
+  size_t requiredLength = labelLength + ((lineLength > 0) ? 1 : 0);
+  if (lineLength + requiredLength >= lineSize) {
+    return false;
+  }
+
+  if (lineLength > 0) {
+    strncat(line, " ", lineSize - strlen(line) - 1);
+  }
+  strncat(line, label, lineSize - strlen(line) - 1);
+  return true;
+}
+
+bool appendOverviewLabelToLine(char* line, size_t lineSize, const char* label) {
+  if (line == nullptr || lineSize == 0 || label == nullptr || label[0] == '\0') {
+    return false;
+  }
+
+  char candidate[24];
+  snprintf(candidate, sizeof(candidate), "%s%s%s", line, (line[0] != '\0') ? " " : "", label);
+  if (strlen(candidate) >= lineSize) {
+    return false;
+  }
+
+  constexpr uint8_t overviewUsableWidthPixels = 124;
+  if (u8g2.getStrWidth(candidate) > overviewUsableWidthPixels) {
+    return false;
+  }
+
+  snprintf(line, lineSize, "%s", candidate);
+  return true;
+}
+
+bool appendOverlayLabelToLine(char* line, size_t lineSize, const char* label) {
+  if (line == nullptr || lineSize == 0 || label == nullptr || label[0] == '\0') {
+    return false;
+  }
+
+  char candidate[24];
+  snprintf(candidate, sizeof(candidate), "%s%s%s", line, (line[0] != '\0') ? " " : "", label);
+  if (strlen(candidate) >= lineSize) {
+    return false;
+  }
+
+  u8g2.setFont(u8g2_font_6x13_tf);
+  constexpr uint8_t overlayUsableWidthPixels = 116;
+  if (u8g2.getStrWidth(candidate) > overlayUsableWidthPixels) {
+    return false;
+  }
+
+  snprintf(line, lineSize, "%s", candidate);
+  return true;
+}
+
 void clearSequencerNoteBuffer(int16_t* notes, byte& count) {
   count = 0;
   for (byte i = 0; i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
@@ -1935,39 +2008,69 @@ void fillOverlayNoteLines(char* lineOne, size_t lineOneSize, char* lineTwo, size
   char noteLabel[12];
   for (byte i = 0; i < sourceCount && i < SEQUENCER_MAX_NOTES_PER_STEP; i++) {
     formatSequencerStepNote(noteLabel, sizeof(noteLabel), sourceNotes[i]);
-    if (lineOne[0] != '\0') {
-      strncat(lineOne, " ", lineOneSize - strlen(lineOne) - 1);
+    if (!appendOverlayLabelToLine(lineOne, lineOneSize, noteLabel)) {
+      appendOverlayLabelToLine(lineTwo, lineTwoSize, noteLabel);
     }
-    strncat(lineOne, noteLabel, lineOneSize - strlen(lineOne) - 1);
   }
 }
 
-void fillOverviewStepLine(byte stepIndex, char* lineOut, size_t lineOutSize) {
-  if (stepIndex >= SEQUENCER_STEP_COUNT || lineOutSize == 0) {
+void fillOverviewStepLines(byte stepIndex, char* lineOne, size_t lineOneSize, char* lineTwo, size_t lineTwoSize) {
+  if (stepIndex >= SEQUENCER_STEP_COUNT || lineOneSize == 0 || lineTwoSize == 0) {
     return;
   }
 
-  snprintf(lineOut, lineOutSize, "%02u ", static_cast<unsigned>(stepIndex + 1));
+  lineOne[0] = '\0';
+  lineTwo[0] = '\0';
 
   if (shouldDisplaySequencerTie(stepIndex)) {
-    strncat(lineOut, "T", lineOutSize - strlen(lineOut) - 1);
+    snprintf(lineOne, lineOneSize, "%02u T", static_cast<unsigned>(stepIndex + 1));
     return;
   }
 
   if (sequencerStepNoteCount[stepIndex] == 0) {
-    strncat(lineOut, "_", lineOutSize - strlen(lineOut) - 1);
+    snprintf(lineOne, lineOneSize, "%02u _", static_cast<unsigned>(stepIndex + 1));
     return;
   }
 
-  char noteLabel[8];
-  for (byte noteIndex = 0; noteIndex < sequencerStepNoteCount[stepIndex] &&
-                           noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
+  snprintf(lineOne, lineOneSize, "%02u", static_cast<unsigned>(stepIndex + 1));
+
+  char noteLabel[12];
+  byte noteCount = sequencerStepNoteCount[stepIndex];
+  for (byte noteIndex = 0; noteIndex < noteCount && noteIndex < SEQUENCER_MAX_NOTES_PER_STEP; noteIndex++) {
     formatSequencerStepNote(noteLabel, sizeof(noteLabel), sequencerStepPitchSteps[stepIndex][noteIndex]);
-    if (noteIndex > 0) {
-      strncat(lineOut, " ", lineOutSize - strlen(lineOut) - 1);
+    if (!appendOverviewLabelToLine(lineOne, lineOneSize, noteLabel)) {
+      if (lineTwo[0] == '\0') {
+        snprintf(lineTwo, lineTwoSize, "   ");
+      }
+      appendOverviewLabelToLine(lineTwo, lineTwoSize, noteLabel);
     }
-    strncat(lineOut, noteLabel, lineOutSize - strlen(lineOut) - 1);
   }
+}
+
+byte countSequencerOverviewStepsThatFit(byte firstStep) {
+  if (firstStep >= SEQUENCER_STEP_COUNT) {
+    return 0;
+  }
+
+  u8g2.setFont(u8g2_font_6x13_tf);
+  int y = SEQUENCER_OVERVIEW_FIRST_LINE_Y;
+  byte count = 0;
+  char lineOne[24];
+  char lineTwo[24];
+
+  for (byte stepIndex = firstStep; stepIndex < SEQUENCER_STEP_COUNT; stepIndex++) {
+    fillOverviewStepLines(stepIndex, lineOne, sizeof(lineOne), lineTwo, sizeof(lineTwo));
+    bool usesSecondLine = (lineTwo[0] != '\0');
+    int lastBaseline = usesSecondLine ? (y + SEQUENCER_OVERVIEW_SECOND_LINE_OFFSET) : y;
+    if (lastBaseline > SEQUENCER_OVERVIEW_MAX_BASELINE_Y) {
+      break;
+    }
+
+    count++;
+    y += usesSecondLine ? SEQUENCER_OVERVIEW_DOUBLE_STEP_ADVANCE : SEQUENCER_OVERVIEW_SINGLE_STEP_ADVANCE;
+  }
+
+  return (count > 0) ? count : 1;
 }
 
 void hideSequencerOverlay() {
@@ -2070,12 +2173,12 @@ void hideSequencerPerformanceMonitor() {
 }
 
 void showSequencerOverviewPage(bool advancePage) {
-  constexpr byte pageCount =
-    (SEQUENCER_STEP_COUNT + SEQUENCER_OVERVIEW_STEPS_PER_PAGE - 1) / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
   if (advancePage) {
-    sequencerOverviewPage = static_cast<byte>((sequencerOverviewPage + 1) % pageCount);
+    byte displayedCount = countSequencerOverviewStepsThatFit(sequencerOverviewStartStep);
+    byte nextStart = static_cast<byte>(sequencerOverviewStartStep + displayedCount);
+    sequencerOverviewStartStep = (nextStart < SEQUENCER_STEP_COUNT) ? nextStart : 0;
   } else {
-    sequencerOverviewPage = 0;
+    sequencerOverviewStartStep = 0;
   }
   sequencerOverlayMode = SequencerOverlayMode::Overview;
   sequencerOverlayUntil = 0;
@@ -2677,7 +2780,7 @@ void resetSequencerState() {
   sequencerConfirmPressedAt = 0;
   sequencerNextStepAt = 0;
   sequencerCurrentStepStartedAt = 0;
-  sequencerOverviewPage = 0;
+  sequencerOverviewStartStep = 0;
   sequencerLengthPercentDisplay = 100;
   sequencerExactLengthOriginal = 100;
   sequencerExactLengthBuffer[0] = '\0';
@@ -4902,28 +5005,28 @@ void drawSequencerOverlay() {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::Overview) {
-    char lineBuffer[SEQUENCER_OVERVIEW_STEPS_PER_PAGE][24];
-    constexpr byte overviewPageCount =
-      (SEQUENCER_STEP_COUNT + SEQUENCER_OVERVIEW_STEPS_PER_PAGE - 1) / SEQUENCER_OVERVIEW_STEPS_PER_PAGE;
-    if (sequencerOverviewPage >= overviewPageCount) {
-      sequencerOverviewPage = 0;
-    }
-    byte firstStep = static_cast<byte>(sequencerOverviewPage * SEQUENCER_OVERVIEW_STEPS_PER_PAGE);
-
     sequencerOverlayVisible = true;
     sequencerOverlayDirty = false;
 
     u8g2.clearBuffer();
     u8g2.setFont(u8g2_font_6x13_tf);
 
-    for (byte row = 0; row < SEQUENCER_OVERVIEW_STEPS_PER_PAGE; row++) {
-      byte stepIndex = static_cast<byte>(firstStep + row);
-      if (stepIndex >= SEQUENCER_STEP_COUNT) {
+    int y = SEQUENCER_OVERVIEW_FIRST_LINE_Y;
+    char lineOne[24];
+    char lineTwo[24];
+    for (byte stepIndex = sequencerOverviewStartStep; stepIndex < SEQUENCER_STEP_COUNT; stepIndex++) {
+      fillOverviewStepLines(stepIndex, lineOne, sizeof(lineOne), lineTwo, sizeof(lineTwo));
+      bool usesSecondLine = (lineTwo[0] != '\0');
+      int lastBaseline = usesSecondLine ? (y + SEQUENCER_OVERVIEW_SECOND_LINE_OFFSET) : y;
+      if (lastBaseline > SEQUENCER_OVERVIEW_MAX_BASELINE_Y) {
         break;
       }
-      fillOverviewStepLine(stepIndex, lineBuffer[row], sizeof(lineBuffer[row]));
-      int y = 3 + (row * 15);
-      u8g2.drawStr(4, y, lineBuffer[row]);
+
+      u8g2.drawStr(4, y, lineOne);
+      if (usesSecondLine) {
+        u8g2.drawStr(4, y + SEQUENCER_OVERVIEW_SECOND_LINE_OFFSET, lineTwo);
+      }
+      y += usesSecondLine ? SEQUENCER_OVERVIEW_DOUBLE_STEP_ADVANCE : SEQUENCER_OVERVIEW_SINGLE_STEP_ADVANCE;
     }
 
     u8g2.sendBuffer();

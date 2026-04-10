@@ -11,6 +11,7 @@ Current OLED layout:
   Copy #13
   L 150% V 96 P 75%
   C3 E3 G3
+  B3 D4 F4
   Tap target step
   Tools/enc = exit
 
@@ -26,7 +27,9 @@ Current behavior:
 
 Display notes:
 
-- if the source step is tied, the note row shows `T` instead of note labels
+- the note area stays on one line when the labels fit and wraps only when
+  needed
+- if the source step is tied, the note area shows `T` instead of note labels
 
 Display behavior:
 
