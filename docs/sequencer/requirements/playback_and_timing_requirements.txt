@@ -196,6 +196,24 @@ A step with a length value above 100 percent shall be allowed to continue
 across later steps.
 
 
+ID: SEQ-PLAY-015A
+Title: Step Boundary Release Ordering
+Status: Active
+Area: Playback
+Priority: High
+
+Requirement:
+When a step reaches its scheduled note-off at a step boundary, the sequencer
+shall release that note before starting the next non-tied transport step.
+
+Details:
+- A length value of exactly 100 percent shall therefore hold through its own
+  step and release at the next step boundary.
+- Tie is the explicit exception: when the next transport step continues that
+  source step, the carried note shall remain active across the boundary
+  instead of being released first.
+
+
 ID: SEQ-PLAY-016
 Title: Probability Range
 Status: Active

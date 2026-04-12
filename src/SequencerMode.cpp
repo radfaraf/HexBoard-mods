@@ -617,6 +617,8 @@ int findActiveSequencerTransportPlaybackGroup(byte sourceStep);
 void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration);
 void clearSequencerPlaybackGroup(SequencerPlaybackGroup& group, bool stopNotes = true);
 bool doesNextSequencerStepContinueSource(byte stepIndex, byte activeStepCount);
+bool doesSequencerStepContinuePlaybackGroup(int8_t stepIndex, byte activeStepCount, const SequencerPlaybackGroup& group);
+void releaseSequencerPlaybackGroupsForStepBoundary(int8_t nextStepIndex, byte activeStepCount);
 void recordSequencerExternalClockPulse();
 bool advanceSequencerExternalClockState(uint64_t& stepDuration);
 void updatePendingExternalGateSyncEstimate();
@@ -2383,6 +2385,38 @@ bool doesNextSequencerStepContinueSource(byte stepIndex, byte activeStepCount) {
          findSequencerTieSourceStep(nextStepIndex, activeStepCount) == stepIndex;
 }
 
+bool doesSequencerStepContinuePlaybackGroup(int8_t stepIndex, byte activeStepCount, const SequencerPlaybackGroup& group) {
+  if (stepIndex < 0 ||
+      stepIndex >= activeStepCount ||
+      !group.transportPlayback ||
+      group.sourceStep < 0 ||
+      !sequencerStepTie[static_cast<byte>(stepIndex)]) {
+    return false;
+  }
+
+  return findSequencerTieSourceStep(static_cast<byte>(stepIndex), activeStepCount) == group.sourceStep;
+}
+
+void releaseSequencerPlaybackGroupsForStepBoundary(int8_t nextStepIndex, byte activeStepCount) {
+  for (byte groupIndex = 0; groupIndex < SEQUENCER_MAX_ACTIVE_PLAYBACK_GROUPS; groupIndex++) {
+    SequencerPlaybackGroup& group = sequencerPlaybackGroups[groupIndex];
+    if (!group.active ||
+        (group.externalClock.pendingGateSync && group.noteOffAt == 0) ||
+        group.externalClock.pendingTieBoundary ||
+        runTime < group.noteOffAt) {
+      continue;
+    }
+
+    // Boundary note-offs should happen before the next regular step retriggers,
+    // but ties must keep their carried note alive across that boundary.
+    if (doesSequencerStepContinuePlaybackGroup(nextStepIndex, activeStepCount, group)) {
+      continue;
+    }
+
+    clearSequencerPlaybackGroup(group, true);
+  }
+}
+
 void continueSequencerTiePlayback(byte stepIndex, uint64_t stepDuration) {
   byte activeStepCount = sequencerActiveStepCount();
   int8_t sourceStep = findSequencerTieSourceStep(stepIndex, activeStepCount);
@@ -2497,11 +2531,14 @@ void serviceSequencerPlaybackGroups() {
 
 void advanceSequencerPlaybackStep(uint64_t stepDuration, bool applyProbability) {
   byte activeStepCount = sequencerActiveStepCount();
-  sequencerPlayingStep = nextSequencerStep(activeStepCount);
+  int8_t nextStepIndex = nextSequencerStep(activeStepCount);
 
-  if (sequencerPlayingStep < 0) {
+  if (nextStepIndex < 0) {
     return;
   }
+
+  releaseSequencerPlaybackGroupsForStepBoundary(nextStepIndex, activeStepCount);
+  sequencerPlayingStep = nextStepIndex;
 
   byte stepIndex = static_cast<byte>(sequencerPlayingStep);
   if (sequencerStepTie[stepIndex]) {
@@ -2677,6 +2714,12 @@ void startSequencerPlaybackGroup(byte stepIndex, uint64_t stepDuration, bool app
   group.sourceStep = transportPlayback ? static_cast<int8_t>(stepIndex) : -1;
   group.transportPlayback = transportPlayback;
   uint64_t playbackStartedAt = runTime;
+  if (transportPlayback && sequencerCurrentStepStartedAt > 0) {
+    // Transport gate timing follows the step boundary rather than the service-loop
+    // timestamp so 100% notes release on-grid and same-pitch retriggers do not
+    // drift into each other on monosynths.
+    playbackStartedAt = sequencerCurrentStepStartedAt;
+  }
   group.externalClock = SequencerPlaybackExternalClockState{};
   group.externalClock.gatePercent = gatePercent;
   group.externalClock.startedAt = playbackStartedAt;

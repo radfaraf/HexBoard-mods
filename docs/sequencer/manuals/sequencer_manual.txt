@@ -157,7 +157,8 @@ The available length values are:
 
 Length is stored as a percentage of the step duration.
 
-- 100% means one full step
+- 100% means one full step and releases at the step boundary before the next
+  non-tied step starts
 - values below 100% shorten the note
 - values above 100% let the note continue across later steps
 - 0% means the step will not sound
@@ -422,6 +423,8 @@ Tie behavior:
 - a tied step does not send a new note-on during transport playback
 - the tied step continues the nearest earlier eligible non-tied step from the
   same pattern pass
+- Tie is the exception to the normal 100% boundary release, so the carried
+  source note stays active into the tied step instead of being released first
 - the lower playable keyboard keeps the carried note lit for the full held
   duration while that tied continuation remains active
 - the tied step ignores its own stored note, length, velocity, and probability
