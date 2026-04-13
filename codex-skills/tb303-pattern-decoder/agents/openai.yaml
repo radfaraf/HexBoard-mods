@@ -1,4 +1,4 @@
 interface:
   display_name: "TB-303 Pattern Decoder"
   short_description: "Decode acid pattern screenshots and 303 diagrams."
-  default_prompt: "Use $tb303-pattern-decoder to explain what the circles, ties, and note rows mean in a TB-303 or TD-3 acid pattern screenshot and convert it into a HexBoard-friendly step list."
+  default_prompt: "Use $tb303-pattern-decoder to explain what the circles, ties, and note rows mean in a TB-303 or TD-3 acid pattern screenshot and convert it into a HexBoard-friendly step list, treating slide as 150% note length overlap for TD-3 / TD-3-MO when Slide mode is enabled and Multi Trigger is Off."

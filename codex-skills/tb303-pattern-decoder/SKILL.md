@@ -22,8 +22,9 @@ Use this skill when a user shares a 303-style pattern image, acid pattern screen
    - length percent
    - velocity
    - probability
-5. Do not imply HexBoard supports true TB-303 slide unless the current firmware really does.
-6. If the source pattern depends on 303 behavior that HexBoard does not match exactly, give the closest usable HexBoard entry and name the compromise.
+5. For actionable `TD-3` or `TD-3-MO` entry guidance, map `slide` to `150%` length on the source note step rather than `Tie`.
+6. Always say that this overlap-based slide mapping is specific to `TD-3` / `TD-3-MO` playback with the device configured for `Slide mode` plus `Multi Trigger Off`.
+7. If the source pattern depends on other 303 behavior that HexBoard does not match exactly, give the closest usable HexBoard entry and name the compromise.
 
 ## HexBoard Mapping
 
@@ -31,7 +32,7 @@ Use this skill when a user shares a 303-style pattern image, acid pattern screen
 - `rest` time step: leave the step empty
 - `tie` time step: use HexBoard `Tie`
 - `accent`: raise velocity on that step
-- `slide`: explain that it is distinct from Tie and only map it if the current firmware truly supports it
+- `slide`: explain that it is distinct from Tie and, by default, map it to `150%` length on the sliding note's source step for `TD-3` / `TD-3-MO` playback with `Slide mode` enabled and `Multi Trigger Off`
 - octave flags such as `UP` or `DOWN`: shift the displayed pitch by one octave or tuning cycle as appropriate
 
 ## Output Expectations
@@ -41,6 +42,7 @@ When answering with this skill:
 - explain the source notation in plain language first
 - clearly label any uncertain symbol meanings
 - if asked for conversion, provide a step-by-step HexBoard entry list
+- when slides appear in a conversion, default to the `150%` overlap method and label it as `TD-3` / `TD-3-MO` specific
 - prefer compact tables or numbered steps over long prose
 
 Read [references/notation-guide.md](references/notation-guide.md) when you need the common 303 symbol mappings or translation rules.

@@ -28,7 +28,8 @@ Translate the source into HexBoard in this order:
 3. Convert `rest` time steps into empty HexBoard steps.
 4. Convert `tie` time steps into HexBoard `Tie`.
 5. Map accents to higher velocity.
-6. Only map slide if HexBoard truly supports the needed behavior; otherwise call it out as unsupported and offer the closest workaround.
+6. For actionable `TD-3` / `TD-3-MO` conversion, map `slide` to `150%` length on the source note step so it overlaps into the next note.
+7. State that this overlap method assumes the target device is configured with `Slide mode` enabled and `Multi Trigger Off`, because that is what lets the overlapping note length trigger the slide properly.
 
 ## Confidence Guidance
 
@@ -42,5 +43,6 @@ Be explicit about uncertainty when:
 ## Common Caveats
 
 - `Tie` and `slide` are not the same thing on a TB-303.
+- For this skill's default actionable `TD-3` / `TD-3-MO` output, `slide` maps to overlapping length (`150%`), not to HexBoard `Tie`.
 - A 303 chart may show a pitch label above a step that is not a sounded new note if the paired `time mode` step is a tie or rest.
 - Web diagrams sometimes simplify or stylize the original 303 entry process, so describe the confidence level when decoding them.
