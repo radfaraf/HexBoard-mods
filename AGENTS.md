@@ -161,6 +161,18 @@ When needed:
 
 - If a behavior has changed over time, make sure the current code and the manuals reflect only the latest intended behavior.
 
+## Plan Revision Review
+
+When creating plans, if a plan has already been proposed and is later revised, do not show only the replacement plan.
+
+For revised plans:
+
+- Present the full updated plan.
+- Also include a brief "what changed" summary that highlights the differences from the prior version.
+- Focus the change summary on additions, removals, changed assumptions, changed scope, and changed implementation or testing details.
+- Keep the change summary compact and easy to review.
+- If nothing material changed, say that explicitly instead of implying a major revision.
+
 ## Commit Message Preference
 
 - When there are uncommitted changes, always suggest one commit message that covers everything currently uncommitted, not just the latest turn's work.
