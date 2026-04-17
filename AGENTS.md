@@ -171,6 +171,9 @@ For revised plans:
 - Also include a brief "what changed" summary that highlights the differences from the prior version.
 - Focus the change summary on additions, removals, changed assumptions, changed scope, and changed implementation or testing details.
 - Keep the change summary compact and easy to review.
+- Mark newly added items inside the revised plan with bold labels such as `**NEW:**` or `**Added:**` when that helps the changes scan quickly.
+- Italicize the actual new wording where practical so additions stand out from unchanged text.
+- If the new text is too large or awkward to italicize cleanly, keep the bold marker and prioritize readability.
 - If nothing material changed, say that explicitly instead of implying a major revision.
 
 ## Commit Message Preference
