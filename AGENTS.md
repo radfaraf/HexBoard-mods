@@ -23,6 +23,7 @@ mode-specific documentation for Codex to follow.
 - Repo-owned Codex skill copies live in `codex-skills/`.
 - Keep project-specific skills in that folder so they stay versioned with the firmware and docs.
 - Treat the repo copies as the project source of truth when reading or updating project skills.
+- For this machine, the installed paths under `/Users/robertw/.codex/skills/` for project-owned skills should be symlinks to the matching repo folders in `codex-skills/` so they stay automatically in sync.
 - Current project-owned skills:
   - `codex-skills/hexboard-persistence-guard/`
   - `codex-skills/hexboard-key-menu-builder/`
@@ -31,7 +32,7 @@ mode-specific documentation for Codex to follow.
 - When a project skill is intentionally updated, keep its related references and `agents/openai.yaml` in sync in the same pass.
 - Always update the repo copy under `codex-skills/` first so the change is versioned and can be committed and pushed to GitHub.
 - Never treat the installed copy under `$CODEX_HOME/skills/` as the source of truth for project skills.
-- If an installed copy exists under `$CODEX_HOME/skills/` (for this machine, `/Users/robertw/.codex/skills/`), sync it from the updated repo copy in the same pass.
+- If the installed path under `$CODEX_HOME/skills/` (for this machine, `/Users/robertw/.codex/skills/`) is missing or has been replaced with a real directory, restore the symlink to the repo copy instead of manually syncing duplicate files.
 
 ## Code Commenting Preference
 
