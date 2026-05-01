@@ -4049,7 +4049,8 @@ GEMItem menuItemSequencerRenameOrDelete("Rename or Delete", openSequencerRenameO
 GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerTapPreview("Tap Preview", sequencerTapPreview, selectSequencerTapPreview, sequencerTapPreviewMenuCallback);
-GEMItem menuItemSequencerMonophonicMode("Monophonic mode", sequencerMonophonicMode, selectSequencerMonophonicMode, sequencerMonophonicModeMenuCallback);
+GEMItem menuItemSequencerPlaybackDivider("----------");
+GEMItem menuItemSequencerMonophonicMode("Monophonic", sequencerMonophonicMode, selectSequencerMonophonicMode, sequencerMonophonicModeMenuCallback);
 GEMItem menuItemSequencerPlayType("Play Type", sequencerPlayType, selectSequencerPlayType, sequencerPlayTypeMenuCallback);
 GEMItem menuItemSequencerClockSource("Clock Source", sequencerClockSource, selectSequencerClockSource, sequencerClockSourceMenuCallback);
 GEMItem menuItemSequencerSendClock("Send Clock", sequencerSendClock, selectSequencerSendClock, sequencerSendClockMenuCallback);
@@ -4690,8 +4691,9 @@ void setupSequencerMenu() {
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerDirection);
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerTempo);
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerPlayType);
-  menuPageSequencerPlayback.addMenuItem(menuItemSequencerMonophonicMode);
   menuPageSequencerPlayback.addMenuItem(menuGotoSequencerMidiSync);
+  menuPageSequencerPlayback.addMenuItem(menuItemSequencerPlaybackDivider);
+  menuPageSequencerPlayback.addMenuItem(menuItemSequencerMonophonicMode);
 
   // Keep MIDI sync in its own submenu so these general settings are clearly separate from per-sequence playback data.
   menuPageSequencerMidiSync.addMenuItem(menuItemSequencerClockSource);

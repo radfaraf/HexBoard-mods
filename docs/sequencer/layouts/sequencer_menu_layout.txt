@@ -28,8 +28,9 @@ Playback Settings submenu:
   Direction
   Tempo
   Play Type
-  Monophonic mode
   MIDI Sync
+  ----------
+  Monophonic
 
 MIDI Sync submenu:
 

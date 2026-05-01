@@ -47,7 +47,7 @@ Step Editing
 - The note area stays on one line when the labels fit and only uses a second
   line when needed.
 - Each step can hold up to 6 notes.
-- Monophonic mode in Playback Settings changes note entry so each new note
+- Monophonic in Playback Settings changes note entry so each new note
   replaces the selected step's current notes with that one note.
 - Step notes are kept sorted from lowest to highest.
 - In 12 EDO, note labels use normal note names like `C3`.
@@ -185,7 +185,7 @@ Menu Items
   setting also affects the lower keyboard note lights that transport playback
   triggers
 - Playback Settings:
-  Steps, Direction, Tempo, Play Type, Monophonic mode, MIDI Sync
+  Steps, Direction, Tempo, Play Type, MIDI Sync, ----------, Monophonic
 - Playback Settings > MIDI Sync:
   Clock Source, Send Clock, Send Transport
 - File Management:
@@ -196,7 +196,7 @@ Menu Items
 - Choosing Delete from that action page opens a confirmation page that shows
   the target and requires choosing `Yes, Delete` or `Cancel`.
 - Tap Preview: audition step contents when a step is tapped
-- Monophonic mode: when On, note entry stores one note per selected step by
+- Monophonic: when On, note entry stores one note per selected step by
   replacing any current notes with the newly pressed note
 - Synth Options: opens the shared synth settings page
 - Update Firmware: reboots to the firmware update bootloader
@@ -248,7 +248,7 @@ Saving And Files
   per-step velocity, per-step probability, and per-step Tie.
 - Tap Preview is a general sequencer setting and is not stored per sequence
   file. It is saved with the board profile and Auto-Save settings system.
-- Monophonic mode, Clock Source, Send Clock, and Send Transport are general
+- Monophonic, Clock Source, Send Clock, and Send Transport are general
   sequencer settings and are not stored per sequence file. They are saved with
   the board profile and Auto-Save settings system.
 - Seq Lights settings are general sequencer settings and are not stored per

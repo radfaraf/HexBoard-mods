@@ -99,9 +99,9 @@ With no step selected:
 With a step selected:
 
 - pressing a note key auditions that note
-- with Monophonic mode Off, the note is added to the step if it was not already
+- with Monophonic Off, the note is added to the step if it was not already
   there, and pressing the same note again removes it from the step
-- with Monophonic mode On, the newly pressed note replaces the selected step's
+- with Monophonic On, the newly pressed note replaces the selected step's
   current notes so the step contains one note
 - this step-edit workflow does not drive the `Now Playing` overlay
 
@@ -270,15 +270,16 @@ Available direction modes:
 - Brownian: moves only to neighboring steps
 - Drunk: may stay still or move one step left or right
 
-8.7 Monophonic mode
+8.7 Monophonic
 
-Monophonic mode is in Playback Settings.
+Monophonic is the last item in Playback Settings, separated from the other
+playback controls by a divider.
 
 - Off: note entry works as normal chord entry, with up to 6 notes per step
 - On: pressing a lower keyboard note while a step is selected replaces that
   step's current notes with the newly pressed note
-- Existing saved chord steps are not rewritten just by turning Monophonic mode
-  On. The replacement happens when you enter a new note on a selected step.
+- Existing saved chord steps are not rewritten just by turning Monophonic On.
+  The replacement happens when you enter a new note on a selected step.
 
 
 9. Output Mode
@@ -506,8 +507,9 @@ Playback Settings submenu:
 - Direction
 - Tempo
 - Play Type
-- Monophonic mode
 - MIDI Sync
+- ----------
+- Monophonic
 
 MIDI Sync submenu:
 
@@ -848,7 +850,7 @@ The current save file stores:
 - the probability value for each step
 - the Tie flag for each step
 
-Tap Preview and Monophonic mode are general sequencer settings and are not
+Tap Preview and Monophonic are general sequencer settings and are not
 stored per sequence file. They are saved with the board profile and Auto-Save
 settings system.
 
@@ -885,7 +887,7 @@ Older files that do not contain Tie fields load with Tie off on every step.
 4. Turn the encoder while the step is selected to set note length quickly.
 5. Repeat for other steps.
 6. Press the top-right key to start playback.
-7. Adjust Tempo, Steps, Direction, Play Type, or Monophonic mode from Playback
+7. Adjust Tempo, Steps, Direction, Play Type, or Monophonic from Playback
    Settings, and Tap Preview from the main Sequencer menu, as needed.
 8. Choose Save or Save New to store the sequence.
 
