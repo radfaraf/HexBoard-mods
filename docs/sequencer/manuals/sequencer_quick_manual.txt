@@ -47,8 +47,9 @@ Step Editing
 - The note area stays on one line when the labels fit and only uses a second
   line when needed.
 - Each step can hold up to 6 notes.
-- Monophonic in Playback Settings changes note entry so each new note
-  replaces the selected step's current notes with that one note.
+- Monophonic in Playback Settings changes note entry so each different note
+  replaces the selected step's current notes with that one note. Pressing the
+  same current note clears the step.
 - Step notes are kept sorted from lowest to highest.
 - In 12 EDO, note labels use normal note names like `C3`.
 - In other tunings, note labels use `step.octave` style labels like `7.4`.
@@ -197,7 +198,8 @@ Menu Items
   the target and requires choosing `Yes, Delete` or `Cancel`.
 - Tap Preview: audition step contents when a step is tapped
 - Monophonic: when On, note entry stores one note per selected step by
-  replacing any current notes with the newly pressed note
+  replacing any current notes with a different newly pressed note; pressing the
+  same current note clears the step
 - Synth Options: opens the shared synth settings page
 - Update Firmware: reboots to the firmware update bootloader
 

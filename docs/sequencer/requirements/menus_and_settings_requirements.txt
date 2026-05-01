@@ -231,6 +231,8 @@ Details:
 - Off shall preserve normal chord-entry behavior with up to 6 notes per step.
 - On shall make each newly entered note replace the selected step's current
   notes with that one note.
+- On shall clear the selected step when the pressed note matches the selected
+  step's current single note.
 - Monophonic shall be stored in the board profile settings rather than in the
   current sequence file.
 

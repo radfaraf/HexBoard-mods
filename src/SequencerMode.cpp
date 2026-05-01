@@ -1943,7 +1943,11 @@ bool shouldDisplaySequencerTie(int8_t stepIndex) {
 
 void toggleEditBufferNote(int16_t pitchSteps) {
   if (sequencerMonophonicMode == SEQUENCER_MONOPHONIC_ON) {
-    // Monophonic entry replaces the whole selected-step note list instead of toggling chord members.
+    // Monophonic entry toggles the current single note, otherwise it replaces the whole note list.
+    if (sequencerEditNoteCount == 1 && sequencerEditPitchSteps[0] == pitchSteps) {
+      clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
+      return;
+    }
     clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
     sequencerEditPitchSteps[0] = pitchSteps;
     sequencerEditNoteCount = 1;

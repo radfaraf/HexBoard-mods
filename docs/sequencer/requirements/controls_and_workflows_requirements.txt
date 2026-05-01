@@ -111,6 +111,8 @@ Details:
   note in the step.
 - With Monophonic On, selected-step note entry shall replace the selected
   step's current notes with the pressed note.
+- With Monophonic On, if the selected step currently contains only the pressed
+  note, selected-step note entry shall clear the step instead.
 
 
 ID: SEQ-CTRL-008

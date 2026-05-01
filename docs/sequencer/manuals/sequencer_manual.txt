@@ -102,7 +102,8 @@ With a step selected:
 - with Monophonic Off, the note is added to the step if it was not already
   there, and pressing the same note again removes it from the step
 - with Monophonic On, the newly pressed note replaces the selected step's
-  current notes so the step contains one note
+  current notes so the step contains one note; if the step already contains
+  only that same note, pressing it again clears the step
 - this step-edit workflow does not drive the `Now Playing` overlay
 
 Sequencer note entry uses the current Keyboard tuning and transpose rather than
@@ -278,6 +279,8 @@ playback controls by a divider.
 - Off: note entry works as normal chord entry, with up to 6 notes per step
 - On: pressing a lower keyboard note while a step is selected replaces that
   step's current notes with the newly pressed note
+- On: pressing the same note as the selected step's current single note clears
+  the step
 - Existing saved chord steps are not rewritten just by turning Monophonic On.
   The replacement happens when you enter a new note on a selected step.
 
