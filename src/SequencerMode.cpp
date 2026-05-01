@@ -73,6 +73,8 @@ constexpr byte SEQUENCER_TRANSPORT_STOP = 0;
 constexpr byte SEQUENCER_TRANSPORT_PLAY = 1;
 constexpr byte SEQUENCER_TAP_PREVIEW_OFF = 0;
 constexpr byte SEQUENCER_TAP_PREVIEW_ON = 1;
+constexpr byte SEQUENCER_MONOPHONIC_OFF = 0;
+constexpr byte SEQUENCER_MONOPHONIC_ON = 1;
 constexpr byte SEQUENCER_PLAY_TYPE_MIDI = 0;
 constexpr byte SEQUENCER_PLAY_TYPE_OB_SYNTH = 1;
 constexpr byte SEQUENCER_CLOCK_SOURCE_INTERNAL = 0;
@@ -276,6 +278,7 @@ bool sequencerTransportHeld = false;
 SequencerOverlayMode sequencerOverlayBeforePerformance = SequencerOverlayMode::Hidden;
 byte sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
 byte sequencerTapPreview = SEQUENCER_TAP_PREVIEW_ON;
+byte sequencerMonophonicMode = SEQUENCER_MONOPHONIC_OFF;
 byte sequencerPlayType = SEQUENCER_PLAY_TYPE_MIDI;
 byte sequencerClockSource = SEQUENCER_CLOCK_SOURCE_INTERNAL;
 byte sequencerSendClock = SEQUENCER_SEND_CLOCK_OFF;
@@ -1939,6 +1942,14 @@ bool shouldDisplaySequencerTie(int8_t stepIndex) {
 }
 
 void toggleEditBufferNote(int16_t pitchSteps) {
+  if (sequencerMonophonicMode == SEQUENCER_MONOPHONIC_ON) {
+    // Monophonic entry replaces the whole selected-step note list instead of toggling chord members.
+    clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
+    sequencerEditPitchSteps[0] = pitchSteps;
+    sequencerEditNoteCount = 1;
+    return;
+  }
+
   byte index = findNoteInBuffer(sequencerEditPitchSteps, sequencerEditNoteCount, pitchSteps);
   if (index < SEQUENCER_MAX_NOTES_PER_STEP) {
     for (byte i = index; i + 1 < sequencerEditNoteCount; i++) {
@@ -2782,6 +2793,7 @@ void clearSelectedSequencerStep() {
 
 void resetSequencerState() {
   byte preservedTapPreview = sequencerTapPreview;
+  byte preservedMonophonicMode = sequencerMonophonicMode;
   byte preservedClockSource = sequencerClockSource;
   byte preservedSendClock = sequencerSendClock;
   byte preservedSendTransport = sequencerSendTransport;
@@ -2812,6 +2824,7 @@ void resetSequencerState() {
   sequencerPlayingStep = -1;
   sequencerStepPlayCount = SEQUENCER_STEP_COUNT;
   sequencerTapPreview = preservedTapPreview;
+  sequencerMonophonicMode = preservedMonophonicMode;
   sequencerPlayType = SEQUENCER_PLAY_TYPE_MIDI;
   sequencerClockSource = preservedClockSource;
   sequencerSendClock = preservedSendClock;
@@ -3861,6 +3874,11 @@ void sequencerTapPreviewMenuCallback(GEMCallbackData callbackData) {
   persistSequencerGeneralSettingsToProfile();
 }
 
+void sequencerMonophonicModeMenuCallback(GEMCallbackData callbackData) {
+  (void)callbackData;
+  persistSequencerGeneralSettingsToProfile();
+}
+
 void sequencerPlayTypeMenuCallback(GEMCallbackData callbackData) {
   (void)callbackData;
   setSequencerDirtyState(true);
@@ -3948,6 +3966,8 @@ GEMSpinner spinnerSequencerTempo(spinnerBoundariesSequencerTempo, GEM_LOOP);
 
 SelectOptionByte optionByteSequencerTapPreview[] = { { "Off", SEQUENCER_TAP_PREVIEW_OFF }, { "On", SEQUENCER_TAP_PREVIEW_ON } };
 GEMSelect selectSequencerTapPreview(sizeof(optionByteSequencerTapPreview) / sizeof(SelectOptionByte), optionByteSequencerTapPreview);
+SelectOptionByte optionByteSequencerMonophonicMode[] = { { "Off", SEQUENCER_MONOPHONIC_OFF }, { "On", SEQUENCER_MONOPHONIC_ON } };
+GEMSelect selectSequencerMonophonicMode(sizeof(optionByteSequencerMonophonicMode) / sizeof(SelectOptionByte), optionByteSequencerMonophonicMode);
 SelectOptionByte optionByteSequencerPlayType[] = { { "MIDI", SEQUENCER_PLAY_TYPE_MIDI }, { "OB Synth", SEQUENCER_PLAY_TYPE_OB_SYNTH } };
 GEMSelect selectSequencerPlayType(sizeof(optionByteSequencerPlayType) / sizeof(SelectOptionByte), optionByteSequencerPlayType);
 SelectOptionByte optionByteSequencerClockSource[] = {
@@ -4029,6 +4049,7 @@ GEMItem menuItemSequencerRenameOrDelete("Rename or Delete", openSequencerRenameO
 GEMItem menuItemSequencerRevert("Revert", revertSequencerMenuCallback);
 GEMItem menuItemSequencerStepPlayCount("Steps", sequencerStepPlayCount, spinnerSequencerStepPlayCount, sequencerStepPlayCountMenuCallback);
 GEMItem menuItemSequencerTapPreview("Tap Preview", sequencerTapPreview, selectSequencerTapPreview, sequencerTapPreviewMenuCallback);
+GEMItem menuItemSequencerMonophonicMode("Monophonic mode", sequencerMonophonicMode, selectSequencerMonophonicMode, sequencerMonophonicModeMenuCallback);
 GEMItem menuItemSequencerPlayType("Play Type", sequencerPlayType, selectSequencerPlayType, sequencerPlayTypeMenuCallback);
 GEMItem menuItemSequencerClockSource("Clock Source", sequencerClockSource, selectSequencerClockSource, sequencerClockSourceMenuCallback);
 GEMItem menuItemSequencerSendClock("Send Clock", sequencerSendClock, selectSequencerSendClock, sequencerSendClockMenuCallback);
@@ -4189,6 +4210,7 @@ uint64_t getSequencerTransportPlaybackLedTimePressed(byte buttonIndex) {
 SequencerPersistentSettings getSequencerPersistentSettings() {
   SequencerPersistentSettings values;
   values.tapPreview = sequencerTapPreview;
+  values.monophonicMode = sequencerMonophonicMode;
   values.clockSource = sequencerClockSource;
   values.sendClock = sequencerSendClock;
   values.sendTransport = sequencerSendTransport;
@@ -4201,6 +4223,8 @@ SequencerPersistentSettings getSequencerPersistentSettings() {
 // Apply profile-backed sequencer preferences without touching per-sequence musical data.
 void applySequencerPersistentSettings(const SequencerPersistentSettings& values) {
   sequencerTapPreview = (values.tapPreview == SEQUENCER_TAP_PREVIEW_OFF) ? SEQUENCER_TAP_PREVIEW_OFF : SEQUENCER_TAP_PREVIEW_ON;
+  sequencerMonophonicMode =
+    (values.monophonicMode == SEQUENCER_MONOPHONIC_ON) ? SEQUENCER_MONOPHONIC_ON : SEQUENCER_MONOPHONIC_OFF;
   sequencerClockSource =
     (values.clockSource == SEQUENCER_CLOCK_SOURCE_EXTERNAL_MIDI) ? SEQUENCER_CLOCK_SOURCE_EXTERNAL_MIDI : SEQUENCER_CLOCK_SOURCE_INTERNAL;
   sequencerSendClock = (values.sendClock == SEQUENCER_SEND_CLOCK_ON) ? SEQUENCER_SEND_CLOCK_ON : SEQUENCER_SEND_CLOCK_OFF;
@@ -4666,6 +4690,7 @@ void setupSequencerMenu() {
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerDirection);
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerTempo);
   menuPageSequencerPlayback.addMenuItem(menuItemSequencerPlayType);
+  menuPageSequencerPlayback.addMenuItem(menuItemSequencerMonophonicMode);
   menuPageSequencerPlayback.addMenuItem(menuGotoSequencerMidiSync);
 
   // Keep MIDI sync in its own submenu so these general settings are clearly separate from per-sequence playback data.

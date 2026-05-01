@@ -106,7 +106,11 @@ audition.
 Details:
 - With no step selected, pressing a lower keyboard note shall audition only.
 - With a step selected, pressing a lower keyboard note shall audition and also
-  toggle that note in the selected step.
+  edit the note contents of the selected step.
+- With Monophonic mode Off, selected-step note entry shall toggle the pressed
+  note in the step.
+- With Monophonic mode On, selected-step note entry shall replace the selected
+  step's current notes with the pressed note.
 
 
 ID: SEQ-CTRL-008

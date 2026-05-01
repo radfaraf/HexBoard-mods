@@ -58,7 +58,7 @@ Preferred workflow for larger Sequencer changes:
 - then tell the user the code work is done and ready for testing as part of the same reply
 - use this exact line for that handoff:
   `CODING READY FOR TESTING.`
-- then suggest a commit message for the current uncommitted work
+- then suggest a commit message only if repo status shows uncommitted changes
 - then immediately update the documentation files in the same overall pass when Sequencer docs, layouts, or requirements need it
 - when beginning that documentation pass, use this exact line:
   `UPDATING DOCS.`
@@ -179,13 +179,11 @@ For revised plans:
 
 ## Commit Message Preference
 
-- When there are uncommitted changes, always suggest one commit message that covers everything currently uncommitted, not just the latest turn's work.
-- If earlier changes are still uncommitted, keep including them in the suggested message until they are actually committed.
-- Phrase the message around the main resulting change as a whole. If the uncommitted work is "add feature X" plus follow-up fixes to finish feature X before commit, the message should usually be about adding feature X, not about the latest fix in isolation.
-- Once some changes have been committed, stop mentioning them and base future suggestions only on what is still uncommitted.
-- This applies across all affected files, including `AGENTS.md`, manuals, layout docs, requirements, scripts, and code.
-- Keep commit message suggestions simple, clear, and easy to use.
-- Format commit suggestions like this so they are easy to spot:
+- Suggest a commit message only when the current workspace has uncommitted changes.
+- Before suggesting a commit message, check the repo status for the current workspace.
+- If the repo status is clean, do not mention commit messages.
+- If there are uncommitted changes, suggest one simple commit message that covers the full current diff, including docs and other non-code files.
+- Format suggestions like this:
   `COMMIT MESSAGE SUGGESTION:`
   `message here`
 

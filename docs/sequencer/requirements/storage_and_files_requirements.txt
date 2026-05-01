@@ -10,8 +10,8 @@ Requirement:
 Sequence files shall be stored under /Sequences in onboard flash.
 
 Details:
-- General sequencer display preferences such as Tap Preview, MIDI Sync
-  settings, and Seq Lights settings shall not be stored in sequence files.
+- General sequencer preferences such as Tap Preview, Monophonic mode, MIDI
+  Sync settings, and Seq Lights settings shall not be stored in sequence files.
 
 
 ID: SEQ-FILE-002
@@ -235,8 +235,8 @@ Details:
 - Sequence files also store per-step probability.
 - Sequence files also store per-step Tie flags.
 - Older files that do not contain Tie fields shall load with all Tie flags off.
-- Tap Preview, Clock Source, Send Clock, and Send Transport are general
-  sequencer settings and are not stored per sequence file.
+- Tap Preview, Monophonic mode, Clock Source, Send Clock, and Send Transport
+  are general sequencer settings and are not stored per sequence file.
 - Those general sequencer settings shall be stored in the board profile
   settings and follow the Auto-Save profile workflow.
 

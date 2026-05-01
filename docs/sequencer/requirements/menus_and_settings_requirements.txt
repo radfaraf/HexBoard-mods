@@ -153,6 +153,7 @@ Details:
 - Direction
 - Tempo
 - Play Type
+- Monophonic mode
 - MIDI Sync
 
 
@@ -210,6 +211,24 @@ Priority: High
 Requirement:
 The Play Type menu item shall switch between MIDI playback and onboard synth
 playback.
+
+
+ID: SEQ-MENU-010A
+Title: Monophonic Mode Setting
+Status: Active
+Area: Menus
+Priority: High
+
+Requirement:
+The Monophonic mode menu item shall control whether live selected-step note
+entry stores one note or allows chord entry.
+
+Details:
+- Off shall preserve normal chord-entry behavior with up to 6 notes per step.
+- On shall make each newly entered note replace the selected step's current
+  notes with that one note.
+- Monophonic mode shall be stored in the board profile settings rather than in
+  the current sequence file.
 
 
 ID: SEQ-MENU-012

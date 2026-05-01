@@ -25,6 +25,7 @@ struct SequencerPersistentSettings {
   byte stepAccentEvery = 0;
   byte stepColorMode = 1;
   byte stepHue = 9;  // Indigo default
+  byte monophonicMode = 0;
 };
 
 bool getButtonPitchStepsForSequencer(byte buttonIndex, int16_t& pitchSteps);

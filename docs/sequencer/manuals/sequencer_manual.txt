@@ -13,7 +13,7 @@ split, so you can return to the normal board behavior at any time.
 - Track count: 1 track
 - Step count available: 32 steps
 - Active playback length: 1 to 32 steps
-- Notes per step: up to 4
+- Notes per step: up to 6
 - Note storage format: tuning-relative pitch steps
 - Length per step: stored per step
 - Velocity per step: stored per step
@@ -99,8 +99,10 @@ With no step selected:
 With a step selected:
 
 - pressing a note key auditions that note
-- the note is also added to the step if it was not already there
-- pressing the same note again removes it from the step
+- with Monophonic mode Off, the note is added to the step if it was not already
+  there, and pressing the same note again removes it from the step
+- with Monophonic mode On, the newly pressed note replaces the selected step's
+  current notes so the step contains one note
 - this step-edit workflow does not drive the `Now Playing` overlay
 
 Sequencer note entry uses the current Keyboard tuning and transpose rather than
@@ -267,6 +269,16 @@ Available direction modes:
 - Random: picks any step in the active range each tick
 - Brownian: moves only to neighboring steps
 - Drunk: may stay still or move one step left or right
+
+8.7 Monophonic mode
+
+Monophonic mode is in Playback Settings.
+
+- Off: note entry works as normal chord entry, with up to 6 notes per step
+- On: pressing a lower keyboard note while a step is selected replaces that
+  step's current notes with the newly pressed note
+- Existing saved chord steps are not rewritten just by turning Monophonic mode
+  On. The replacement happens when you enter a new note on a selected step.
 
 
 9. Output Mode
@@ -494,6 +506,7 @@ Playback Settings submenu:
 - Direction
 - Tempo
 - Play Type
+- Monophonic mode
 - MIDI Sync
 
 MIDI Sync submenu:
@@ -835,8 +848,9 @@ The current save file stores:
 - the probability value for each step
 - the Tie flag for each step
 
-Tap Preview is a general sequencer setting and is not stored per sequence
-file. It is saved with the board profile and Auto-Save settings system.
+Tap Preview and Monophonic mode are general sequencer settings and are not
+stored per sequence file. They are saved with the board profile and Auto-Save
+settings system.
 
 Clock Source, Send Clock, and Send Transport are general sequencer settings and
 are not stored per sequence file. They are saved with the board profile and
@@ -871,8 +885,8 @@ Older files that do not contain Tie fields load with Tie off on every step.
 4. Turn the encoder while the step is selected to set note length quickly.
 5. Repeat for other steps.
 6. Press the top-right key to start playback.
-7. Adjust Tempo, Steps, Direction, or Play Type from Playback Settings, and
-   Tap Preview from the main Sequencer menu, as needed.
+7. Adjust Tempo, Steps, Direction, Play Type, or Monophonic mode from Playback
+   Settings, and Tap Preview from the main Sequencer menu, as needed.
 8. Choose Save or Save New to store the sequence.
 
 

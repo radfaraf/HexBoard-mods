@@ -5348,7 +5348,7 @@ struct SettingsHeader {
   uint8_t defaultProfileIndex;
 };
 
-constexpr uint8_t CURRENT_SETTINGS_VERSION = 2;
+constexpr uint8_t CURRENT_SETTINGS_VERSION = 3;
 constexpr uint8_t PROFILE_COUNT = 9;
 constexpr uint8_t DEFAULT_PROFILE_INDEX = 0;
 
@@ -5414,6 +5414,7 @@ enum class SettingKey : uint8_t {
   SequencerStepAccentEvery,
   SequencerStepColorMode,
   SequencerStepHue,
+  SequencerMonophonicMode,
   // This must remain last – it gives the total number of settings.
   NumSettings
 };
@@ -5490,6 +5491,7 @@ const uint8_t factoryDefaults[NUM_SETTINGS] = {
   /* SequencerStepAccentEvery     */ 4,
   /* SequencerStepColorMode       */ 1,
   /* SequencerStepHue             */ 9,
+  /* SequencerMonophonicMode      */ 0,
 };
 
 // ==================================================
@@ -5556,7 +5558,8 @@ bool load_settings() {
     save_settings();
     return false;
   }
-  if (header.version != CURRENT_SETTINGS_VERSION) {
+  bool migratingFromVersion2 = (header.version == 2);
+  if (header.version != CURRENT_SETTINGS_VERSION && !migratingFromVersion2) {
     sendToLog("Settings version mismatch. File version: " + std::to_string(header.version) + "; Expected version: " + std::to_string(CURRENT_SETTINGS_VERSION));
     f.close();
     applyFactoryDefaultsToSettings();
@@ -5565,8 +5568,8 @@ bool load_settings() {
   }
   // Always boot from profile 1 even if an older file recorded a different default.
   defaultProfileIndex = DEFAULT_PROFILE_INDEX;
-  size_t storedSettingCount = NUM_SETTINGS;
-  size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * NUM_SETTINGS;
+  size_t storedSettingCount = migratingFromVersion2 ? static_cast<size_t>(NUM_SETTINGS - 1) : static_cast<size_t>(NUM_SETTINGS);
+  size_t expectedSize = static_cast<size_t>(PROFILE_COUNT) * storedSettingCount;
   size_t actualSize = static_cast<size_t>(f.size());
   size_t actualSettingsSize = (actualSize >= sizeof(SettingsHeader)) ? (actualSize - sizeof(SettingsHeader)) : 0;
   if (actualSettingsSize != expectedSize) {
@@ -5587,6 +5590,7 @@ bool load_settings() {
     save_settings();
     return false;
   }
+  applyFactoryDefaultsToSettings();
   for (uint8_t profile = 0; profile < PROFILE_COUNT; ++profile) {
     memcpy(
       settingsProfiles[profile],
@@ -5596,6 +5600,11 @@ bool load_settings() {
   activeProfileIndex = defaultProfileIndex;
   settings = settingsProfiles[activeProfileIndex];
   settingsDirty = false;
+  if (migratingFromVersion2) {
+    sendToLog("Migrated settings from version 2 to version 3.");
+    save_settings();
+    settingsDirty = false;
+  }
   sendToLog("Settings loaded successfully.");
   return true;
 }
@@ -5684,6 +5693,7 @@ void persistSequencerGeneralSettingsToProfile() {
   settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)] = sequencerSettings.stepAccentEvery;
   settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)] = sequencerSettings.stepColorMode;
   settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)] = sequencerSettings.stepHue;
+  settings[static_cast<uint8_t>(SettingKey::SequencerMonophonicMode)] = sequencerSettings.monophonicMode;
   markSettingsDirty();
 }
 
@@ -7403,6 +7413,7 @@ void syncSettingsToRuntime() {
   sequencerSettings.stepAccentEvery = settings[static_cast<uint8_t>(SettingKey::SequencerStepAccentEvery)];
   sequencerSettings.stepColorMode = settings[static_cast<uint8_t>(SettingKey::SequencerStepColorMode)];
   sequencerSettings.stepHue = settings[static_cast<uint8_t>(SettingKey::SequencerStepHue)];
+  sequencerSettings.monophonicMode = settings[static_cast<uint8_t>(SettingKey::SequencerMonophonicMode)];
   applySequencerPersistentSettings(sequencerSettings);
   updateEnvelopeParamsFromSettings();
   updateArpeggiatorTiming();
