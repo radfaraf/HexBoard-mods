@@ -364,6 +364,8 @@ void enterSequencerExactVelocityEdit();
 void exitSequencerExactVelocityEdit(bool saveChanges);
 void enterSequencerExactProbabilityEdit();
 void exitSequencerExactProbabilityEdit(bool saveChanges);
+bool handleSequencerExactEncoderEditButtonEvent(byte buttonIndex, bool pressed);
+int8_t buttonIndexToSequencerStep(byte buttonIndex);
 void enterSequencerFunctionPicker();
 void exitSequencerFunctionPicker();
 void enterSequencerCopyTargetSelect();
@@ -1353,6 +1355,36 @@ void exitSequencerExactProbabilityEdit(bool saveChanges) {
   sequencerOverlayDirty = true;
 }
 
+bool handleSequencerExactEncoderEditButtonEvent(byte buttonIndex, bool pressed) {
+  if (!pressed) {
+    return true;
+  }
+
+  SequencerOverlayMode editMode = sequencerOverlayMode;
+  if (buttonIndex == SEQUENCER_FUNCTION_BUTTON_INDEX) {
+    if (editMode == SequencerOverlayMode::ExactVelocityEdit) {
+      exitSequencerExactVelocityEdit(false);
+    } else if (editMode == SequencerOverlayMode::ExactProbabilityEdit) {
+      exitSequencerExactProbabilityEdit(false);
+    }
+    return true;
+  }
+
+  int8_t stepIndex = buttonIndexToSequencerStep(buttonIndex);
+  if (stepIndex >= 0) {
+    // Keep step pads live during encoder-driven edits, but preserve
+    // encoder-press-as-save by reloading the target step's stored value.
+    if (sequencerTapPreview == SEQUENCER_TAP_PREVIEW_ON) {
+      previewSequencerStep(static_cast<byte>(stepIndex));
+    }
+    if (sequencerSelectedStep != stepIndex) {
+      selectSequencerStepForEditing(static_cast<byte>(stepIndex), editMode);
+    }
+  }
+
+  return true;
+}
+
 void enterSequencerCopyTargetSelect() {
   if (sequencerSelectedStep < 0) {
     return;
@@ -1942,18 +1974,6 @@ bool shouldDisplaySequencerTie(int8_t stepIndex) {
 }
 
 void toggleEditBufferNote(int16_t pitchSteps) {
-  if (sequencerMonophonicMode == SEQUENCER_MONOPHONIC_ON) {
-    // Monophonic entry toggles the current single note, otherwise it replaces the whole note list.
-    if (sequencerEditNoteCount == 1 && sequencerEditPitchSteps[0] == pitchSteps) {
-      clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
-      return;
-    }
-    clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
-    sequencerEditPitchSteps[0] = pitchSteps;
-    sequencerEditNoteCount = 1;
-    return;
-  }
-
   byte index = findNoteInBuffer(sequencerEditPitchSteps, sequencerEditNoteCount, pitchSteps);
   if (index < SEQUENCER_MAX_NOTES_PER_STEP) {
     for (byte i = index; i + 1 < sequencerEditNoteCount; i++) {
@@ -1963,6 +1983,14 @@ void toggleEditBufferNote(int16_t pitchSteps) {
       sequencerEditNoteCount--;
       sequencerEditPitchSteps[sequencerEditNoteCount] = SEQUENCER_NO_PITCH;
     }
+    return;
+  }
+
+  if (sequencerMonophonicMode == SEQUENCER_MONOPHONIC_ON) {
+    // Different Mono notes replace the step, but an existing pressed note still toggles off above.
+    clearSequencerNoteBuffer(sequencerEditPitchSteps, sequencerEditNoteCount);
+    sequencerEditPitchSteps[0] = pitchSteps;
+    sequencerEditNoteCount = 1;
     return;
   }
 
@@ -4526,16 +4554,12 @@ void handleSequencerButtonEvent(byte buttonIndex, bool pressed) {
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactVelocityEdit) {
-    if (!pressed) {
-      return;
-    }
+    handleSequencerExactEncoderEditButtonEvent(buttonIndex, pressed);
     return;
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
-    if (!pressed) {
-      return;
-    }
+    handleSequencerExactEncoderEditButtonEvent(buttonIndex, pressed);
     return;
   }
 
@@ -5256,7 +5280,6 @@ void applySequencerLedOverrides() {
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
     }
-    return;
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::ExactProbabilityEdit) {
@@ -5264,7 +5287,6 @@ void applySequencerLedOverrides() {
     for (uint16_t buttonIndex = 0; buttonIndex < ledCount; buttonIndex++) {
       strip.setPixelColor(buttonIndex, 0);
     }
-    return;
   }
 
   if (sequencerOverlayMode == SequencerOverlayMode::FunctionPicker) {

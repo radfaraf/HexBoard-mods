@@ -116,7 +116,12 @@ instructions.
 Details:
 - Exact velocity editing is encoder-driven and does not require dedicated lit
   button hints.
-- While this overlay is open, all keys remain dark.
+- While this overlay is open, the normal sequencer step LEDs and function LEDs
+  shall remain visible.
+- While this overlay is open, tapping another step pad shall switch the
+  velocity editor to that step without saving pending changes from the previous
+  step.
+- While this overlay is open, lower note-entry keys shall not edit notes.
 - The helper text shall instruct the user to press the encoder to save.
 - Steps whose note labels fit on one line shall not reserve a blank second line.
 - If the selected step has Tie enabled, the note area shall show `T` instead of
@@ -138,7 +143,12 @@ encoder instructions.
 Details:
 - Exact probability editing is encoder-driven and does not require dedicated
   lit button hints.
-- While this overlay is open, all keys remain dark.
+- While this overlay is open, the normal sequencer step LEDs and function LEDs
+  shall remain visible.
+- While this overlay is open, tapping another step pad shall switch the
+  probability editor to that step without saving pending changes from the
+  previous step.
+- While this overlay is open, lower note-entry keys shall not edit notes.
 - The helper text shall instruct the user to press the encoder to save.
 - Steps whose note labels fit on one line shall not reserve a blank second line.
 - If the selected step has Tie enabled, the note area shall show `T` instead of

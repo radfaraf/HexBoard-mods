@@ -99,6 +99,10 @@ Step Velocity
 - Turn the encoder to move through:
   0, 5, 10, 15, ... 125, 127
 - Press the encoder to save.
+- While Vel is open, the step pads and sequencer function lights stay visible.
+- Tap another step pad to switch Vel editing to that step; pending encoder
+  changes are not saved unless you press the encoder first.
+- Lower note-entry keys do not add or remove notes while Vel is open.
 - Playback, tap preview, save, and load all use the stored step velocity.
 
 Step Probability
@@ -111,6 +115,10 @@ Step Probability
 - Turn the encoder to move through:
   0, 5, 10, 15, ... 100
 - Press the encoder to save.
+- While Prob is open, the step pads and sequencer function lights stay visible.
+- Tap another step pad to switch Prob editing to that step; pending encoder
+  changes are not saved unless you press the encoder first.
+- Lower note-entry keys do not add or remove notes while Prob is open.
 - Playback, save, and load all use the stored step probability.
 - Tap Preview ignores probability and still auditions the step.
 - Tied steps are the exception: Tap Preview stays silent on them.

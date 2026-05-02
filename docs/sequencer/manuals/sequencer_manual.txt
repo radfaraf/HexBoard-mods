@@ -384,6 +384,12 @@ The exact velocity screen uses encoder entry:
 - the values are:
   0, 5, 10, 15, ... 125, 127
 - pressing the encoder saves and returns to the tools picker
+- while Vel is open, the step pads and sequencer function lights stay visible
+- tapping another step pad switches Vel editing to that step and reloads that
+  step's saved velocity
+- pending encoder changes are discarded if you leave Vel or switch steps before
+  pressing the encoder
+- lower note-entry keys do not add or remove notes while Vel is open
 
 Velocity affects:
 
@@ -412,6 +418,12 @@ The exact probability screen uses encoder entry:
 - turn the encoder to move through:
   0, 5, 10, 15, ... 100
 - pressing the encoder saves and returns to the tools picker
+- while Prob is open, the step pads and sequencer function lights stay visible
+- tapping another step pad switches Prob editing to that step and reloads that
+  step's saved probability
+- pending encoder changes are discarded if you leave Prob or switch steps
+  before pressing the encoder
+- lower note-entry keys do not add or remove notes while Prob is open
 
 Probability affects:
 
