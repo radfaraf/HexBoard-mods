@@ -109,10 +109,11 @@ Details:
   edit the note contents of the selected step.
 - With Monophonic Off, selected-step note entry shall toggle the pressed
   note in the step.
+- With Monophonic On, selected-step note entry shall remove the pressed note if
+  the selected step already contains that note.
 - With Monophonic On, selected-step note entry shall replace the selected
-  step's current notes with the pressed note.
-- With Monophonic On, if the selected step currently contains only the pressed
-  note, selected-step note entry shall clear the step instead.
+  step's current notes with the pressed note when that note is not already in
+  the selected step.
 
 
 ID: SEQ-CTRL-008

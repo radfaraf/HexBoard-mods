@@ -229,10 +229,10 @@ Details:
   items by a non-interactive divider.
 - The Monophonic menu item shall appear last in the Playback Settings submenu.
 - Off shall preserve normal chord-entry behavior with up to 6 notes per step.
-- On shall make each newly entered note replace the selected step's current
-  notes with that one note.
-- On shall clear the selected step when the pressed note matches the selected
-  step's current single note.
+- On shall remove the pressed note when the selected step already contains that
+  note.
+- On shall make a pressed note replace the selected step's current notes with
+  that one note when the selected step does not already contain it.
 - Monophonic shall be stored in the board profile settings rather than in the
   current sequence file.
 
