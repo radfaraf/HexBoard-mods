@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 3:42PM EDT
+Last updated: 2026-06-24 3:50PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -32,6 +32,41 @@ receive one focused task at a time.
   belong in separate implementation work handled by other workers.
 - When Robert accepts, rejects, defers, or completes a candidate, update this
   ledger in the same coordination branch.
+
+## Standard Porting Flow
+
+Use this flow for each small upstream PR.
+
+1. Robert chooses one candidate.
+2. This planning thread writes a worker-ready task brief with source commits,
+   target behavior, target seams, docs to update, and exact verification.
+3. The worker creates a branch in
+   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` named
+   `codex/<short-feature-name>`.
+4. The worker implements one focused slice, updates relevant upstream docs,
+   verifies, and commits locally.
+5. This planning thread reviews the implementation before the ledger changes.
+6. If accepted, push the branch to Robert's fork:
+   `git push -u origin <branch>`.
+7. Open a PR with this compare URL pattern:
+   `https://github.com/shapingthesilence/HexBoard/compare/development...radfaraf:HexBoard-mods:<branch>?expand=1`.
+8. Update this ledger with the branch, verification, PR URL, and current status.
+
+## PR Template
+
+Use this as the starting body for future upstream PRs.
+
+```md
+## Summary
+
+[One short paragraph describing the behavior and why it is useful.]
+
+## Verification
+
+- `git diff --check` passed
+- Build result:
+- Manual hardware checks:
+```
 
 ## Strong Candidates
 
@@ -96,39 +131,46 @@ already include equivalent or stronger behavior.
 
 - None yet. Robert has not selected the first implementation slice.
 
-## Completed
+## Completed Infrastructure
 
 - Preserved the `hexboard-sequencer` source/archive branch locally and on
   GitHub at `e33dae7fd0421c5e82dcb9902e583e4d1c104757`.
 - Created the upstream implementation workspace:
   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream`.
 - Created this coordination branch and ledger.
-- Physical menu shortcut buttons.
-  - Source commits: `7579e06`, `2f32fc4`, `a54fcf5`.
-  - Implementation branch:
-    `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
-    `codex/physical-menu-shortcut-buttons`.
-  - Changed files reported/reviewed:
-    `src/firmware/hardware/GridScanRotary.cpp`,
-    `docs/user-manual.md`, and `docs/developer-guide.md`.
-  - Behavior completed: while an OLED menu or virtual list browser is active,
-    hold the bottom command button as a modifier and press the top/middle
-    command buttons to navigate. Normal navigation uses top=up and middle=down;
-    GEM value editing uses top=increase and middle=decrease. Shortcut button
-    state is masked during wheel updates so menu navigation does not also move
-    velocity, modulation, or pitch bend.
-  - Verification reported by implementation worker: `git diff --check` passed;
-    direct checkout `make` failed because the folder name does not match
-    `HexBoard.ino`; temp-folder build from
-    `/private/tmp/hexboard-build-physical-menu-shortcut-20260624/HexBoard`
-    passed with `648544` bytes program storage and `191764` bytes globals.
-    Robert manually tested the shortcut and confirmed it works.
-  - Review status: reviewed in this planning thread with no blocking findings.
-  - Submission status: submitted upstream as
-    `https://github.com/shapingthesilence/HexBoard/pull/14`
-    (`shapingthesilence/HexBoard#14`) targeting `development`.
-  - Remaining status step: watch PR review/CI and update this ledger again
-    after the PR is merged, closed, or requires follow-up changes.
+
+## Porting Status
+
+| Item | Local Status | Upstream Status | Branch / PR |
+| --- | --- | --- | --- |
+| Physical menu shortcut buttons | Complete, reviewed, tested | Submitted | `codex/physical-menu-shortcut-buttons`, `shapingthesilence/HexBoard#14` |
+
+## Completed Port Details
+
+### Physical menu shortcut buttons
+
+- Source commits: `7579e06`, `2f32fc4`, `a54fcf5`.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/physical-menu-shortcut-buttons`.
+- PR: `https://github.com/shapingthesilence/HexBoard/pull/14`, targeting
+  upstream `development`.
+- Changed files reported/reviewed:
+  `src/firmware/hardware/GridScanRotary.cpp`, `docs/user-manual.md`, and
+  `docs/developer-guide.md`.
+- Behavior completed: while an OLED menu or virtual list browser is active,
+  hold the bottom command button as a modifier and press the top/middle command
+  buttons to navigate. Normal navigation uses top=up and middle=down; GEM value
+  editing uses top=increase and middle=decrease. Shortcut button state is
+  masked during wheel updates so menu navigation does not also move velocity,
+  modulation, or pitch bend.
+- Verification: `git diff --check` passed; direct checkout `make` failed
+  because the folder name does not match `HexBoard.ino`; temp-folder build from
+  `/private/tmp/hexboard-build-physical-menu-shortcut-20260624/HexBoard` passed
+  with `648544` bytes program storage and `191764` bytes globals. Robert
+  manually tested the shortcut and confirmed it works.
+- Next: watch PR review/CI and update this ledger after the PR is merged,
+  closed, or requires follow-up changes.
 
 ## Rejected Or Already Upstream
 
