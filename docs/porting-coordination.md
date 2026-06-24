@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 3:50PM EDT
+Last updated: 2026-06-24 3:52PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -78,11 +78,6 @@ to consider first.
   - Behavior: adjusts GEM menu sizing/font so menu headers are easier to read.
   - Status: candidate, not selected yet. Needs fit check against upstream's
     newer menu layout.
-- Personal `docs/TODO.txt` ignore rule.
-  - Source commit: `3afbfd6`.
-  - Behavior: keeps Robert's personal `docs/TODO.txt` out of version control.
-  - Status: candidate, likely fork/local workflow only unless upstream wants
-    personal notes ignored.
 - Arduino IDE sync helper improvements.
   - Source commits include `1cc98fe` plus older helper-script commits.
   - Behavior: improves helper workflow for syncing the project to an Arduino
@@ -174,6 +169,9 @@ already include equivalent or stronger behavior.
 
 ## Rejected Or Already Upstream
 
+- Personal `docs/TODO.txt` ignore rule: do not port. This file is Robert's
+  personal notes file and should be left alone by workers unless Robert
+  explicitly asks for help with it.
 - MIDI-IN animation press-lighting fix: already upstream.
 - Note display overlay behavior: likely already upstream; verify only if a
   hardware test shows a gap.
@@ -183,8 +181,6 @@ already include equivalent or stronger behavior.
 ## Open Questions
 
 - Which candidate should be selected first for an implementation worker?
-- Should `docs/TODO.txt` ignore behavior remain local/fork-only, or is it worth
-  proposing upstream?
 - Does current upstream still need any Arduino IDE sync helper, or did the new
   root-sketch layout make that obsolete?
 - If current menu labels already show the selected tuning/layout/scale, does
