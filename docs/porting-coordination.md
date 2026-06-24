@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 5:51PM EDT
+Last updated: 2026-06-24 6:52PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -45,7 +45,15 @@ exception; see the aggregate sequencer flow below.
    artifact Robert should test.
    Worker briefs should be formatted as one plain copy/paste `text` block with
    no extra surrounding prose, so Robert can paste them directly into another
-   worker chat.
+   worker chat. Every worker brief should begin with this Plan Mode instruction
+   before the task details:
+
+   ```text
+   Please use Plan Mode first. Review this task brief against the current
+   upstream workspace and old sequencer reference, then produce a
+   decision-complete implementation plan. Do not edit files until Robert
+   approves the plan.
+   ```
 3. The worker creates a branch in
    `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` named
    `codex/<short-feature-name>`. Default branch policy: each independent
@@ -154,6 +162,45 @@ Working assumptions until upstream gives different guidance:
 - Both disabled and enabled builds must compile during sequencer PRs.
 - When disabled, there should be no sequencer menu item, no active sequencer
   runtime behavior, and no changes to normal Keyboard-mode flow.
+
+## Sequencer Port Architecture Notes
+
+These notes are guardrails for later sequencer implementation slices. They are
+not final runtime architecture decisions for every subsystem.
+
+- Treat the old `hexboard-sequencer` branch as a behavior/reference source, not
+  as a file-structure template to recreate.
+- Keep sequencer-owned code under `src/firmware/sequencer/` as much as
+  practical. Non-sequencer firmware modules should use narrow sequencer API
+  hooks instead of depending on sequencer internals.
+- Split sequencer code by responsibility so no single file grows into another
+  oversized mode implementation. Expected seams include the mode shell,
+  state/model, input/editing, LEDs, menus/overlay, playback/timing, and
+  storage/file-management.
+- For storage/file-management, review old heap-using paths before porting code
+  that relies on `String` or `std::vector<String>`.
+- For step data, consider a compact `SequencerStep` struct instead of the old
+  parallel arrays, but treat that as a design review item rather than a locked
+  decision.
+- Do not add sequencer settings to upstream profile storage until a sequencer
+  slice truly needs them. Handle settings schema and migration changes as
+  deliberate compatibility work.
+- During the playback slice, review old fixed playback-state buffers before
+  copying their sizes. Preserve reliable note-off, tie, and preview behavior,
+  but measure enabled-build RAM and choose the smallest safe static limits.
+- Record program storage and globals for meaningful disabled and enabled
+  sequencer milestones.
+
+Storage browser ideas to revisit when the persistence/file-management slice
+begins:
+
+- The old browser used a 128-entry table and built each folder view around that
+  limit. Do not copy that design as a settled plan without review.
+- Possible directions include visible-window browsing, bounded page buffers,
+  folder-first organization, repeated scans, or an optional on-disk index if a
+  later need proves it useful.
+- Robert and the planning thread should review these browser ideas together
+  before giving a worker the storage/file-management task brief.
 
 Local implementation slices for the aggregate sequencer PR:
 
