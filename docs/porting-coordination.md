@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 4:55PM EDT
+Last updated: 2026-06-24 5:06PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -101,12 +101,6 @@ Use this as the starting body for future upstream PRs.
 These should be reviewed before selecting, because current upstream appears to
 already include equivalent or stronger behavior.
 
-- Note display overlay behavior.
-  - Source commits: `05ed91a`, `f88b66f`, `6ae908b`.
-  - Upstream status: likely covered by the modular `PlayedNotesOverlay` system,
-    including sleep/wake behavior, hold-after-release behavior, menu badge, and
-    overlay dismissal.
-  - Only reconsider after hardware testing finds missing behavior.
 - MIDI-IN animation press-lighting fix.
   - Source commit: `21428d3`.
   - Upstream status: already present. Upstream avoids normal user key
@@ -214,8 +208,12 @@ already include equivalent or stronger behavior.
   and temp-folder build workflow is fast enough, so adding helper-script
   changes would not solve a current upstream pain point.
 - MIDI-IN animation press-lighting fix: already upstream.
-- Note display overlay behavior: likely already upstream; verify only if a
-  hardware test shows a gap.
+- Note display overlay behavior: already upstream and improved. Upstream's
+  modular `PlayedNotesOverlay` covers the old hold-after-release, release-grace,
+  sleep/wake, and dismissal behavior, and adds stronger behavior such as a menu
+  badge, sorted notes, label/number modes, user-geometry labels, 12-EDO chord
+  names, and delegated-control suppression. Sequencer-specific note display
+  behavior remains deferred with the sequencer phase.
 - Settings migration safety for growing settings arrays: already upstream in a
   stronger migration framework.
 
