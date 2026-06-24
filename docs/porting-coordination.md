@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 4:36PM EDT
+Last updated: 2026-06-24 4:38PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -135,27 +135,7 @@ already include equivalent or stronger behavior.
 
 ## Selected Next
 
-- Current tuning/layout/scale row markers in virtual-list menus.
-  - Source commit: `7ad7e46`.
-  - Branch policy: independent of PR `shapingthesilence/HexBoard#14`; branch
-    from fresh upstream `development`, not from
-    `codex/physical-menu-shortcut-buttons`.
-  - Desired behavior: when the user opens the Tuning, Layout, or Scales browser,
-    the currently active item should be obvious inside the list, preferably with
-    the old leading `*` marker or an equivalent compact cue. Opening the browser
-    should also start on or near the current item when that can be resolved.
-  - Upstream adaptation: do not copy the old GEM-page implementation directly.
-    Current upstream already shows `Tuning:<current>`, `Layout:<current>`, and
-    `Scale:<current>` on the parent menu and now renders these pages through
-    `VirtualListMenu` plus `GeometryMenu.cpp`.
-  - Suggested implementation shape: add the smallest generic support needed to
-    `VirtualListMenu` for provider-supplied active-row marking and initial row
-    selection, then use that from the user-geometry Tuning/Layout/Scales
-    provider. Keep folder rows/back rows distinct from selectable active items.
-  - Verification: `git diff --check`, firmware build from a temp folder named
-    `HexBoard`, and manual hardware checks that each browser marks the current
-    item, opens at the current item when possible, still handles folders/back,
-    and keeps parent-menu current labels working.
+- None selected.
 
 ## Completed Infrastructure
 
@@ -170,6 +150,7 @@ already include equivalent or stronger behavior.
 | Item | Local Status | Upstream Status | Branch / PR |
 | --- | --- | --- | --- |
 | Physical menu shortcut buttons | Complete, reviewed, tested | Submitted | `codex/physical-menu-shortcut-buttons`, `shapingthesilence/HexBoard#14` |
+| Current tuning/layout/scale row markers | Complete, reviewed, tested | Not submitted | `codex/current-item-menu-markers` |
 
 ## Completed Port Details
 
@@ -197,6 +178,35 @@ already include equivalent or stronger behavior.
   manually tested the shortcut and confirmed it works.
 - Next: watch PR review/CI and update this ledger after the PR is merged,
   closed, or requires follow-up changes.
+
+### Current tuning/layout/scale row markers
+
+- Source commit: `7ad7e46`.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/current-item-menu-markers`.
+- Implementation commit: `5d307e3` (`Mark current geometry menu items`).
+- Changed files reported/reviewed: `src/firmware/menu/VirtualListMenu.h`,
+  `src/firmware/menu/VirtualListMenu.cpp`,
+  `src/firmware/menu/GeometryMenu.cpp`,
+  `src/firmware/hardware/GridState.h`,
+  `src/firmware/hardware/GridState.cpp`,
+  `src/firmware/storage/PresetSyncGeometry.cpp`,
+  `docs/user-manual.md`, and `docs/developer-guide.md`.
+- Behavior completed: the Tuning, Layout, and Scales virtual-list browsers mark
+  the active selectable item with a leading `*` and initially focus that row
+  when it is visible. The generic `VirtualListMenuProvider` support avoids
+  marking Back rows, folder links, and label rows.
+- Verification: `git diff --check HEAD~1..HEAD` passed; temp-folder build from
+  `/private/tmp/hexboard-current-item-menu-markers/HexBoard` passed with
+  `649160` bytes program storage and `191380` bytes RAM. Firmware artifact:
+  `/private/tmp/hexboard-current-item-menu-markers/HexBoard/build/HexBoard.ino.uf2`.
+  Robert manually tested the row markers and confirmed they work.
+- Review notes: implementation branch is independent from PR
+  `shapingthesilence/HexBoard#14`; `upstream/development..HEAD` contains only
+  `5d307e3`. Planning-thread review found no blocking issues.
+- Next: push/open a PR when Robert is ready, then update this ledger with the PR
+  URL and upstream status.
 
 ## Rejected Or Already Upstream
 
