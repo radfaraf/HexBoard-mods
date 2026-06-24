@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 4:38PM EDT
+Last updated: 2026-06-24 4:46PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -150,7 +150,7 @@ already include equivalent or stronger behavior.
 | Item | Local Status | Upstream Status | Branch / PR |
 | --- | --- | --- | --- |
 | Physical menu shortcut buttons | Complete, reviewed, tested | Submitted | `codex/physical-menu-shortcut-buttons`, `shapingthesilence/HexBoard#14` |
-| Current tuning/layout/scale row markers | Complete, reviewed, tested | Not submitted | `codex/current-item-menu-markers` |
+| Current tuning/layout/scale row markers | Complete, reviewed, tested | Submitted | `codex/current-item-menu-markers`, `shapingthesilence/HexBoard#15` |
 
 ## Completed Port Details
 
@@ -186,6 +186,8 @@ already include equivalent or stronger behavior.
   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
   `codex/current-item-menu-markers`.
 - Implementation commit: `5d307e3` (`Mark current geometry menu items`).
+- PR: `https://github.com/shapingthesilence/HexBoard/pull/15`, targeting
+  upstream `development`.
 - Changed files reported/reviewed: `src/firmware/menu/VirtualListMenu.h`,
   `src/firmware/menu/VirtualListMenu.cpp`,
   `src/firmware/menu/GeometryMenu.cpp`,
@@ -205,8 +207,8 @@ already include equivalent or stronger behavior.
 - Review notes: implementation branch is independent from PR
   `shapingthesilence/HexBoard#14`; `upstream/development..HEAD` contains only
   `5d307e3`. Planning-thread review found no blocking issues.
-- Next: push/open a PR when Robert is ready, then update this ledger with the PR
-  URL and upstream status.
+- Next: watch PR review/CI and update this ledger after the PR is merged,
+  closed, or requires follow-up changes.
 
 ## Rejected Or Already Upstream
 
