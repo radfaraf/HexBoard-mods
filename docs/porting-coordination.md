@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 3:58PM EDT
+Last updated: 2026-06-24 4:10PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -42,7 +42,20 @@ Use this flow for each small upstream PR.
    target behavior, target seams, docs to update, and exact verification.
 3. The worker creates a branch in
    `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` named
-   `codex/<short-feature-name>`.
+   `codex/<short-feature-name>`. Default branch policy: each independent
+   feature/fix starts from fresh upstream `development`, not from another
+   unmerged PR branch. Only stack on another unmerged PR when the new task truly
+   depends on that PR's code; if stacking is required, the worker brief must
+   explicitly name the dependency PR/branch. Normal independent branch setup:
+
+   ```bash
+   cd /Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream
+   git fetch upstream
+   git switch development
+   git pull --ff-only upstream development
+   git switch -c codex/<short-feature-name>
+   ```
+
 4. The worker implements one focused slice, updates relevant upstream docs,
    verifies, and commits locally.
 5. This planning thread reviews the implementation before the ledger changes.
@@ -114,6 +127,9 @@ already include equivalent or stronger behavior.
 
 - Current tuning/layout/scale row markers in virtual-list menus.
   - Source commit: `7ad7e46`.
+  - Branch policy: independent of PR `shapingthesilence/HexBoard#14`; branch
+    from fresh upstream `development`, not from
+    `codex/physical-menu-shortcut-buttons`.
   - Desired behavior: when the user opens the Tuning, Layout, or Scales browser,
     the currently active item should be obvious inside the list, preferably with
     the old leading `*` marker or an equivalent compact cue. Opening the browser
