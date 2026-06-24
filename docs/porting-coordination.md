@@ -233,7 +233,7 @@ Local implementation slices for the aggregate sequencer PR:
 
 ## Selected Next
 
-- Sequencer mode foundation plus step selection and step LEDs. This should build
+- Step Note Entry Verification And Basic Transport Playback. This should build
   on `codex/sequencer-feature-flag-shell` and remain part of the aggregate
   sequencer PR rather than opening a standalone upstream PR.
 
@@ -286,7 +286,7 @@ Local implementation slices for the aggregate sequencer PR:
   while the existing root sketch stays thin. The only integration point is
   `setupSequencerMenu()` from `MenuAndDisplay.cpp`.
 - Next: use this branch as the base for the aggregate sequencer PR. The next
-  local slice is sequencer mode foundation plus step selection and step LEDs.
+  local slice is Step Note Entry Verification And Basic Transport Playback.
 
 ### Physical menu shortcut buttons
 
