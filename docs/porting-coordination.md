@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 4:46PM EDT
+Last updated: 2026-06-24 4:55PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -93,16 +93,8 @@ Use this as the starting body for future upstream PRs.
 
 ## Strong Candidates
 
-These are the most plausible non-sequencer, non-doc changes from the old branch
-to consider first.
-
-- Arduino IDE sync helper improvements.
-  - Source commits include `1cc98fe` plus older helper-script commits.
-  - Behavior: improves helper workflow for syncing the project to an Arduino
-    IDE-friendly layout.
-  - Status: candidate only if the current upstream layout still has a concrete
-    Arduino IDE pain point. Do not port blindly because upstream has changed
-    structure.
+- None currently selected. Most remaining old-branch work is either already
+  upstream, intentionally skipped, or part of the deferred sequencer phase.
 
 ## Maybe Already Covered
 
@@ -218,6 +210,9 @@ already include equivalent or stronger behavior.
 - Bigger menu/header text: do not port for now. Avoid changing upstream menu
   sizing unless later device testing shows the current menu needs readability
   tweaks.
+- Arduino IDE sync helper improvements: do not port. The current command-line
+  and temp-folder build workflow is fast enough, so adding helper-script
+  changes would not solve a current upstream pain point.
 - MIDI-IN animation press-lighting fix: already upstream.
 - Note display overlay behavior: likely already upstream; verify only if a
   hardware test shows a gap.
@@ -226,5 +221,4 @@ already include equivalent or stronger behavior.
 
 ## Open Questions
 
-- Does current upstream still need any Arduino IDE sync helper, or did the new
-  root-sketch layout make that obsolete?
+- None currently.
