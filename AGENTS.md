@@ -3,6 +3,30 @@
 These are standing instructions for work on the HexBoard firmware and its
 mode-specific documentation for Codex to follow.
 
+## Upstream Port Coordination
+
+This checkout is now also the historical source/archive and planning workspace
+for selectively porting work from `hexboard-sequencer` into the current upstream
+HexBoard `development` firmware.
+
+- Use this repo to inspect the old sequencer branch, preserve context, maintain
+  the porting candidate ledger, and prepare one-task-at-a-time instructions for
+  implementation workers.
+- The upstream implementation workspace is
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream`. Treat
+  that folder as reserved for implementation workers. This planning thread may
+  inspect it for status and context, but should not make changes there unless
+  Robert explicitly asks.
+- Do not bulk merge, rebase, or blindly cherry-pick `hexboard-sequencer` into
+  upstream. Every feature, fix, or doc change must be selected intentionally.
+- Robert will personally review and approve each porting slice before another
+  worker implements it.
+- On the `codex/porting-coordinator` branch, only update coordination
+  documentation unless Robert explicitly expands the scope.
+- Keep `docs/porting-coordination.md` current as the project ledger for goals,
+  candidate decisions, completed work, deferred work, rejected work, and open
+  questions.
+
 ## Core Project Rules
 
 - Always maintain Arduino IDE compatibility.
