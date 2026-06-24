@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 4:10PM EDT
+Last updated: 2026-06-24 4:17PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -40,6 +40,9 @@ Use this flow for each small upstream PR.
 1. Robert chooses one candidate.
 2. This planning thread writes a worker-ready task brief with source commits,
    target behavior, target seams, docs to update, and exact verification.
+   Worker briefs should be formatted as one plain copy/paste `text` block with
+   no extra surrounding prose, so Robert can paste them directly into another
+   worker chat.
 3. The worker creates a branch in
    `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` named
    `codex/<short-feature-name>`. Default branch policy: each independent
