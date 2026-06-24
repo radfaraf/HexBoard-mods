@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 4:17PM EDT
+Last updated: 2026-06-24 4:36PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -39,7 +39,9 @@ Use this flow for each small upstream PR.
 
 1. Robert chooses one candidate.
 2. This planning thread writes a worker-ready task brief with source commits,
-   target behavior, target seams, docs to update, and exact verification.
+   target behavior, target seams, docs to update, exact verification, firmware
+   compile requirements, and the local path/link to the compiled firmware
+   artifact Robert should test.
    Worker briefs should be formatted as one plain copy/paste `text` block with
    no extra surrounding prose, so Robert can paste them directly into another
    worker chat.
@@ -59,8 +61,12 @@ Use this flow for each small upstream PR.
    git switch -c codex/<short-feature-name>
    ```
 
-4. The worker implements one focused slice, updates relevant upstream docs,
-   verifies, and commits locally.
+4. The worker implements one focused slice, updates relevant upstream docs, runs
+   `git diff --check`, compiles the firmware using the appropriate HexBoard
+   build method, provides Robert a local path/link to the compiled firmware
+   artifact for hardware testing, and commits locally. If the build fails, the
+   worker should report the failure and not claim the task is ready for hardware
+   testing.
 5. This planning thread reviews the implementation before the ledger changes.
 6. If accepted, push the branch to Robert's fork:
    `git push -u origin <branch>`.
@@ -81,6 +87,7 @@ Use this as the starting body for future upstream PRs.
 
 - `git diff --check` passed
 - Build result:
+- Firmware artifact for testing:
 - Manual hardware checks:
 ```
 
