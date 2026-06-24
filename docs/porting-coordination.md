@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 5:06PM EDT
+Last updated: 2026-06-24 5:16PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -112,16 +112,64 @@ already include equivalent or stronger behavior.
 
 ## Deferred
 
-- Sequencer feature port.
+- Sequencer feature port. See the sequencer roadmap below.
 - Sequencer manuals, layouts, and requirements docs.
 - Sequencer USB backup and backup GUI tools.
 - TB-303 pattern decoder skill.
 - Repo-owned Codex skill updates and old AGENTS/process-only changes.
 - Old compile-helper tweaks unless a new concrete need appears.
 
+## Sequencer Port Roadmap
+
+The sequencer should be ported as an optional compile-time feature, not as an
+always-on change to upstream firmware. The goal is for users and maintainers to
+be able to build either normal HexBoard firmware without the sequencer or a
+sequencer-enabled firmware.
+
+Working assumptions until upstream gives different guidance:
+
+- Disabled build should be the low-risk default for early upstream PRs.
+- Enabled build should be selected by a clear build flag such as
+  `HEXBOARD_ENABLE_SEQUENCER=1` or an equivalent upstream-preferred name.
+- Arduino IDE compatibility still matters, so the worker should consider both a
+  build flag path and a small config-header path if needed.
+- Both disabled and enabled builds must compile during sequencer PRs.
+- When disabled, there should be no sequencer menu item, no active sequencer
+  runtime behavior, and no changes to normal Keyboard-mode flow.
+
+Planned sequencer slices:
+
+1. Compile-time feature flag plus sequencer shell.
+   - Add the feature flag/config mechanism.
+   - Add minimal `SequencerMode` module stubs or shell integration.
+   - Add no-op behavior when the feature is disabled.
+   - Add a visible sequencer entry only when enabled.
+   - Prove both disabled and enabled firmware builds compile.
+2. Core sequencer editing.
+   - Port the basic step grid, step selection, note entry, deselect behavior,
+     and step LEDs behind the feature flag.
+   - Keep storage, MIDI sync, backup, and advanced tools out of this slice.
+3. Sequencer playback.
+   - Port play/stop, timing, note output, and onboard synth/MIDI playback paths.
+   - Keep advanced probability, ties, and external sync for later unless Robert
+     explicitly chooses to include them.
+4. Sequencer persistence and file management.
+   - Port save/load/new/rename/delete behavior after core editing and playback
+     are stable.
+   - Keep sequencer storage separate from normal Keyboard settings where
+     practical.
+5. Advanced sequencer features and bug fixes.
+   - Port velocity/probability editing, ties, MIDI sync, monophonic entry,
+     lighting refinements, backup tools, and sequencer-specific played-note
+     overlay behavior as separate reviewable slices.
+6. Sequencer documentation pass.
+   - Update sequencer user docs, requirements, and layouts once enough behavior
+     is present to document accurately.
+
 ## Selected Next
 
-- None selected.
+- None selected. When Robert starts the sequencer phase, the first planned
+  worker task is the compile-time feature flag plus sequencer shell.
 
 ## Completed Infrastructure
 
