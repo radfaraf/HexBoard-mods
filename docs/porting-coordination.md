@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 3:22PM EDT
+Last updated: 2026-06-24 3:42PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -124,9 +124,11 @@ already include equivalent or stronger behavior.
     passed with `648544` bytes program storage and `191764` bytes globals.
     Robert manually tested the shortcut and confirmed it works.
   - Review status: reviewed in this planning thread with no blocking findings.
-    Leave the implementation branch in place until the implementation is
-    committed and either merged/cherry-picked into the intended upstream-port
-    branch or otherwise archived.
+  - Submission status: submitted upstream as
+    `https://github.com/shapingthesilence/HexBoard/pull/14`
+    (`shapingthesilence/HexBoard#14`) targeting `development`.
+  - Remaining status step: watch PR review/CI and update this ledger again
+    after the PR is merged, closed, or requires follow-up changes.
 
 ## Rejected Or Already Upstream
 
