@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 3:55PM EDT
+Last updated: 2026-06-24 3:58PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -86,13 +86,6 @@ to consider first.
 These should be reviewed before selecting, because current upstream appears to
 already include equivalent or stronger behavior.
 
-- Current tuning/layout/scale visibility in menus.
-  - Source commit: `7ad7e46`.
-  - Upstream status: likely covered by dynamic main-menu labels such as
-    `Tuning:...`, `Layout:...`, and `Scale:...`, plus newer user-geometry menu
-    handling.
-  - Only reconsider if Robert specifically wants row-level `* current item`
-    markers inside the list rows.
 - Note display overlay behavior.
   - Source commits: `05ed91a`, `f88b66f`, `6ae908b`.
   - Upstream status: likely covered by the modular `PlayedNotesOverlay` system,
@@ -119,7 +112,24 @@ already include equivalent or stronger behavior.
 
 ## Selected Next
 
-- None yet. Robert has not selected the first implementation slice.
+- Current tuning/layout/scale row markers in virtual-list menus.
+  - Source commit: `7ad7e46`.
+  - Desired behavior: when the user opens the Tuning, Layout, or Scales browser,
+    the currently active item should be obvious inside the list, preferably with
+    the old leading `*` marker or an equivalent compact cue. Opening the browser
+    should also start on or near the current item when that can be resolved.
+  - Upstream adaptation: do not copy the old GEM-page implementation directly.
+    Current upstream already shows `Tuning:<current>`, `Layout:<current>`, and
+    `Scale:<current>` on the parent menu and now renders these pages through
+    `VirtualListMenu` plus `GeometryMenu.cpp`.
+  - Suggested implementation shape: add the smallest generic support needed to
+    `VirtualListMenu` for provider-supplied active-row marking and initial row
+    selection, then use that from the user-geometry Tuning/Layout/Scales
+    provider. Keep folder rows/back rows distinct from selectable active items.
+  - Verification: `git diff --check`, firmware build from a temp folder named
+    `HexBoard`, and manual hardware checks that each browser marks the current
+    item, opens at the current item when possible, still handles folders/back,
+    and keeps parent-menu current labels working.
 
 ## Completed Infrastructure
 
@@ -178,8 +188,5 @@ already include equivalent or stronger behavior.
 
 ## Open Questions
 
-- Which candidate should be selected first for an implementation worker?
 - Does current upstream still need any Arduino IDE sync helper, or did the new
   root-sketch layout make that obsolete?
-- If current menu labels already show the selected tuning/layout/scale, does
-  Robert still want row-level `* current item` markers?
