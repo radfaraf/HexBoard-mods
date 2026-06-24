@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 5:16PM EDT
+Last updated: 2026-06-24 5:51PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -35,7 +35,8 @@ receive one focused task at a time.
 
 ## Standard Porting Flow
 
-Use this flow for each small upstream PR.
+Use this flow for each small upstream PR. The sequencer feature port is an
+exception; see the aggregate sequencer flow below.
 
 1. Robert chooses one candidate.
 2. This planning thread writes a worker-ready task brief with source commits,
@@ -73,6 +74,23 @@ Use this flow for each small upstream PR.
 7. Open a PR with this compare URL pattern:
    `https://github.com/shapingthesilence/HexBoard/compare/development...radfaraf:HexBoard-mods:<branch>?expand=1`.
 8. Update this ledger with the branch, verification, PR URL, and current status.
+
+## Sequencer Aggregate PR Flow
+
+Use this flow while porting the sequencer feature.
+
+1. Continue or stack sequencer implementation slices on
+   `codex/sequencer-feature-flag-shell` unless a slice truly needs isolation.
+2. Keep each local slice focused, reviewed, and committed separately so the
+   aggregate PR remains understandable.
+3. Run disabled and enabled builds for every meaningful sequencer milestone, and
+   hardware-test milestones that change board behavior.
+4. Do not open an upstream sequencer PR for placeholder-only scaffolding. Open
+   one aggregate upstream PR after the enabled sequencer build has coherent core
+   behavior, expected to include at least mode entry, step editing, step LEDs,
+   and playback.
+5. If upstream maintainers ask for smaller PRs, update this ledger before
+   changing the submission strategy.
 
 ## PR Template
 
@@ -137,7 +155,7 @@ Working assumptions until upstream gives different guidance:
 - When disabled, there should be no sequencer menu item, no active sequencer
   runtime behavior, and no changes to normal Keyboard-mode flow.
 
-Planned sequencer slices:
+Local implementation slices for the aggregate sequencer PR:
 
 1. Compile-time feature flag plus sequencer shell.
    - Add the feature flag/config mechanism.
@@ -168,8 +186,9 @@ Planned sequencer slices:
 
 ## Selected Next
 
-- None selected. When Robert starts the sequencer phase, the first planned
-  worker task is the compile-time feature flag plus sequencer shell.
+- Sequencer mode foundation plus step selection and step LEDs. This should build
+  on `codex/sequencer-feature-flag-shell` and remain part of the aggregate
+  sequencer PR rather than opening a standalone upstream PR.
 
 ## Completed Infrastructure
 
@@ -185,8 +204,42 @@ Planned sequencer slices:
 | --- | --- | --- | --- |
 | Physical menu shortcut buttons | Complete, reviewed, tested | Submitted | `codex/physical-menu-shortcut-buttons`, `shapingthesilence/HexBoard#14` |
 | Current tuning/layout/scale row markers | Complete, reviewed, tested | Submitted | `codex/current-item-menu-markers`, `shapingthesilence/HexBoard#15` |
+| Sequencer feature flag and shell | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
+
+### Sequencer feature flag and shell
+
+- Sequencer roadmap slice: 1. Compile-time feature flag plus sequencer shell.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commit: `80cd76b` (`Add optional sequencer feature shell`).
+- Changed files reported/reviewed: `Makefile`, `README.md`,
+  `docs/developer-guide.md`, `docs/user-manual.md`,
+  `src/firmware/config/FeatureFlags.h`,
+  `src/firmware/menu/MenuAndDisplay.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`, and
+  `src/firmware/sequencer/SequencerMode.cpp`.
+- Behavior completed: `HEXBOARD_ENABLE_SEQUENCER` defaults to `0`; disabled
+  builds install no Sequencer menu item and add no sequencer runtime behavior.
+  Enabled builds install only a top-level `Sequencer` placeholder page. No old
+  sequencer editing, playback, storage, MIDI sync, LED override, settings, or
+  alternate board-mode behavior was bulk-ported.
+- Verification: `git diff --check upstream/development..HEAD` passed. Default
+  temp-folder build with `HEXBOARD_ENABLE_SEQUENCER=0` passed with `648544`
+  bytes program storage and `191348` bytes globals; firmware artifact:
+  `/private/tmp/hexboard-sequencer-flag-disabled/HexBoard/build/HexBoard.ino.uf2`.
+  Enabled temp-folder build with `HEXBOARD_ENABLE_SEQUENCER=1` passed with
+  `648816` bytes program storage and `191644` bytes globals; firmware artifact:
+  `/private/tmp/hexboard-sequencer-flag-enabled/HexBoard/build/HexBoard.ino.uf2`.
+  Robert manually tested and verified both firmware versions.
+- Review notes: planning-thread review found no blocking issues. The enabled
+  shell uses sequencer-owned static GEM objects and a no-op disabled build path,
+  while the existing root sketch stays thin. The only integration point is
+  `setupSequencerMenu()` from `MenuAndDisplay.cpp`.
+- Next: use this branch as the base for the aggregate sequencer PR. The next
+  local slice is sequencer mode foundation plus step selection and step LEDs.
 
 ### Physical menu shortcut buttons
 
