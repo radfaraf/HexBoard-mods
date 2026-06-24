@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 2:44PM
+Last updated: 2026-06-24 3:22PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -38,13 +38,6 @@ receive one focused task at a time.
 These are the most plausible non-sequencer, non-doc changes from the old branch
 to consider first.
 
-- Physical menu shortcut buttons.
-  - Source commits: `7579e06`, `2f32fc4`, `a54fcf5`.
-  - Behavior: hold the bottom command button and use the top/middle command
-    buttons for menu up/down. Later fixes made direction intuitive: navigation
-    uses top=up and bottom=down; value editing uses top=increase and
-    bottom=decrease.
-  - Status: candidate, not selected yet.
 - Bigger menu/header text.
   - Source commit: `98bfc91`.
   - Behavior: adjusts GEM menu sizing/font so menu headers are easier to read.
@@ -110,6 +103,30 @@ already include equivalent or stronger behavior.
 - Created the upstream implementation workspace:
   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream`.
 - Created this coordination branch and ledger.
+- Physical menu shortcut buttons.
+  - Source commits: `7579e06`, `2f32fc4`, `a54fcf5`.
+  - Implementation branch:
+    `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+    `codex/physical-menu-shortcut-buttons`.
+  - Changed files reported/reviewed:
+    `src/firmware/hardware/GridScanRotary.cpp`,
+    `docs/user-manual.md`, and `docs/developer-guide.md`.
+  - Behavior completed: while an OLED menu or virtual list browser is active,
+    hold the bottom command button as a modifier and press the top/middle
+    command buttons to navigate. Normal navigation uses top=up and middle=down;
+    GEM value editing uses top=increase and middle=decrease. Shortcut button
+    state is masked during wheel updates so menu navigation does not also move
+    velocity, modulation, or pitch bend.
+  - Verification reported by implementation worker: `git diff --check` passed;
+    direct checkout `make` failed because the folder name does not match
+    `HexBoard.ino`; temp-folder build from
+    `/private/tmp/hexboard-build-physical-menu-shortcut-20260624/HexBoard`
+    passed with `648544` bytes program storage and `191764` bytes globals.
+    Robert manually tested the shortcut and confirmed it works.
+  - Review status: reviewed in this planning thread with no blocking findings.
+    Leave the implementation branch in place until the implementation is
+    committed and either merged/cherry-picked into the intended upstream-port
+    branch or otherwise archived.
 
 ## Rejected Or Already Upstream
 
