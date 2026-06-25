@@ -262,7 +262,8 @@ Local implementation slices for the aggregate sequencer PR:
 ## Selected Next
 
 - None currently selected. Sequencer monophonic note entry and Play Type
-  routing have been completed and recorded below.
+  routing plus the selected-step blink fix have been completed and recorded
+  below.
 
 ## Completed Infrastructure
 
@@ -285,6 +286,7 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer step light colors | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer Step Tools and playback semantics | Complete, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer monophonic and Play Type routing | Complete, build-tested and locally tested; OB Synth edge-case checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer selected-step blink fix | Complete, build-tested and Robert-tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -648,6 +650,42 @@ Local implementation slices for the aggregate sequencer PR:
   hidden synth preview-slot paths. Hardware behavior still needs the focused
   manual OB Synth checklist, especially release, stop, and panic behavior
   across route changes.
+- Next: the following Sequencer Selected-Step Blink Fix slice has since been
+  completed and recorded below.
+
+### Sequencer selected-step blink fix
+
+- Sequencer roadmap slice: focused continuation of 5. Advanced sequencer
+  features and bug fixes for sequencer LED/light behavior.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation state: uncommitted follow-up changes after the Monophonic/Play
+  Type routing slice.
+- Changed files reported/spot-checked: `docs/code-analysis.md`,
+  `docs/developer-guide.md`, `docs/sequencer-manual.md`, and
+  `src/firmware/sequencer/SequencerLeds.cpp`.
+- Behavior completed: the upstream sequencer LED renderer now restores the
+  legacy selected-step blink behavior. Selected steps use a `600000ULL` microsecond
+  on phase and a `200000ULL` microsecond off phase, gating the selected step
+  fully off before the normal empty/programmed step rendering path. The existing
+  brightness ladder remains unchanged, so programmed selected steps are still
+  brighter during the on phase.
+- Behavior intentionally not included: any sequence persistence, unrelated
+  Sequencer light-setting changes, PR submission, or additional playback/routing
+  behavior.
+- Verification: worker reported `git diff --check` passed and
+  `make sequencer-builds` passed. The disabled build reported `649080` bytes
+  program storage and `192844` bytes globals/RAM. The enabled build reported
+  `669056` bytes program storage and `196468` bytes globals/RAM. Enabled firmware
+  artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert reported the change was done and tested. This planning-thread update
+  did not rerun any build or compile commands.
+- Review notes: planning-thread spot-check confirmed the current upstream diff
+  adds the blink constants/helper and gates selected step LEDs off during the
+  off phase before normal rendering, with matching upstream documentation
+  updates.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
