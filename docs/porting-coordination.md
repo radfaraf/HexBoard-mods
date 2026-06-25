@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 10:46PM EDT
+Last updated: 2026-06-25 9:36AM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -160,7 +160,7 @@ already include equivalent or stronger behavior.
 ## Deferred
 
 - Sequencer feature port. See the sequencer roadmap below.
-- Sequencer manuals, layouts, and requirements docs.
+- Full sequencer manuals, layouts, and requirements docs.
 - Sequencer USB backup and backup GUI tools.
 - TB-303 pattern decoder skill.
 - Repo-owned Codex skill updates and old AGENTS/process-only changes.
@@ -250,16 +250,17 @@ Local implementation slices for the aggregate sequencer PR:
      practical.
 5. Advanced sequencer features and bug fixes.
    - Port velocity/probability editing, ties, MIDI sync, monophonic entry,
-     lighting refinements, backup tools, and sequencer-specific played-note
-     overlay behavior as separate reviewable slices.
+     remaining lighting refinements, backup tools, and sequencer-specific
+     played-note overlay behavior as separate reviewable slices. Sequencer step
+     light color refinements are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
 
 ## Selected Next
 
-- None currently selected. Sequencer MIDI Audition And Edit Overlay has been
-  completed and recorded below.
+- None currently selected. Sequencer step light colors have been completed and
+  recorded below.
 
 ## Completed Infrastructure
 
@@ -279,6 +280,7 @@ Local implementation slices for the aggregate sequencer PR:
 | Step note entry and basic transport playback | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer playback controls foundation | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer MIDI audition and edit overlay | Complete, reviewed, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer step light colors | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -462,6 +464,59 @@ Local implementation slices for the aggregate sequencer PR:
   stat, changed files, managed-note module, Tap Preview menu setting, lower-grid
   audition/release path, preview-step path, selected-step overlay module, and
   documentation updates. No PR was opened.
+- Next: the following Sequencer Step Light Colors slice has since been
+  completed and recorded below.
+
+### Sequencer step light colors
+
+- Sequencer roadmap slice: focused continuation of 5. Advanced sequencer
+  features and bug fixes for sequencer LED/light behavior.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commit after the MIDI audition/edit-overlay slice: `7cd37e2`
+  (`Port sequencer step light colors`).
+- Changed files reported/reviewed: `docs/code-analysis.md`,
+  `docs/developer-guide.md`, `docs/sequencer-manual.md`,
+  `src/firmware/hardware/LedRender.cpp`,
+  `src/firmware/hardware/LedRender.h`,
+  `src/firmware/menu/MenuAndDisplay.cpp`,
+  `src/firmware/sequencer/SequencerLeds.cpp`,
+  `src/firmware/sequencer/SequencerLightMenu.cpp`,
+  `src/firmware/sequencer/SequencerLightMenu.h`,
+  `src/firmware/sequencer/SequencerLightSettings.cpp`,
+  `src/firmware/sequencer/SequencerLightSettings.h`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/storage/PersistentDataModels.h`, and
+  `src/firmware/storage/Settings.cpp`.
+- Behavior completed: enabled sequencer builds now include a `Seq Lights` page
+  with profile-backed `Accent Every`, `Step Color`, and `Step Hue` controls.
+  The new profile keys are `SequencerStepAccentEvery`,
+  `SequencerStepColorMode`, and `SequencerStepHue`, with
+  `CURRENT_SETTINGS_VERSION` intentionally left at `20` for this aggregate
+  branch compatibility tradeoff. Programmed-step LEDs use the new
+  Regular/Note step color behavior, accent brightness, and the medium/high/
+  highest programmed-step brightness ladder. `Step Color = Note` uses the
+  stored step's lowest note and the board palette hue/saturation, with a narrow
+  LED base-color cache plus linear/gamma helpers to avoid double dimming.
+- Behavior intentionally not included: sequence-file persistence for light
+  preferences, full sequencer save/load/browser persistence, a settings version
+  bump or forced settings migration, remaining advanced sequencer tools, and PR
+  submission.
+- Verification: worker reported `rtk git diff --check`,
+  `rtk make sequencer-disabled`, and `rtk make sequencer-enabled` passed. The
+  disabled build reported `648768` bytes program storage and `192732` bytes
+  globals/RAM. The enabled build reported `656504` bytes program storage and
+  `195484` bytes globals/RAM. Enabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert compiled and tested the build. No temp-copy fallback was needed. This
+  planning-thread update did not rerun firmware builds.
+- Review notes: planning-thread read-only check found the upstream
+  implementation worktree clean at `7cd37e2` and confirmed the reported commit,
+  changed files, `14 files changed, 471 insertions(+), 33 deletions(-)` stat,
+  profile-backed light settings, `Seq Lights` menu, unchanged settings version,
+  LED base-color and linear/gamma helper path, upstream docs updates, and that
+  no PR was opened.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
