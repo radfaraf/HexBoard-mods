@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 6:05PM EDT
+Last updated: 2026-06-25 6:35PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -255,8 +255,9 @@ Local implementation slices for the aggregate sequencer PR:
      and sequencer-specific played-note overlay behavior as separate reviewable
      slices. Sequencer step light color refinements, Step Tools/playback
      semantics, monophonic/Play Type routing, selected-step blink, persistence/
-     file management v1, external MIDI clock receive, MIDI sync send, and the
-     performance monitor overlay are complete and recorded below.
+     file management v1, external MIDI clock receive, MIDI sync send, the
+     performance monitor overlay, and the sequencer overview screen are
+     complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -265,8 +266,9 @@ Local implementation slices for the aggregate sequencer PR:
 
 - None currently selected. Sequencer monophonic note entry and Play Type
   routing, the selected-step blink fix, sequencer persistence/file management
-  v1, external MIDI clock receive, MIDI sync send, and the performance monitor
-  overlay have been completed and recorded below.
+  v1, external MIDI clock receive, MIDI sync send, the performance monitor
+  overlay, and the sequencer overview screen have been completed and recorded
+  below.
 
 ## Completed Infrastructure
 
@@ -294,6 +296,7 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer external MIDI clock receive | Complete, compiled, Robert-tested, and planning-thread checked against `e63518d` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer MIDI sync send | Complete, compiled, Robert-tested, and planning-thread checked against `275a638` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer performance monitor overlay | Complete, compiled, Robert-tested, and planning-thread checked against `874ac2f` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer overview screen | Complete, compiled, Robert-tested, and planning-thread checked against `22eec18` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -964,6 +967,66 @@ Local implementation slices for the aggregate sequencer PR:
   `origin/codex/sequencer-feature-flag-shell`. The check confirmed the commit
   stat as `10 files changed, 434 insertions(+), 32 deletions(-)`, verified the
   changed-file list above, and confirmed that no PR was opened.
+- Next: the following Sequencer Overview Screen slice has since been completed
+  and recorded below.
+
+### Sequencer overview screen
+
+- Sequencer roadmap slice: focused continuation of 5. Advanced sequencer
+  features and bug fixes for the old multi-step pattern review overlay.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commit after the performance monitor overlay slice:
+  `22eec1818e403543df48fa15daff89a12a19a9d4` (`Port sequencer overview
+  screen`).
+- Changed files verified from the implementation commit:
+  `docs/code-analysis.md`, `docs/developer-guide.md`,
+  `docs/sequencer-manual.md`,
+  `src/firmware/sequencer/SequencerInput.cpp`,
+  `src/firmware/sequencer/SequencerLeds.cpp`,
+  `src/firmware/sequencer/SequencerOverlay.cpp`, and
+  `src/firmware/sequencer/SequencerOverlay.h`.
+- Behavior completed: enabled sequencer builds now restore the old note
+  overview screen on the second-row 9th key, physical button `18`. The first
+  press opens the overview from step 1; repeated presses advance through packed
+  pages and cycle through the 32-step pattern. Normal step or note-entry
+  actions hide the overview before continuing normal editing or audition
+  behavior. Modal tool screens keep their existing behavior rather than being
+  interrupted by overview actions.
+- OLED display completed: the overview uses compact no-title rows and packs as
+  many steps as fit on the 128x128 OLED. Empty steps show `_`, tied steps show
+  `T`, chord notes are shown in ascending order, and large chords wrap onto a
+  second indented line for the same step. `12 EDO` uses note labels such as
+  `C4`; other tunings use numeric `step.octave` labels.
+- LED behavior completed: button `18` is restored as a white sequencer utility
+  key, using the idle white level normally and the brighter white level while
+  the overview is active.
+- Behavior intentionally not included: USB Backup, desktop backup scripts or
+  launchers, sequencer-specific played-note overlay behavior, full old
+  sequencer manuals/layouts/requirements port, or PR submission.
+- Verification: Robert reported `git diff --check` passed,
+  `make sequencer-disabled` passed, and `make sequencer-enabled` passed with
+  the expected Arduino low-memory warning for enabled sequencer builds.
+  Disabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-disabled/HexBoard.ino.uf2`.
+  Enabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert reported the build was compiled and hardware-tested. This
+  planning-thread update did not rerun any build or compile commands.
+- Manual checklist completed: Robert tested the overview feature on device
+  after the compiled build. The implemented scope covers opening the overview
+  from button `18`, page advancement, compact row rendering, empty and tied
+  step markers, chord wrapping, tuning-aware labels, hiding before normal
+  step/note editing, preserving modal tool behavior, and the active/idle white
+  utility LED state for button `18`.
+- Review notes: planning-thread read-only check found the upstream
+  implementation worktree clean on `codex/sequencer-feature-flag-shell` at
+  `22eec18`, confirmed the commit stat as `7 files changed, 230
+  insertions(+), 10 deletions(-)`, verified the changed-file list above, and
+  confirmed that the local tracking ref
+  `origin/codex/sequencer-feature-flag-shell` also pointed at `22eec18` during
+  this check. No PR was opened.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
