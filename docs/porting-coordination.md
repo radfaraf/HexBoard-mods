@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 5:14PM EDT
+Last updated: 2026-06-25 5:32PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -252,13 +252,12 @@ Local implementation slices for the aggregate sequencer PR:
    - Sequencer storage remains separate from normal Keyboard settings except
      for profile-backed sequencer preferences.
 5. Advanced sequencer features and bug fixes.
-   - Remaining deferred candidates include song-position-aware MIDI
-     Continue/resume, USB Backup and desktop backup tools, the performance
-     monitor overlay, and sequencer-specific played-note overlay behavior as
-     separate reviewable slices. Sequencer step light color refinements, Step
-     Tools/playback semantics, monophonic/Play Type routing, selected-step
-     blink, persistence/file management v1, external MIDI clock receive, and
-     MIDI sync send are complete and recorded below.
+   - Remaining deferred candidates include USB Backup and desktop backup tools,
+     the performance monitor overlay, and sequencer-specific played-note overlay
+     behavior as separate reviewable slices. Sequencer step light color
+     refinements, Step Tools/playback semantics, monophonic/Play Type routing,
+     selected-step blink, persistence/file management v1, external MIDI clock
+     receive, and MIDI sync send are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -818,9 +817,8 @@ Local implementation slices for the aggregate sequencer PR:
   clock pulses establish a boundary. USB host clock jitter may still be audible
   depending on host and routing.
 - Behavior intentionally not included: MIDI clock send, MIDI transport send,
-  song-position-pointer resume semantics for Continue, USB Backup, desktop
-  backup scripts or launchers, the performance monitor overlay, and PR
-  submission.
+  USB Backup, desktop backup scripts or launchers, the performance monitor
+  overlay, and PR submission.
 - Verification: Robert reported `rtk git diff --check` passed,
   `rtk make sequencer-disabled` passed with `650192` bytes program storage and
   `192860` bytes globals/RAM, and `rtk make sequencer-enabled` passed with
@@ -882,10 +880,9 @@ Local implementation slices for the aggregate sequencer PR:
   Version `20` settings migrate using the pre-`SequencerClockSource` width,
   version `21` settings migrate using the pre-`SequencerSendClock` width, and
   the new send preferences are filled from factory defaults during migration.
-- Behavior intentionally not included: MIDI Continue send, Song Position
-  Pointer resume/send semantics, sequence-file persistence for MIDI sync send
-  preferences, USB Backup, desktop backup scripts or launchers, the performance
-  monitor overlay, and PR submission.
+- Behavior intentionally not included: MIDI Continue send, sequence-file
+  persistence for MIDI sync send preferences, USB Backup, desktop backup
+  scripts or launchers, the performance monitor overlay, and PR submission.
 - Verification: Robert reported `rtk git --no-optional-locks diff --check`
   passed, `rtk make sequencer-disabled` passed with `650352` bytes program
   storage and `192880` bytes globals/RAM, and `rtk make sequencer-enabled`
