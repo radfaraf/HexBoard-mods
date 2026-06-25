@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 9:17PM EDT
+Last updated: 2026-06-24 10:46PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -43,16 +43,37 @@ exception; see the aggregate sequencer flow below.
    target behavior, target seams, docs to update, exact verification, firmware
    compile requirements, and the local path/link to the compiled firmware
    artifact Robert should test.
-   Worker briefs should be formatted as one plain copy/paste `text` block with
-   no extra surrounding prose, so Robert can paste them directly into another
-   worker chat. Every worker brief should begin with this Plan Mode instruction
-   before the task details:
+   Worker briefs must be delivered as exactly one fenced `text` block and the
+   entire assistant reply should contain only that block. Put all task context,
+   commands, verification, caveats, handoff notes, and warnings inside the
+   block so Robert can copy/paste the whole reply directly into another worker
+   chat. Do not put summaries, apologies, commit message suggestions, status
+   notes, or any other prose before or after the block. If ledger/status notes
+   are needed too, say they are separate from the worker brief and ask Robert
+   before mixing them into the same reply. Every worker brief should begin with
+   this Plan Mode instruction before the task details:
 
    ```text
    Please use Plan Mode first. Review this task brief against the current
    upstream workspace and old sequencer reference, then produce a
    decision-complete implementation plan. Do not edit files until Robert
    approves the plan.
+   ```
+   Every worker brief should also include this behavior fidelity boundary,
+   either verbatim or with slice-specific additions when Robert has approved
+   different behavior:
+
+   ```text
+   Behavior fidelity boundary:
+   Use the old sequencer code, manuals, layouts, and requirements as the
+   reference for user-visible behavior in this slice. Preserve the existing
+   control flow, step layout, menu meaning, LED/key colors, defaults, timing
+   behavior, and workflow unless this brief explicitly says to change them.
+   Modernize the implementation to fit upstream development architecture:
+   keep sequencer-owned code under src/firmware/sequencer/ as much as
+   practical, use narrow hooks in non-sequencer files, split code by
+   responsibility, and avoid copying fragile old storage or memory patterns
+   without review.
    ```
 3. The worker creates a branch in
    `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` named
@@ -170,6 +191,10 @@ not final runtime architecture decisions for every subsystem.
 
 - Treat the old `hexboard-sequencer` branch as a behavior/reference source, not
   as a file-structure template to recreate.
+- Preserve old user-visible sequencer behavior unless the selected worker brief
+  explicitly says Robert approved a behavior change. Do not casually redesign
+  menus, key colors, step layout, defaults, timing behavior, or workflows while
+  reshaping the implementation for upstream.
 - Keep sequencer-owned code under `src/firmware/sequencer/` as much as
   practical. Non-sequencer firmware modules should use narrow sequencer API
   hooks instead of depending on sequencer internals.
@@ -233,16 +258,8 @@ Local implementation slices for the aggregate sequencer PR:
 
 ## Selected Next
 
-- Sequencer Playback Controls Foundation. This should build on
-  `codex/sequencer-feature-flag-shell` and remain part of the aggregate
-  sequencer PR rather than opening a standalone upstream PR.
-- Selected scope: add volatile/in-memory playback controls for Tempo, Steps,
-  and Direction. Port all old direction modes: Forward, Backward, Ping-Pong,
-  Random, Brownian, and Drunk.
-- Explicitly out of scope: persistence/file backing, storage/browser flows,
-  quick length editing, onboard synth sequencer playback, audition/tap preview,
-  probability, ties, detailed tools, external MIDI sync, MIDI clock/transport
-  send, and settings schema changes.
+- None currently selected. Sequencer MIDI Audition And Edit Overlay has been
+  completed and recorded below.
 
 ## Completed Infrastructure
 
@@ -260,6 +277,8 @@ Local implementation slices for the aggregate sequencer PR:
 | Current tuning/layout/scale row markers | Complete, reviewed, tested | Submitted | `codex/current-item-menu-markers`, `shapingthesilence/HexBoard#15` |
 | Sequencer feature flag and shell | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Step note entry and basic transport playback | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer playback controls foundation | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer MIDI audition and edit overlay | Complete, reviewed, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -346,8 +365,104 @@ Local implementation slices for the aggregate sequencer PR:
   service call, grid event handoff while Sequencer mode is active, LED render
   override while active, and panic-stop release. The default disabled build
   remains intended to have no Sequencer menu or runtime behavior.
-- Next: no follow-up implementation slice has been selected yet. The likely
-  next planning candidate is sequencer edit/playback controls phase 2.
+- Next: the following Sequencer Playback Controls Foundation slice has since
+  been completed and recorded below.
+
+### Sequencer playback controls foundation
+
+- Sequencer roadmap slice: focused continuation of 3. Sequencer playback.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commits after the basic playback slice: `a87a1fc` (`Add
+  volatile sequencer playback settings`) and `19bc37d` (`update manual with
+  respect to sequencer wording`).
+- Changed files reported/reviewed: `README.md`, `docs/code-analysis.md`,
+  `docs/developer-guide.md`, `docs/sequencer-manual.md`,
+  `docs/user-manual.md`, `src/firmware/sequencer/SequencerLeds.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackMenu.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackMenu.h`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.h`,
+  `src/firmware/sequencer/SequencerTransport.cpp`, and
+  `src/firmware/sequencer/SequencerTransport.h`.
+- Behavior completed: enabled sequencer builds now provide a Playback Settings
+  page with volatile `Steps`, `Direction`, and `Tempo` controls. `Steps`
+  limits transport playback to an active range of 1 through 32 steps and keeps
+  inactive step LEDs off. `Tempo` defaults to 120 BPM, supports 1 through 255
+  BPM, and controls the internal 16th-note step duration. `Direction` supports
+  Forward, Backward, Ping-Pong, Random, Brownian, and Drunk.
+- Behavior intentionally not included: persistence or file backing for playback
+  controls, sequence save/load/browser flows, settings schema changes, quick
+  length editing, onboard synth sequencer playback, audition/tap preview,
+  probability, ties, detailed tools, external MIDI sync, and MIDI
+  clock/transport send.
+- Verification: worker reported `rtk git diff --check`,
+  `rtk make sequencer-disabled`, and `rtk make sequencer-enabled` passed.
+  Enabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert compiled, tested, and confirmed the build. This planning-thread update
+  did not rerun firmware builds.
+- Review notes: planning-thread read-only check found the implementation branch
+  clean at `19bc37d` and confirmed the reported files, commits, volatile
+  playback settings/menu modules, transport direction logic, inactive-step LED
+  handling, and documentation updates. No settings schema, persistence,
+  preset-sync, or web changes were present.
+- Next: the following Sequencer MIDI Audition And Edit Overlay slice has since
+  been completed and recorded below.
+
+### Sequencer MIDI audition and edit overlay
+
+- Sequencer roadmap slices: focused continuation of 2. Core sequencer editing
+  and 3. Sequencer playback.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commit after the playback-controls slice: `6ef6ec8` (`Add
+  sequencer MIDI audition and edit overlay`).
+- Changed files reported/reviewed: `README.md`, `docs/code-analysis.md`,
+  `docs/developer-guide.md`, `docs/sequencer-manual.md`,
+  `src/firmware/app/Runtime.cpp`,
+  `src/firmware/sequencer/SequencerInput.cpp`,
+  `src/firmware/sequencer/SequencerManagedNotes.cpp`,
+  `src/firmware/sequencer/SequencerManagedNotes.h`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`,
+  `src/firmware/sequencer/SequencerOverlay.cpp`,
+  `src/firmware/sequencer/SequencerOverlay.h`,
+  `src/firmware/sequencer/SequencerPlaybackMenu.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.h`, and
+  `src/firmware/sequencer/SequencerTransport.cpp`.
+- Behavior completed: enabled sequencer builds now use sequencer-owned managed
+  MIDI notes for audition, tap preview, and playback release ownership.
+  Lower-grid playable note keys audition MIDI while Sequencer mode is active;
+  with a selected step, the same press auditions and toggles that pitch in the
+  selected step, and release reliably releases the audition note. The volatile
+  `Tap Preview` playback setting defaults to `On`; selecting a programmed step
+  previews its stored MIDI note or chord unless the setting is off. A compact
+  selected-step `Edit #NN` overlay shows length, velocity, probability, and
+  wrapped note labels for the selected step.
+- Behavior intentionally not included: persistence or file backing for `Tap
+  Preview`, sequence save/load/browser flows, settings schema changes, onboard
+  synth or OB Synth sequencer playback/preview, probability playback behavior,
+  ties, exact legacy edit screens, external MIDI sync, MIDI clock/transport
+  send, backup tools, and PR submission.
+- Verification: worker reported `rtk git diff --check`,
+  `rtk make sequencer-disabled`, and `rtk make sequencer-enabled` passed.
+  Enabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert reported the build was compiled and tested. The implementation worker
+  did not run physical hardware checks, so the manual device checklist from the
+  brief still remains. This planning-thread update did not rerun firmware
+  builds.
+- Review notes: planning-thread read-only check found the upstream
+  implementation worktree clean at `6ef6ec8` and confirmed the reported commit
+  stat, changed files, managed-note module, Tap Preview menu setting, lower-grid
+  audition/release path, preview-step path, selected-step overlay module, and
+  documentation updates. No PR was opened.
+- Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
 
