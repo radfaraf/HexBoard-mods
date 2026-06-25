@@ -828,9 +828,6 @@ Local implementation slices for the aggregate sequencer PR:
 
 ## Rejected Or Already Upstream
 
-- Personal `docs/TODO.txt` ignore rule: do not port or use as a porting
-  reminder source. This file is Robert's personal notes file and should be left
-  alone by workers unless Robert explicitly asks for help with it.
 - Bigger menu/header text: do not port for now. Avoid changing upstream menu
   sizing unless later device testing shows the current menu needs readability
   tweaks.
