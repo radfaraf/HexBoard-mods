@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 9:09PM EDT
+Last updated: 2026-06-24 9:17PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -233,9 +233,16 @@ Local implementation slices for the aggregate sequencer PR:
 
 ## Selected Next
 
-- None currently selected. The likely next planning candidate is sequencer
-  edit/playback controls phase 2, but Robert has not selected the next
-  implementation slice yet.
+- Sequencer Playback Controls Foundation. This should build on
+  `codex/sequencer-feature-flag-shell` and remain part of the aggregate
+  sequencer PR rather than opening a standalone upstream PR.
+- Selected scope: add volatile/in-memory playback controls for Tempo, Steps,
+  and Direction. Port all old direction modes: Forward, Backward, Ping-Pong,
+  Random, Brownian, and Drunk.
+- Explicitly out of scope: persistence/file backing, storage/browser flows,
+  quick length editing, onboard synth sequencer playback, audition/tap preview,
+  probability, ties, detailed tools, external MIDI sync, MIDI clock/transport
+  send, and settings schema changes.
 
 ## Completed Infrastructure
 
