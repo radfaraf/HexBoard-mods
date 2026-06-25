@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 12:26PM EDT
+Last updated: 2026-06-25 2:58PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -216,16 +216,18 @@ not final runtime architecture decisions for every subsystem.
 - Record program storage and globals for meaningful disabled and enabled
   sequencer milestones.
 
-Storage browser ideas to revisit when the persistence/file-management slice
-begins:
+Storage browser outcome from the completed persistence/file-management slice:
 
 - The old browser used a 128-entry table and built each folder view around that
-  limit. Do not copy that design as a settled plan without review.
-- Possible directions include visible-window browsing, bounded page buffers,
-  folder-first organization, repeated scans, or an optional on-disk index if a
-  later need proves it useful.
-- Robert and the planning thread should review these browser ideas together
-  before giving a worker the storage/file-management task brief.
+  limit. The upstream v1 browser does not copy that design.
+- The completed v1 browser scans only the current folder under `/Sequences`,
+  orders folders before `.hbseq` files, uses `VirtualListMenu` callbacks, and
+  caches current-folder counts plus an 8-row visible window instead of keeping a
+  tree-wide path list in memory.
+- This is intended to support hundreds of saved sequences when users organize
+  them into folders. If a later real-world need proves that very large single
+  folders are common, revisit optional indexing or more efficient ordered scans
+  as a separate performance slice.
 
 Local implementation slices for the aggregate sequencer PR:
 
@@ -244,17 +246,18 @@ Local implementation slices for the aggregate sequencer PR:
    - Keep advanced probability, ties, and external sync for later unless Robert
      explicitly chooses to include them.
 4. Sequencer persistence and file management.
-   - Port save/load/new/rename/delete behavior after core editing and playback
-     are stable.
-   - Keep sequencer storage separate from normal Keyboard settings where
-     practical.
+   - Completed as v1 and recorded below: sequence save/load/new/revert,
+     foldered browser, create folder, rename/delete, current-path restore,
+     title/dirty state, and profile-backed `Tap Preview`.
+   - Sequencer storage remains separate from normal Keyboard settings except
+     for profile-backed sequencer preferences.
 5. Advanced sequencer features and bug fixes.
-   - Port velocity/probability editing, ties, MIDI sync, monophonic entry,
-     remaining lighting refinements, backup tools, the performance monitor
-     overlay, and sequencer-specific played-note overlay behavior as separate
-     reviewable slices. Sequencer step light color refinements, Step Tools/
-     playback semantics, and monophonic/Play Type routing are complete and
-     recorded below.
+   - Remaining deferred candidates include MIDI sync, MIDI clock/transport
+     send, USB Backup and desktop backup tools, the performance monitor overlay,
+     and sequencer-specific played-note overlay behavior as separate reviewable
+     slices. Sequencer step light color refinements, Step Tools/playback
+     semantics, monophonic/Play Type routing, selected-step blink, and
+     persistence/file management v1 are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -262,8 +265,8 @@ Local implementation slices for the aggregate sequencer PR:
 ## Selected Next
 
 - None currently selected. Sequencer monophonic note entry and Play Type
-  routing plus the selected-step blink fix have been completed and recorded
-  below.
+  routing, the selected-step blink fix, and sequencer persistence/file
+  management v1 have been completed and recorded below.
 
 ## Completed Infrastructure
 
@@ -287,6 +290,7 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer Step Tools and playback semantics | Complete, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer monophonic and Play Type routing | Complete, build-tested and locally tested; OB Synth edge-case checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer selected-step blink fix | Complete, build-tested and Robert-tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer persistence and file management v1 | Complete, compiled, Robert-tested, and planning-thread checked against final HEAD | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -660,9 +664,9 @@ Local implementation slices for the aggregate sequencer PR:
 - Implementation branch:
   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
   `codex/sequencer-feature-flag-shell`.
-- Implementation state: uncommitted follow-up changes after the Monophonic/Play
-  Type routing slice.
-- Changed files reported/spot-checked: `docs/code-analysis.md`,
+- Implementation commit after the Monophonic/Play Type routing slice:
+  `06923ea` (`Blink selected sequencer steps before LED rendering`).
+- Changed files verified from the implementation commit: `docs/code-analysis.md`,
   `docs/developer-guide.md`, `docs/sequencer-manual.md`, and
   `src/firmware/sequencer/SequencerLeds.cpp`.
 - Behavior completed: the upstream sequencer LED renderer now restores the
@@ -682,10 +686,88 @@ Local implementation slices for the aggregate sequencer PR:
   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
   Robert reported the change was done and tested. This planning-thread update
   did not rerun any build or compile commands.
-- Review notes: planning-thread spot-check confirmed the current upstream diff
-  adds the blink constants/helper and gates selected step LEDs off during the
-  off phase before normal rendering, with matching upstream documentation
-  updates.
+- Review notes: planning-thread spot-check confirmed the committed upstream
+  change adds the blink constants/helper and gates selected step LEDs off
+  during the off phase before normal rendering, with matching upstream
+  documentation updates. The final branch now has the sequencer
+  persistence/file-management commits on top.
+- Next: the following Sequencer Persistence And File Management v1 slice has
+  since been completed and recorded below.
+
+### Sequencer persistence and file management v1
+
+- Sequencer roadmap slice: 4. Sequencer persistence and file management, plus
+  the profile-backed `Tap Preview` cleanup from the persistence bucket split.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commits after the selected-step blink fix: `00dd06c` (`Port
+  sequencer save and file management`), `623de05` (`Fix sequencer file menu
+  entry tracking`), and `5ee86dd` (`Cache sequencer file browser rows and
+  counts`).
+- Changed files verified from final HEAD after the blink fix: `README.md`,
+  `docs/code-analysis.md`, `docs/developer-guide.md`,
+  `docs/sequencer-manual.md`, `src/firmware/app/Runtime.cpp`,
+  `src/firmware/sequencer/SequencerFileMenu.cpp`,
+  `src/firmware/sequencer/SequencerFileMenu.h`,
+  `src/firmware/sequencer/SequencerInput.cpp`,
+  `src/firmware/sequencer/SequencerLeds.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`,
+  `src/firmware/sequencer/SequencerPlaybackMenu.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.h`,
+  `src/firmware/sequencer/SequencerStorage.cpp`,
+  `src/firmware/sequencer/SequencerStorage.h`,
+  `src/firmware/sequencer/SequencerTools.cpp`,
+  `src/firmware/storage/PersistentDataModels.h`, and
+  `src/firmware/storage/Settings.cpp`.
+- Behavior completed: enabled sequencer builds now include a `File Management`
+  page with `New`, `Save`, `Save New`, `Load`, `Revert`, `Create Folder`, and
+  `Rename/Delete`. Sequence files live under `/Sequences`, use the `.hbseq`
+  extension, remember the current path in `/Sequences/.current`, and reload the
+  remembered sequence after settings/profile restore during startup.
+- Sequence-file data completed: saved files use text records with
+  `format=HBSEQ`, `version=3`, and `noteFormat=stepsFromC`. They store all 32
+  step records, tuning-relative pitch-step values, note counts, per-step
+  length/velocity/probability/Tie, `Tempo`, active `Steps`, `Direction`, and
+  `Play Type`. Unknown keys are ignored and invalid values are clamped while
+  parsing.
+- Runtime/file workflow completed: `New`, `Load`, and `Revert` stop transport,
+  release sequencer-managed notes, reset sequencer input/tools/overlay state as
+  needed, and clear dirty state after a successful reset or file operation.
+  The Sequencer title is `Sequencer` with no current file, `Seq-NAME` for a
+  clean current file, and `Seq-*NAME` when sequence-owned data is dirty.
+- Browser/naming behavior completed: the file browser scans only the current
+  folder, lists folders before sequence files, supports parent navigation, and
+  uses `VirtualListMenu` callbacks with cached current-folder counts plus an
+  8-row visible-window cache instead of keeping a full tree/list of paths in
+  memory. The naming screen accepts letters, numbers, spaces, and hyphen up to
+  20 visible characters, rejects duplicates in the target folder, and appends
+  `.hbseq` internally for sequence files. Rename/delete supports files and
+  folders; folder delete is recursive, and rename/delete repairs or clears the
+  remembered current path when it affects the current sequence.
+- Persistence bucket split completed: `Tap Preview` is now profile-backed, with
+  `CURRENT_SETTINGS_VERSION` bumped to `21` and version `20` settings migrated
+  by filling the new `SequencerTapPreview` byte from factory defaults.
+  Sequence files do not store `Tap Preview`, `Monophonic`, `Seq Lights`,
+  selected step, undo/tool/naming/browser state, overlay messages, active note
+  handles, transport timing, or dirty state.
+- Behavior intentionally not included: external MIDI clock, MIDI
+  start/stop/clock send, USB Backup, desktop backup scripts or launchers, the
+  performance monitor overlay, full old sequencer manuals/layouts/requirements
+  port, PR submission, or any broad merge from the old branch.
+- Verification: Robert reported the final build was compiled and tested after
+  the file-browser follow-up fixes. This planning-thread update did not rerun
+  any build or compile commands at Robert's request.
+- Review notes: planning-thread read-only check found the upstream
+  implementation worktree clean on `codex/sequencer-feature-flag-shell` at
+  `5ee86dd`, confirmed the final commit stack and changed files after
+  `06923ea`, and spot-checked the storage/menu modules, fixed-buffer sequence
+  serialization/parsing, atomic temp-file save path, startup restore,
+  current-folder browser row/count cache, profile-backed `Tap Preview`
+  settings migration, and maintained upstream docs. This ledger entry is based
+  on final HEAD rather than the worker's earlier completion summary.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
