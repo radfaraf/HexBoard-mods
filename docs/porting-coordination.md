@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-24 6:52PM EDT
+Last updated: 2026-06-24 9:09PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -233,9 +233,9 @@ Local implementation slices for the aggregate sequencer PR:
 
 ## Selected Next
 
-- Step Note Entry Verification And Basic Transport Playback. This should build
-  on `codex/sequencer-feature-flag-shell` and remain part of the aggregate
-  sequencer PR rather than opening a standalone upstream PR.
+- None currently selected. The likely next planning candidate is sequencer
+  edit/playback controls phase 2, but Robert has not selected the next
+  implementation slice yet.
 
 ## Completed Infrastructure
 
@@ -252,6 +252,7 @@ Local implementation slices for the aggregate sequencer PR:
 | Physical menu shortcut buttons | Complete, reviewed, tested | Submitted | `codex/physical-menu-shortcut-buttons`, `shapingthesilence/HexBoard#14` |
 | Current tuning/layout/scale row markers | Complete, reviewed, tested | Submitted | `codex/current-item-menu-markers`, `shapingthesilence/HexBoard#15` |
 | Sequencer feature flag and shell | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Step note entry and basic transport playback | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -285,8 +286,61 @@ Local implementation slices for the aggregate sequencer PR:
   shell uses sequencer-owned static GEM objects and a no-op disabled build path,
   while the existing root sketch stays thin. The only integration point is
   `setupSequencerMenu()` from `MenuAndDisplay.cpp`.
-- Next: use this branch as the base for the aggregate sequencer PR. The next
-  local slice is Step Note Entry Verification And Basic Transport Playback.
+- Next: the following Step Note Entry Verification And Basic Transport Playback
+  slice has since been completed and recorded below.
+
+### Step note entry and basic transport playback
+
+- Sequencer roadmap slices: 2. Core sequencer editing, plus the basic MIDI
+  portion of 3. Sequencer playback.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commits after the shell: `3f38289` (`Add sequencer mode
+  foundation`), `111eafc` (`Separate sequencer build artifacts`), `0f88510`
+  (`Match sequencer utility LED colors`), `ed7e02c` (`Enable sequencer
+  transport playback in staged sketch build`), and `827abb1` (`update
+  sequencer docs`).
+- Changed files reported/reviewed: `Makefile`, `README.md`,
+  `docs/code-analysis.md`, `docs/developer-guide.md`,
+  `docs/sequencer-manual.md`, `docs/user-manual.md`,
+  `src/firmware/app/Runtime.cpp`,
+  `src/firmware/hardware/GridScanRotary.cpp`,
+  `src/firmware/hardware/LedRender.cpp`,
+  `src/firmware/sequencer/SequencerInput.cpp`,
+  `src/firmware/sequencer/SequencerInput.h`,
+  `src/firmware/sequencer/SequencerLeds.cpp`,
+  `src/firmware/sequencer/SequencerLeds.h`,
+  `src/firmware/sequencer/SequencerMidi.cpp`,
+  `src/firmware/sequencer/SequencerMidi.h`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`,
+  `src/firmware/sequencer/SequencerState.cpp`,
+  `src/firmware/sequencer/SequencerState.h`,
+  `src/firmware/sequencer/SequencerTransport.cpp`,
+  `src/firmware/sequencer/SequencerTransport.h`, and
+  `src/firmware/synth/SynthVoiceAllocation.cpp`.
+- Behavior completed: enabled sequencer builds now support 32-step
+  selection/deselection, tuning-relative selected-step note toggling, up to 6
+  notes per step, selected-step clear on button `19`, transport toggle on
+  button `9`, fixed 120 BPM internal forward playback across all 32 steps,
+  MIDI output through the current tuning/transpose/routing/MPE helpers,
+  sequencer LED overrides, and panic/exit note release.
+- Behavior intentionally not included: persistence, save/load/browser flows,
+  external sync, MIDI clock/transport send, onboard synth sequencer playback,
+  audition/preview sound, direction modes, probability, ties, detailed tools,
+  and settings schema changes.
+- Verification: `git diff --check 80cd76b..codex/sequencer-feature-flag-shell`
+  passed. Robert already built and hardware-tested the disabled and enabled
+  variants.
+- Review notes: planning-thread static review found no blocking issues. The
+  implementation keeps sequencer-owned state, input, LED, MIDI, and transport
+  code under `src/firmware/sequencer/`. Integration remains narrow: runtime
+  service call, grid event handoff while Sequencer mode is active, LED render
+  override while active, and panic-stop release. The default disabled build
+  remains intended to have no Sequencer menu or runtime behavior.
+- Next: no follow-up implementation slice has been selected yet. The likely
+  next planning candidate is sequencer edit/playback controls phase 2.
 
 ### Physical menu shortcut buttons
 
