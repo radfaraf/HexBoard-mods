@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 9:36AM EDT
+Last updated: 2026-06-25 12:16PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -56,8 +56,7 @@ exception; see the aggregate sequencer flow below.
    ```text
    Please use Plan Mode first. Review this task brief against the current
    upstream workspace and old sequencer reference, then produce a
-   decision-complete implementation plan. Do not edit files until Robert
-   approves the plan.
+   decision-complete implementation plan.
    ```
    Every worker brief should also include this behavior fidelity boundary,
    either verbatim or with slice-specific additions when Robert has approved
@@ -252,15 +251,16 @@ Local implementation slices for the aggregate sequencer PR:
    - Port velocity/probability editing, ties, MIDI sync, monophonic entry,
      remaining lighting refinements, backup tools, and sequencer-specific
      played-note overlay behavior as separate reviewable slices. Sequencer step
-     light color refinements are complete and recorded below.
+     light color refinements, Step Tools/playback semantics, and
+     monophonic/Play Type routing are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
 
 ## Selected Next
 
-- None currently selected. Sequencer step light colors have been completed and
-  recorded below.
+- None currently selected. Sequencer monophonic note entry and Play Type
+  routing have been completed and recorded below.
 
 ## Completed Infrastructure
 
@@ -281,6 +281,8 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer playback controls foundation | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer MIDI audition and edit overlay | Complete, reviewed, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer step light colors | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer Step Tools and playback semantics | Complete, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer monophonic and Play Type routing | Complete, build-tested and locally tested; OB Synth edge-case checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -517,6 +519,133 @@ Local implementation slices for the aggregate sequencer PR:
   profile-backed light settings, `Seq Lights` menu, unchanged settings version,
   LED base-color and linear/gamma helper path, upstream docs updates, and that
   no PR was opened.
+- Next: the following Sequencer Step Tools And Playback Semantics slice has
+  since been completed and recorded below.
+
+### Sequencer Step Tools and playback semantics
+
+- Sequencer roadmap slices: focused continuation of 2. Core sequencer editing,
+  3. Sequencer playback, and 5. Advanced sequencer features and bug fixes.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commits after the step-light-colors slice: `6e2d0ba` (`Add
+  sequencer step copy and transpose helpers`), `26ed045` (`Handle tied notes in
+  sequencer playback`), and `ab284e5` (`Add sequencer step tools palette`).
+- Changed files reported/reviewed: `README.md`, `docs/code-analysis.md`,
+  `docs/developer-guide.md`, `docs/sequencer-manual.md`,
+  `src/firmware/hardware/GridScanRotary.cpp`,
+  `src/firmware/sequencer/SequencerInput.cpp`,
+  `src/firmware/sequencer/SequencerLeds.cpp`,
+  `src/firmware/sequencer/SequencerManagedNotes.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`,
+  `src/firmware/sequencer/SequencerOverlay.cpp`,
+  `src/firmware/sequencer/SequencerState.cpp`,
+  `src/firmware/sequencer/SequencerState.h`,
+  `src/firmware/sequencer/SequencerTools.cpp`,
+  `src/firmware/sequencer/SequencerTools.h`,
+  `src/firmware/sequencer/SequencerTransport.cpp`, and
+  `src/firmware/sequencer/SequencerTransport.h`.
+- Behavior completed: enabled sequencer builds now include the full in-memory
+  Step Tools editing slice: Tools picker on button `29`, no-selected-step
+  tools status, Len/Vel/Oct+/Oct-/Prob/Tie/Copy/Cancel mapping, step switching
+  while tools and exact Vel/Prob are open, quick encoder length editing,
+  encoder-click deselect, exact length entry, exact velocity/probability
+  encoder editing, octave transpose with displayed octave `0` through `9`
+  bounds, per-step Tie toggle, full-step Copy, blue-action undo, and hold-clear
+  of selected-step notes and Tie while preserving length/velocity/probability.
+- Playback behavior completed: per-step velocity affects transport playback,
+  tap preview, and selected-step live audition; probability gates whole steps
+  during transport only; length `0%`, short gates, `100%` boundary release, and
+  overlength overlaps are handled with bounded playback groups; Tie continues
+  the nearest earlier eligible active source from the same pattern pass without
+  loop-boundary wrap; tied steps stay silent for tap preview; stop/panic/exit
+  and step-data changes release sequencer-managed notes.
+- Behavior intentionally not included: sequence persistence, save/load/new/
+  rename/delete file flows, file browser/storage UI, USB backup tools and GUI,
+  MIDI sync, MIDI clock/transport send, onboard synth or OB Synth playback,
+  Play Type settings, Monophonic mode, full old sequencer manuals/layouts/
+  requirements port, and PR submission.
+- Verification: worker reported `rtk git diff --check`,
+  `rtk make sequencer-disabled`, and `rtk make sequencer-enabled` passed. The
+  disabled build reported `648920` bytes program storage and `192732` bytes
+  globals/RAM. The enabled build reported `667808` bytes program storage and
+  `195952` bytes globals/RAM. Enabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  The manual hardware checklist has not been run yet.
+- Review notes: implementation left the upstream worktree clean at `ab284e5`
+  and kept sequencer-owned tools, state mutation, overlays, LEDs, and playback
+  semantics under `src/firmware/sequencer/` with only a narrow encoder hook in
+  `GridScanRotary.cpp`. Disabled builds remain intended to have no Sequencer
+  menu item or sequencer runtime behavior.
+- Next: the following Sequencer Monophonic And Play Type Routing slice has
+  since been completed and recorded below.
+
+### Sequencer monophonic and Play Type routing
+
+- Sequencer roadmap slices: focused continuation of 3. Sequencer playback and
+  5. Advanced sequencer features and bug fixes.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commit after the Step Tools/playback-semantics slice:
+  `ee1b82f9a7621fbb3405786d305ec28cc2e6a534` (`Port sequencer monophonic and
+  play type routing`).
+- Changed files verified from the implementation commit: `README.md`,
+  `docs/code-analysis.md`, `docs/developer-guide.md`,
+  `docs/sequencer-manual.md`, `src/firmware/menu/MenuAndDisplay.cpp`,
+  `src/firmware/sequencer/SequencerInput.cpp`,
+  `src/firmware/sequencer/SequencerManagedNotes.cpp`,
+  `src/firmware/sequencer/SequencerOutput.cpp`,
+  `src/firmware/sequencer/SequencerOutput.h`,
+  `src/firmware/sequencer/SequencerPlaybackMenu.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.h`,
+  `src/firmware/sequencer/SequencerState.cpp`,
+  `src/firmware/sequencer/SequencerState.h`,
+  `src/firmware/storage/PersistentDataModels.h`,
+  `src/firmware/storage/Settings.cpp`, `src/firmware/synth/SynthAudio.cpp`,
+  `src/firmware/synth/SynthAudio.h`,
+  `src/firmware/synth/SynthAudioInternal.h`, and
+  `src/firmware/synth/SynthVoiceAllocation.cpp`.
+- Behavior completed: Playback Settings now include a volatile `Play Type`
+  selector with `MIDI` and `OB Synth`, defaulting to `MIDI`. The same page now
+  includes profile-backed `Monophonic` selected-step entry with `Off`/`On`,
+  defaulting to `Off`. With `Monophonic` Off, selected-step note entry keeps
+  normal toggle behavior. With `Monophonic` On, pressing the same pitch clears
+  it, and pressing a different pitch replaces the selected step with one note.
+- Output behavior completed: sequencer-managed audition notes, tap preview, and
+  transport playback now route through `SequencerOutput` handles so each active
+  note releases through the same route it started on. `MIDI` output continues
+  through the sequencer MIDI path. `OB Synth` output uses shared synth tuning
+  and audio settings through synth preview-note handles backed by hidden matrix
+  slots `141..159`, leaving hardware flag slot `140` untouched.
+- Behavior intentionally not included: sequence save/load, file browser and
+  file-management flows, per-sequence `Play Type` persistence, MIDI sync,
+  MIDI clock/transport send, backup tools, and PR submission. `Play Type`
+  remains volatile until the sequence persistence slice stores and restores it
+  per sequence.
+- Documentation/web notes: maintained upstream docs were updated in the
+  implementation commit. No `web/` change was made because there is no current
+  sequencer UI/protocol surface there for these settings.
+- Verification: worker reported `rtk git diff --check` was clean, and
+  `rtk git diff --check --cached` was clean before commit. Worker also reported
+  `rtk make sequencer-disabled` passed with `649080` bytes program storage and
+  `192844` bytes globals/RAM, and `rtk make sequencer-enabled` passed with
+  `669000` bytes program storage and `196468` bytes globals/RAM. Enabled
+  firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert reported the build was compiled and tested. This planning-thread
+  update did not rerun any build commands.
+- Review notes: planning-thread read-only check found the implementation
+  worktree clean on `codex/sequencer-feature-flag-shell` at `ee1b82f`, verified
+  the commit stat as `20 files changed, 492 insertions(+), 91 deletions(-)`,
+  confirmed the reported changed files and artifact path, and spot-checked the
+  `Play Type`, `Monophonic`, profile setting, sequencer output handle, and
+  hidden synth preview-slot paths. Hardware behavior still needs the focused
+  manual OB Synth checklist, especially release, stop, and panic behavior
+  across route changes.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
