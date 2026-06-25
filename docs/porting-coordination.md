@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 12:16PM EDT
+Last updated: 2026-06-25 12:26PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -161,6 +161,7 @@ already include equivalent or stronger behavior.
 - Sequencer feature port. See the sequencer roadmap below.
 - Full sequencer manuals, layouts, and requirements docs.
 - Sequencer USB backup and backup GUI tools.
+- Sequencer performance monitor overlay.
 - TB-303 pattern decoder skill.
 - Repo-owned Codex skill updates and old AGENTS/process-only changes.
 - Old compile-helper tweaks unless a new concrete need appears.
@@ -249,10 +250,11 @@ Local implementation slices for the aggregate sequencer PR:
      practical.
 5. Advanced sequencer features and bug fixes.
    - Port velocity/probability editing, ties, MIDI sync, monophonic entry,
-     remaining lighting refinements, backup tools, and sequencer-specific
-     played-note overlay behavior as separate reviewable slices. Sequencer step
-     light color refinements, Step Tools/playback semantics, and
-     monophonic/Play Type routing are complete and recorded below.
+     remaining lighting refinements, backup tools, the performance monitor
+     overlay, and sequencer-specific played-note overlay behavior as separate
+     reviewable slices. Sequencer step light color refinements, Step Tools/
+     playback semantics, and monophonic/Play Type routing are complete and
+     recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -706,9 +708,9 @@ Local implementation slices for the aggregate sequencer PR:
 
 ## Rejected Or Already Upstream
 
-- Personal `docs/TODO.txt` ignore rule: do not port. This file is Robert's
-  personal notes file and should be left alone by workers unless Robert
-  explicitly asks for help with it.
+- Personal `docs/TODO.txt` ignore rule: do not port or use as a porting
+  reminder source. This file is Robert's personal notes file and should be left
+  alone by workers unless Robert explicitly asks for help with it.
 - Bigger menu/header text: do not port for now. Avoid changing upstream menu
   sizing unless later device testing shows the current menu needs readability
   tweaks.
