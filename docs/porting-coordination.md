@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 5:32PM EDT
+Last updated: 2026-06-25 6:05PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -161,7 +161,6 @@ already include equivalent or stronger behavior.
 - Sequencer feature port. See the sequencer roadmap below.
 - Full sequencer manuals, layouts, and requirements docs.
 - Sequencer USB backup and backup GUI tools.
-- Sequencer performance monitor overlay.
 - TB-303 pattern decoder skill.
 - Repo-owned Codex skill updates and old AGENTS/process-only changes.
 - Old compile-helper tweaks unless a new concrete need appears.
@@ -253,11 +252,11 @@ Local implementation slices for the aggregate sequencer PR:
      for profile-backed sequencer preferences.
 5. Advanced sequencer features and bug fixes.
    - Remaining deferred candidates include USB Backup and desktop backup tools,
-     the performance monitor overlay, and sequencer-specific played-note overlay
-     behavior as separate reviewable slices. Sequencer step light color
-     refinements, Step Tools/playback semantics, monophonic/Play Type routing,
-     selected-step blink, persistence/file management v1, external MIDI clock
-     receive, and MIDI sync send are complete and recorded below.
+     and sequencer-specific played-note overlay behavior as separate reviewable
+     slices. Sequencer step light color refinements, Step Tools/playback
+     semantics, monophonic/Play Type routing, selected-step blink, persistence/
+     file management v1, external MIDI clock receive, MIDI sync send, and the
+     performance monitor overlay are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -266,8 +265,8 @@ Local implementation slices for the aggregate sequencer PR:
 
 - None currently selected. Sequencer monophonic note entry and Play Type
   routing, the selected-step blink fix, sequencer persistence/file management
-  v1, external MIDI clock receive, and MIDI sync send have been completed and
-  recorded below.
+  v1, external MIDI clock receive, MIDI sync send, and the performance monitor
+  overlay have been completed and recorded below.
 
 ## Completed Infrastructure
 
@@ -294,6 +293,7 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer persistence and file management v1 | Complete, compiled, Robert-tested, and planning-thread checked against final HEAD | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer external MIDI clock receive | Complete, compiled, Robert-tested, and planning-thread checked against `e63518d` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer MIDI sync send | Complete, compiled, Robert-tested, and planning-thread checked against `275a638` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer performance monitor overlay | Complete, compiled, Robert-tested, and planning-thread checked against `874ac2f` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -902,6 +902,68 @@ Local implementation slices for the aggregate sequencer PR:
   migration path, and maintained upstream docs. The local tracking ref
   `origin/codex/sequencer-feature-flag-shell` also pointed at `275a638` during
   this check, so this ledger records the verified clean local branch state.
+- Next: the following Sequencer Performance Monitor Overlay slice has since
+  been completed and recorded below.
+
+### Sequencer performance monitor overlay
+
+- Sequencer roadmap slice: focused continuation of 5. Advanced sequencer
+  features and bug fixes for the old hold-to-view diagnostic overlay.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commit after the MIDI sync send slice:
+  `874ac2f062a5ac2766d09f0e519968b44bd2332d` (`Port sequencer performance
+  monitor overlay`).
+- Changed files verified from the implementation commit:
+  `docs/code-analysis.md`, `docs/developer-guide.md`,
+  `docs/sequencer-manual.md`, `src/firmware/midi/MidiInput.cpp`,
+  `src/firmware/midi/MidiInput.h`,
+  `src/firmware/sequencer/SequencerInput.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerOverlay.cpp`,
+  `src/firmware/sequencer/SequencerPerformanceMonitor.cpp`, and
+  `src/firmware/sequencer/SequencerPerformanceMonitor.h`.
+- Behavior completed: enabled sequencer builds now restore the old temporary
+  Performance Monitor overlay. Holding the Sequencer Play/Stop key for about
+  two seconds shows the monitor while held; releasing the key closes it and
+  restores the previous sequencer view or edit state. Short Play/Stop still
+  toggles transport, and with a selected step it deselects the step and toggles
+  transport. Holding for the monitor does not create an accidental transport
+  toggle.
+- Diagnostic display completed: the overlay shows `AudioEng`, `Mem`, `FS`,
+  `MIDI Q`, `Drop`, and `Late`. `AudioEng` uses the existing audio ISR
+  profiling data, `Mem` shows heap used versus total heap, `FS` shows LittleFS
+  used versus total or `FS  unavailable`, `MIDI Q` shows pending MIDI input,
+  and `Drop`/`Late` are receive-stress backlog episode counters rather than
+  exact hardware packet-loss counters.
+- Behavior intentionally not included: USB Backup, desktop backup scripts or
+  launchers, sequencer-specific played-note overlay behavior, full old
+  sequencer manuals/layouts/requirements port, or PR submission.
+- Verification: Robert reported `rtk git diff --check` passed,
+  `rtk git diff --cached --check` passed, `rtk make sequencer-disabled` passed
+  with `650536` bytes program storage and `192920` bytes globals/RAM, and
+  `rtk make sequencer-enabled` passed with `689272` bytes program storage and
+  `203508` bytes globals/RAM. The enabled build emitted the usual low-memory
+  warning. Enabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert reported the build was compiled and hardware-tested. This
+  planning-thread update did not rerun any build or compile commands.
+- Manual checklist completed: short Play/Stop toggles transport; with a
+  selected step, short Play/Stop deselects the step and toggles transport;
+  a two-second Play/Stop hold shows the Performance Monitor; release closes the
+  monitor and restores the previous sequencer view/edit state; the hold does
+  not create an accidental transport toggle; overlay labels and values fit on
+  the OLED; `FS` shows used/total or `FS  unavailable`; and `MIDI Q` changes
+  under pending input. MIDI `Drop`/`Late` counters were implemented as receive
+  stress counters but were not physically stress-tested with external MIDI
+  hardware in the worker pass.
+- Review notes: planning-thread read-only check found the upstream
+  implementation worktree clean on `codex/sequencer-feature-flag-shell` at
+  `874ac2f`, with the local branch one commit ahead of
+  `origin/codex/sequencer-feature-flag-shell`. The check confirmed the commit
+  stat as `10 files changed, 434 insertions(+), 32 deletions(-)`, verified the
+  changed-file list above, and confirmed that no PR was opened.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
