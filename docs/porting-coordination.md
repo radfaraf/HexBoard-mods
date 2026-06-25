@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 2:58PM EDT
+Last updated: 2026-06-25 3:59PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -252,12 +252,13 @@ Local implementation slices for the aggregate sequencer PR:
    - Sequencer storage remains separate from normal Keyboard settings except
      for profile-backed sequencer preferences.
 5. Advanced sequencer features and bug fixes.
-   - Remaining deferred candidates include MIDI sync, MIDI clock/transport
-     send, USB Backup and desktop backup tools, the performance monitor overlay,
-     and sequencer-specific played-note overlay behavior as separate reviewable
-     slices. Sequencer step light color refinements, Step Tools/playback
-     semantics, monophonic/Play Type routing, selected-step blink, and
-     persistence/file management v1 are complete and recorded below.
+   - Remaining deferred candidates include MIDI clock/transport send,
+     song-position-aware MIDI Continue/resume, USB Backup and desktop backup
+     tools, the performance monitor overlay, and sequencer-specific played-note
+     overlay behavior as separate reviewable slices. Sequencer step light color
+     refinements, Step Tools/playback semantics, monophonic/Play Type routing,
+     selected-step blink, persistence/file management v1, and external MIDI
+     clock receive are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -265,8 +266,8 @@ Local implementation slices for the aggregate sequencer PR:
 ## Selected Next
 
 - None currently selected. Sequencer monophonic note entry and Play Type
-  routing, the selected-step blink fix, and sequencer persistence/file
-  management v1 have been completed and recorded below.
+  routing, the selected-step blink fix, sequencer persistence/file management
+  v1, and external MIDI clock receive have been completed and recorded below.
 
 ## Completed Infrastructure
 
@@ -291,6 +292,7 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer monophonic and Play Type routing | Complete, build-tested and locally tested; OB Synth edge-case checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer selected-step blink fix | Complete, build-tested and Robert-tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer persistence and file management v1 | Complete, compiled, Robert-tested, and planning-thread checked against final HEAD | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer external MIDI clock receive | Complete, compiled, Robert-tested, and planning-thread checked against `e63518d` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
@@ -768,6 +770,71 @@ Local implementation slices for the aggregate sequencer PR:
   current-folder browser row/count cache, profile-backed `Tap Preview`
   settings migration, and maintained upstream docs. This ledger entry is based
   on final HEAD rather than the worker's earlier completion summary.
+- Next: the following Sequencer External MIDI Clock Receive slice has since
+  been completed and recorded below.
+
+### Sequencer external MIDI clock receive
+
+- Sequencer roadmap slices: focused continuation of 3. Sequencer playback and
+  5. Advanced sequencer features and bug fixes for MIDI sync receive.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commit after the persistence/file-management slice:
+  `e63518d084d7b45ed5c7ccd2d040dbea1704e85b` (`Port external MIDI clock
+  receive`).
+- Changed files verified from the implementation commit: `docs/code-analysis.md`,
+  `docs/developer-guide.md`, `docs/sequencer-manual.md`,
+  `src/firmware/midi/MidiInput.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`,
+  `src/firmware/sequencer/SequencerPlaybackMenu.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.cpp`,
+  `src/firmware/sequencer/SequencerPlaybackSettings.h`,
+  `src/firmware/sequencer/SequencerTransport.cpp`,
+  `src/firmware/sequencer/SequencerTransport.h`,
+  `src/firmware/storage/PersistentDataModels.h`, and
+  `src/firmware/storage/Settings.cpp`.
+- Behavior completed: Playback Settings now includes profile-backed
+  `Clock Source` with `Internal` and `External MIDI`, defaulting to
+  `Internal`. The profile setting is stored as appended `SequencerClockSource`;
+  `CURRENT_SETTINGS_VERSION` was intentionally not bumped for this in-flight
+  aggregate branch update.
+- External receive behavior completed: when `Clock Source` is `Internal`,
+  button `9` and local tempo continue to control transport as before. When
+  `Clock Source` is `External MIDI`, incoming MIDI Clock `0xF8` advances one
+  sequencer step every six pulses, Start `0xFA` starts from the beginning, Stop
+  `0xFC` stops transport and releases sequencer playback notes, and Continue
+  `0xFB` follows the old sequencer's start-like behavior rather than resuming
+  from a MIDI song position.
+- MIDI parser behavior completed: realtime MIDI bytes are handled narrowly
+  before normal channel/SysEx parsing continues. Running status, SysEx,
+  preset-sync, delegated control, and MIDI note LED behavior remain isolated;
+  delegated mode ignores the sequencer realtime transport hooks.
+- Transport timing behavior completed: external clock playback preserves the
+  existing gate/tie playback model with measured step-boundary timing after
+  clock pulses establish a boundary. USB host clock jitter may still be audible
+  depending on host and routing.
+- Behavior intentionally not included: MIDI clock send, MIDI transport send,
+  song-position-pointer resume semantics for Continue, USB Backup, desktop
+  backup scripts or launchers, the performance monitor overlay, and PR
+  submission.
+- Verification: Robert reported `rtk git diff --check` passed,
+  `rtk make sequencer-disabled` passed with `650192` bytes program storage and
+  `192860` bytes globals/RAM, and `rtk make sequencer-enabled` passed with
+  `686512` bytes program storage and `203004` bytes globals/RAM. The enabled
+  build emitted the usual low-memory warning. Enabled firmware artifact:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream/build/sequencer-enabled/HexBoard.ino.uf2`.
+  Robert reported the build was compiled and tested. This planning-thread
+  update did not rerun any build or compile commands.
+- Review notes: planning-thread read-only check found the upstream
+  implementation worktree clean on `codex/sequencer-feature-flag-shell` at
+  `e63518d`, confirmed the commit stat as `13 files changed, 417 insertions(+),
+  42 deletions(-)`, verified the changed-file list above, and spot-checked the
+  appended profile setting/default, Playback Settings menu item, sequencer mode
+  external MIDI hooks, MIDI input realtime dispatch, external clock transport
+  state, Start/Stop/Continue handlers, gate/tie boundary handling, and maintained
+  upstream docs.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
