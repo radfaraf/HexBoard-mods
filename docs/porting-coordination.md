@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 7:34PM EDT
+Last updated: 2026-06-25 7:59PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -255,8 +255,9 @@ Local implementation slices for the aggregate sequencer PR:
      as separate reviewable slices. Sequencer step light color refinements, Step
      Tools/playback semantics, monophonic/Play Type routing, selected-step blink,
      persistence/file management v1, external MIDI clock receive, MIDI sync send,
-     the performance monitor overlay, the sequencer overview screen, and
-     played-note overlay integration are complete and recorded below.
+     the performance monitor overlay, the sequencer overview screen,
+     played-note overlay integration, and the follow-up sequencer display-state
+     fixes are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -266,8 +267,9 @@ Local implementation slices for the aggregate sequencer PR:
 - None currently selected. Sequencer monophonic note entry and Play Type
   routing, the selected-step blink fix, sequencer persistence/file management
   v1, external MIDI clock receive, MIDI sync send, the performance monitor
-  overlay, the sequencer overview screen, and played-note overlay integration
-  have been completed and recorded below.
+  overlay, the sequencer overview screen, played-note overlay integration, and
+  the follow-up sequencer display-state fixes have been completed and recorded
+  below.
 
 ## Completed Infrastructure
 
@@ -297,6 +299,8 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer performance monitor overlay | Complete, compiled, Robert-tested, and planning-thread checked against `874ac2f` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer overview screen | Complete, compiled, Robert-tested, and planning-thread checked against `22eec18` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer played-note overlay integration | Complete on branch; planning-thread checked against `2bcb4c3`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer close-edit blank display fix | Complete on branch; planning-thread checked against `6d7c191`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer audition overlay blank-state preservation | Complete on branch; planning-thread checked against `94b758e`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 

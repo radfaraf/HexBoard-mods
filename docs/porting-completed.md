@@ -1,6 +1,6 @@
 # HexBoard Completed Port Ledger
 
-Last updated: 2026-06-25 7:34PM EDT
+Last updated: 2026-06-25 7:59PM EDT
 
 This file stores detailed completion records for porting work from the old
 `hexboard-sequencer` branch into upstream HexBoard `development`.
@@ -785,6 +785,56 @@ When a slice completes, update both:
   verified the changed-file list above, and spot-checked the source split
   between `PlayedNotesOverlay`, `SequencerManagedNotes`, and `SequencerMode`.
   No PR was opened.
+- Next: the following Sequencer Display-State Follow-Up Fixes have since been
+  completed and recorded below.
+
+### Sequencer display-state follow-up fixes
+
+- Sequencer roadmap slice: follow-up bug fixes for ported sequencer display
+  behavior. These are not separate old-branch feature ports; they correct
+  aggregate-branch behavior that was slightly off after the recent overlay
+  integration work.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commits after the played-note overlay integration slice:
+  `6d7c191c28d14ead22a20d8698f7a2a393a3f346` (`Blank sequencer display when
+  closing step overlay`) and
+  `94b758eb8f1c936e309f5b78f98712193148947b` (`Preserve blank sequencer
+  display during audition notes`).
+- Changed files verified from the follow-up commits:
+  `docs/code-analysis.md`, `docs/sequencer-manual.md`, `docs/user-manual.md`,
+  `src/firmware/menu/PlayedNotesOverlay.cpp`,
+  `src/firmware/sequencer/SequencerManagedNotes.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerOverlay.cpp`, and
+  `src/firmware/sequencer/SequencerOverlay.h`.
+- Behavior completed: closing selected-step edit focus by pressing the selected
+  step again, pressing the encoder, or short-pressing Play/Stop now blanks the
+  sequencer display instead of redrawing the Sequencer menu. The next explicit
+  step selection, Overview, Tools, or menu action draws its normal screen.
+- Played-note overlay restore behavior completed: no-selection audition notes
+  still feed the shared played-note display source, but when the sequencer idle
+  display is intentionally blank, the full temporary `Now Playing` overlay is
+  used and closing it restores the blank sequencer display instead of forcing a
+  Sequencer menu redraw.
+- Behavior intentionally not included: any new sequencer feature port, USB
+  Backup, desktop backup scripts or launchers, full old sequencer manuals/
+  layouts/requirements port, PR submission, or a broader played-note overlay
+  redesign.
+- Verification: planning-thread check confirmed both commits exist on
+  `codex/sequencer-feature-flag-shell`, the implementation worktree is clean at
+  `94b758e`, and `origin/codex/sequencer-feature-flag-shell` also points at
+  `94b758e`. No compile or manual hardware verification was found in the ledger
+  for these specific follow-up fixes, so this entry does not claim build or
+  device testing.
+- Review notes: planning-thread read-only check confirmed commit `6d7c191` as
+  `2 files changed, 14 insertions(+), 6 deletions(-)` and commit `94b758e` as
+  `8 files changed, 69 insertions(+), 8 deletions(-)`. The source changes add
+  explicit blank-idle display tracking in `SequencerOverlay`, preserve that
+  state across played-note overlay restore in `SequencerMode`, and keep the
+  shared played-note overlay from replacing the intentional blank state with a
+  normal menu redraw.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons
