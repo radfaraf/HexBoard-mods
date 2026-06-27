@@ -898,20 +898,91 @@ When a slice completes, update both:
   full old sequencer manuals/layouts/requirements port, PR submission, or any
   broader backup/protocol redesign outside the completed `/Sequences` HBK1
   workflow.
-- Verification: planning-thread check confirmed the commit stack exists on
-  `codex/sequencer-feature-flag-shell`, the implementation worktree is at
-  `7414ec8`, and `origin/codex/sequencer-feature-flag-shell` currently points
-  at `6b061e6`, leaving the local branch one commit ahead for the hold-clear
-  menu hint removal. An untracked `scripts/__pycache__/` directory is present in
-  the implementation checkout and was ignored for this ledger update. No compile
-  or manual hardware verification was found in the ledger for these specific
-  commits, so this entry does not claim build or device testing.
+- Verification: planning-thread check originally confirmed this commit stack
+  through `7414ec8`; a later final-state check found the aggregate branch clean
+  and pushed through `c0c9616`. Robert reported the final aggregate disabled and
+  enabled builds, focused manual hardware checklist, and host backup tool smoke
+  check were completed after these fixes. Local artifact check found
+  `build/sequencer-disabled/HexBoard.ino.uf2` (`1456128` bytes) and
+  `build/sequencer-enabled/HexBoard.ino.uf2` (`1564672` bytes), both modified
+  `2026-06-27 15:36:22`, and `git diff --check` passed in the upstream
+  implementation checkout.
 - Review notes: planning-thread read-only check confirmed commit `15525cd` as
   `16 files changed, 2823 insertions(+), 10 deletions(-)`, commit `e742409` as
   `11 files changed, 48 insertions(+), 46 deletions(-)`, commit `6b061e6` as
   `1 file changed, 3 insertions(+)`, and commit `7414ec8` as
   `1 file changed, 6 deletions(-)`. No PR was opened.
-- Next: no follow-up implementation slice has been selected yet.
+- Next: the following overlay/menu/title/filename follow-up fixes have since
+  been completed and recorded below.
+
+### Sequencer overlay, menu, title, filename, and PR-readiness follow-up fixes
+
+- Sequencer roadmap slice: final bug-fix and PR-readiness cleanup pass for
+  aggregate-branch sequencer display, overlay, menu action, save suggestion,
+  filename/title styling behavior, and generated-artifact cleanup. These are
+  follow-up corrections to already-ported sequencer behavior and PR hygiene, not
+  a new old-branch feature port.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commits after the USB backup workflow and follow-up fixes:
+  `3097b7589884d2dc4d1c71192d1f60609e24c7f5` (`Release sequencer overlay while
+  file menus are active`), `2c31c56479a1ad0830e07067a1d59037c644c9c7`
+  (`Clear sequencer overlay for menu display`),
+  `9569dc048aa5401e0da1b1a7588afc836c62fe0d` (`Show sequencer file actions as
+  status toasts`), `7664ea64961f0cac19a077f6d9dbf04764135647` (`Defer
+  sequencer overlay redraws while overlays are active`),
+  `fc256d736ff7ebdaaf1ad222b6a452683d506a41` (`Rename blank sequencer state
+  and default save suggestion`), `b1d63bc2e2db4a97536fcc50fe3a1c4166b1ace2`
+  (`Render sequencer title in menu header strip`),
+  `7f08bc118e4c24fc676315c4ae26a89eaedc7975` (`Align sequencer menu title
+  strip text`), and `c0c9616178605c6452dedc5eb061fa010510064d` (`Refine
+  sequencer filename header styling`).
+- Additional PR-readiness and small documentation commits after `c0c9616`:
+  `96c3972cf262e5ee0052c7a2ddb4eb872fc44946` (`Remove tracked Python cache
+  artifact`), `a709c7b5495d4386d4577fa43568a333f3a6912e` (`add me to
+  README.md`), and `119a7bb3c3a9a5aa3c985f9b75b08b8807a3863d` (`reference
+  optional sequencer in features.`).
+- Changed files verified from the follow-up commit stack:
+  `.gitignore`, `README.md`, `docs/sequencer-manual.md`,
+  `scripts/__pycache__/hexboard_backup_lib.cpython-314.pyc` (removed by
+  cleanup commit `96c3972`),
+  `src/firmware/menu/MenuAndDisplay.cpp`,
+  `src/firmware/sequencer/SequencerFileMenu.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`,
+  `src/firmware/sequencer/SequencerOverlay.cpp`,
+  `src/firmware/sequencer/SequencerOverlay.h`,
+  `src/firmware/sequencer/SequencerStorage.cpp`,
+  `src/firmware/sequencer/SequencerTools.cpp`, and
+  `src/firmware/sequencer/SequencerTools.h`.
+- Behavior completed: file menu entry and action feedback now uses transient
+  sequencer status/toast behavior instead of fighting the overlay; sequencer
+  overlay redraws are deferred while other overlays are active; menu display
+  can clear sequencer overlay state when needed; the blank display state and
+  default save suggestion names were clarified; and the sequencer menu title
+  plus loaded filename header styling now render through the menu header strip
+  path with follow-up alignment refinements.
+- PR-readiness cleanup completed: the generated Python bytecode file
+  `scripts/__pycache__/hexboard_backup_lib.cpython-314.pyc` was removed from
+  git, `.gitignore` now ignores Python cache artifacts, and final tracked-file
+  checks found no tracked `__pycache__` or `.pyc` files.
+- Behavior intentionally not included: full old sequencer manuals/layouts/
+  requirements port, PR submission, any new sequencer feature port, or broader
+  redesign of file/menu/overlay behavior outside the completed bug fixes.
+- Verification: planning-thread check confirmed the upstream implementation
+  checkout is clean at `119a7bb`, `origin/codex/sequencer-feature-flag-shell`
+  also points at `119a7bb`, and `git diff --check` passed. Robert reported the
+  final aggregate disabled and enabled builds, focused manual hardware
+  checklist, and host backup tool smoke check were completed. Local artifact
+  check found `build/sequencer-disabled/HexBoard.ino.uf2` (`1456128` bytes),
+  `build/sequencer-enabled/HexBoard.ino.uf2` (`1564672` bytes),
+  `build/sequencer-disabled/HexBoard.ino.bin` (`728004` bytes), and
+  `build/sequencer-enabled/HexBoard.ino.bin` (`782252` bytes), all modified
+  `2026-06-27 15:36:22`.
+- Next: prepare the draft aggregate PR body while leaving the full sequencer
+  manuals/layouts/requirements documentation pass explicitly deferred until the
+  final docs phase.
 
 ### Physical menu shortcut buttons
 

@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-27 2:06PM EDT
+Last updated: 2026-06-27 3:56PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -296,13 +296,14 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer MIDI sync send | Complete, compiled, Robert-tested, and planning-thread checked against `275a638` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer performance monitor overlay | Complete, compiled, Robert-tested, and planning-thread checked against `874ac2f` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer overview screen | Complete, compiled, Robert-tested, and planning-thread checked against `22eec18` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer played-note overlay integration | Complete on branch; planning-thread checked against `2bcb4c3`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer close-edit blank display fix | Complete on branch; planning-thread checked against `6d7c191`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer audition overlay blank-state preservation | Complete on branch; planning-thread checked against `94b758e`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer USB backup workflow | Complete on branch; planning-thread checked against `15525cd`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer MIDI realtime bridge consolidation | Complete on branch; planning-thread checked against `e742409`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer USB backup PUT payload parsing fix | Complete on branch; planning-thread checked against `6b061e6`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer hold-clear menu hint removal | Complete locally; planning-thread checked against `7414ec8`; not pushed to `origin` yet; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer played-note overlay integration | Complete on branch; planning-thread checked against `2bcb4c3`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer close-edit blank display fix | Complete on branch; planning-thread checked against `6d7c191`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer audition overlay blank-state preservation | Complete on branch; planning-thread checked against `94b758e`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer USB backup workflow | Complete on branch; planning-thread checked against `15525cd`; final aggregate build/manual and host-tool smoke verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer MIDI realtime bridge consolidation | Complete on branch; planning-thread checked against `e742409`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer USB backup PUT payload parsing fix | Complete on branch; planning-thread checked against `6b061e6`; final aggregate build/manual and host-tool smoke verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer hold-clear menu hint removal | Complete on branch; planning-thread checked against `7414ec8`; pushed to `origin`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer overlay, menu, title, filename, and PR-readiness follow-up fixes | Complete on branch; planning-thread checked against `119a7bb`; final aggregate build/manual verification reported by Robert; tracked `.pyc` cleanup complete | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
