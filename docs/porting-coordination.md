@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-27 3:56PM EDT
+Last updated: 2026-06-27 4:05PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -283,27 +283,27 @@ Local implementation slices for the aggregate sequencer PR:
 | --- | --- | --- | --- |
 | Physical menu shortcut buttons | Complete, reviewed, tested | Submitted | `codex/physical-menu-shortcut-buttons`, `shapingthesilence/HexBoard#14` |
 | Current tuning/layout/scale row markers | Complete, reviewed, tested | Submitted | `codex/current-item-menu-markers`, `shapingthesilence/HexBoard#15` |
-| Sequencer feature flag and shell | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Step note entry and basic transport playback | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer playback controls foundation | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer MIDI audition and edit overlay | Complete, reviewed, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer step light colors | Complete, reviewed, tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer Step Tools and playback semantics | Complete, build-tested; manual device checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer monophonic and Play Type routing | Complete, build-tested and locally tested; OB Synth edge-case checklist pending | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer selected-step blink fix | Complete, build-tested and Robert-tested | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer persistence and file management v1 | Complete, compiled, Robert-tested, and planning-thread checked against final HEAD | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer external MIDI clock receive | Complete, compiled, Robert-tested, and planning-thread checked against `e63518d` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer MIDI sync send | Complete, compiled, Robert-tested, and planning-thread checked against `275a638` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer performance monitor overlay | Complete, compiled, Robert-tested, and planning-thread checked against `874ac2f` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer overview screen | Complete, compiled, Robert-tested, and planning-thread checked against `22eec18` | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer played-note overlay integration | Complete on branch; planning-thread checked against `2bcb4c3`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer close-edit blank display fix | Complete on branch; planning-thread checked against `6d7c191`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer audition overlay blank-state preservation | Complete on branch; planning-thread checked against `94b758e`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer USB backup workflow | Complete on branch; planning-thread checked against `15525cd`; final aggregate build/manual and host-tool smoke verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer MIDI realtime bridge consolidation | Complete on branch; planning-thread checked against `e742409`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer USB backup PUT payload parsing fix | Complete on branch; planning-thread checked against `6b061e6`; final aggregate build/manual and host-tool smoke verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer hold-clear menu hint removal | Complete on branch; planning-thread checked against `7414ec8`; pushed to `origin`; final aggregate build/manual verification reported by Robert | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
-| Sequencer overlay, menu, title, filename, and PR-readiness follow-up fixes | Complete on branch; planning-thread checked against `119a7bb`; final aggregate build/manual verification reported by Robert; tracked `.pyc` cleanup complete | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer feature flag and shell | Complete, reviewed, tested | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Step note entry and basic transport playback | Complete, reviewed, tested | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer playback controls foundation | Complete, reviewed, tested | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer MIDI audition and edit overlay | Complete, reviewed, build-tested; manual device checklist pending | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer step light colors | Complete, reviewed, tested | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer Step Tools and playback semantics | Complete, build-tested; manual device checklist pending | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer monophonic and Play Type routing | Complete, build-tested and locally tested; OB Synth edge-case checklist pending | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer selected-step blink fix | Complete, build-tested and Robert-tested | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer persistence and file management v1 | Complete, compiled, Robert-tested, and planning-thread checked against final HEAD | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer external MIDI clock receive | Complete, compiled, Robert-tested, and planning-thread checked against `e63518d` | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer MIDI sync send | Complete, compiled, Robert-tested, and planning-thread checked against `275a638` | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer performance monitor overlay | Complete, compiled, Robert-tested, and planning-thread checked against `874ac2f` | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer overview screen | Complete, compiled, Robert-tested, and planning-thread checked against `22eec18` | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer played-note overlay integration | Complete on branch; planning-thread checked against `2bcb4c3`; final aggregate build/manual verification reported by Robert | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer close-edit blank display fix | Complete on branch; planning-thread checked against `6d7c191`; final aggregate build/manual verification reported by Robert | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer audition overlay blank-state preservation | Complete on branch; planning-thread checked against `94b758e`; final aggregate build/manual verification reported by Robert | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer USB backup workflow | Complete on branch; planning-thread checked against `15525cd`; final aggregate build/manual and host-tool smoke verification reported by Robert | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer MIDI realtime bridge consolidation | Complete on branch; planning-thread checked against `e742409`; final aggregate build/manual verification reported by Robert | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer USB backup PUT payload parsing fix | Complete on branch; planning-thread checked against `6b061e6`; final aggregate build/manual and host-tool smoke verification reported by Robert | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer hold-clear menu hint removal | Complete on branch; planning-thread checked against `7414ec8`; pushed to `origin`; final aggregate build/manual verification reported by Robert | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
+| Sequencer overlay, menu, title, filename, and PR-readiness follow-up fixes | Complete on branch; planning-thread checked against `119a7bb`; final aggregate build/manual verification reported by Robert; tracked `.pyc` cleanup complete | Submitted in aggregate PR | `codex/sequencer-feature-flag-shell`, `shapingthesilence/HexBoard#16` |
 
 ## Completed Port Details
 

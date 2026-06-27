@@ -22,6 +22,9 @@ When a slice completes, update both:
 - Implementation branch:
   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
   `codex/sequencer-feature-flag-shell`.
+- Aggregate PR:
+  `https://github.com/shapingthesilence/HexBoard/pull/16`
+  (`shapingthesilence/HexBoard#16`), opened after final HEAD `119a7bb`.
 - Implementation commit: `80cd76b` (`Add optional sequencer feature shell`).
 - Changed files reported/reviewed: `Makefile`, `README.md`,
   `docs/developer-guide.md`, `docs/user-manual.md`,
@@ -925,6 +928,9 @@ When a slice completes, update both:
 - Implementation branch:
   `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
   `codex/sequencer-feature-flag-shell`.
+- Aggregate PR:
+  `https://github.com/shapingthesilence/HexBoard/pull/16`
+  (`shapingthesilence/HexBoard#16`), opened after final HEAD `119a7bb`.
 - Implementation commits after the USB backup workflow and follow-up fixes:
   `3097b7589884d2dc4d1c71192d1f60609e24c7f5` (`Release sequencer overlay while
   file menus are active`), `2c31c56479a1ad0830e07067a1d59037c644c9c7`
@@ -968,8 +974,8 @@ When a slice completes, update both:
   git, `.gitignore` now ignores Python cache artifacts, and final tracked-file
   checks found no tracked `__pycache__` or `.pyc` files.
 - Behavior intentionally not included: full old sequencer manuals/layouts/
-  requirements port, PR submission, any new sequencer feature port, or broader
-  redesign of file/menu/overlay behavior outside the completed bug fixes.
+  requirements port, any new sequencer feature port, or broader redesign of
+  file/menu/overlay behavior outside the completed bug fixes.
 - Verification: planning-thread check confirmed the upstream implementation
   checkout is clean at `119a7bb`, `origin/codex/sequencer-feature-flag-shell`
   also points at `119a7bb`, and `git diff --check` passed. Robert reported the
@@ -980,9 +986,10 @@ When a slice completes, update both:
   `build/sequencer-disabled/HexBoard.ino.bin` (`728004` bytes), and
   `build/sequencer-enabled/HexBoard.ino.bin` (`782252` bytes), all modified
   `2026-06-27 15:36:22`.
-- Next: prepare the draft aggregate PR body while leaving the full sequencer
-  manuals/layouts/requirements documentation pass explicitly deferred until the
-  final docs phase.
+- Next: watch aggregate PR #16 review/CI, update this ledger after meaningful
+  PR changes or merge, and leave the full sequencer manuals/layouts/
+  requirements documentation pass explicitly deferred until the final docs
+  phase.
 
 ### Physical menu shortcut buttons
 
