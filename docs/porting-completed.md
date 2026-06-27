@@ -1,6 +1,6 @@
 # HexBoard Completed Port Ledger
 
-Last updated: 2026-06-25 7:59PM EDT
+Last updated: 2026-06-27 2:06PM EDT
 
 This file stores detailed completion records for porting work from the old
 `hexboard-sequencer` branch into upstream HexBoard `development`.
@@ -835,6 +835,82 @@ When a slice completes, update both:
   state across played-note overlay restore in `SequencerMode`, and keep the
   shared played-note overlay from replacing the intentional blank state with a
   normal menu redraw.
+- Next: the following Sequencer USB Backup Workflow And Follow-Up Fixes have
+  since been completed and recorded below.
+
+### Sequencer USB backup workflow and follow-up fixes
+
+- Sequencer roadmap slice: focused continuation of 5. Advanced sequencer
+  features and bug fixes for USB Backup and desktop backup tools, plus immediate
+  follow-up corrections on the aggregate branch.
+- Implementation branch:
+  `/Users/robertw/Documents/Arduino/HexBoard-port-sequencer-upstream` on
+  `codex/sequencer-feature-flag-shell`.
+- Implementation commits after the display-state follow-up fixes:
+  `15525cd9af952cd2615500fe064a0678f9ba8cb4` (`Add sequencer USB backup
+  workflow`), `e742409dff364f53d59bfc6a8f305b0859a4a872` (`Consolidate
+  sequencer MIDI realtime handling`),
+  `6b061e629079ca46087b6bbbe013230bdb287ac6` (`Fix USB backup PUT payload
+  parsing`), and `7414ec81355dbec13864a5dfd09f9b02143be507` (`Remove
+  sequencer hold-clear menu hint`).
+- Changed files verified from the follow-up commit stack:
+  `Launch HexBoard Backup.bat`, `Launch HexBoard Backup.command`, `README.md`,
+  `docs/code-analysis.md`, `docs/developer-guide.md`,
+  `docs/sequencer-manual.md`, `docs/user-manual.md`,
+  `scripts/hexboard_backup.py`, `scripts/hexboard_backup_gui.py`,
+  `scripts/hexboard_backup_lib.py`, `src/firmware/hardware/LedRender.cpp`,
+  `src/firmware/menu/PlayedNotesOverlay.cpp`,
+  `src/firmware/midi/MidiInput.cpp`,
+  `src/firmware/sequencer/SequencerFileMenu.cpp`,
+  `src/firmware/sequencer/SequencerFileMenu.h`,
+  `src/firmware/sequencer/SequencerLeds.cpp`,
+  `src/firmware/sequencer/SequencerMode.cpp`,
+  `src/firmware/sequencer/SequencerMode.h`,
+  `src/firmware/sequencer/SequencerUsbBackup.cpp`,
+  `src/firmware/sequencer/SequencerUsbBackup.h`,
+  `src/firmware/synth/SynthAudio.cpp`, `src/firmware/synth/SynthAudio.h`,
+  `src/firmware/synth/SynthAudioInternal.h`, and
+  `src/firmware/synth/SynthVoiceAllocation.cpp`.
+- USB Backup behavior completed: enabled sequencer builds now include
+  `File Management` -> `USB Backup`, with `Start Session` / `Stop Session`,
+  live two-line status, leave/stop confirmations while active, session cleanup
+  when leaving Sequencer mode, storage-workflow guards during active sessions,
+  blanked sequencer LEDs, and consumed hex-button editing/play actions while
+  encoder menu navigation remains available.
+- HBK1 protocol behavior completed: `SequencerUsbBackup.*` owns an enabled-only
+  USB-serial session rooted at `/Sequences`, with `HELLO`, `PING`, `LIST`,
+  `GET`, `PUT`, `MKDIR`, `DELETE`, `RMDIR`, and `RENAME`. Paths stay restricted
+  to `/Sequences`, direct file operations are limited to `.hbseq` files, PUT
+  restores write through a temporary file before rename, and partial incoming
+  restores are cleared on timeout or session exit.
+- Host backup tooling completed: the repo now includes
+  `scripts/hexboard_backup_gui.py` as the primary desktop workflow,
+  `scripts/hexboard_backup_lib.py` as the shared HBK1 client library,
+  `scripts/hexboard_backup.py` as support/debug CLI tooling, plus macOS and
+  Windows launchers for users who already have Python 3 and `pyserial`.
+- Follow-up fixes completed: MIDI realtime handling is now consolidated so
+  `MidiInput.cpp` forwards realtime status bytes while Sequencer mode owns
+  clock/start/continue/stop policy; USB Backup command parsing now returns from
+  command input immediately after a PUT command switches into payload receive
+  mode; and the stale `Hold 19 clears` row was removed from the Sequencer top
+  page.
+- Behavior intentionally not included: TB-303 pattern decoder skill updates,
+  full old sequencer manuals/layouts/requirements port, PR submission, or any
+  broader backup/protocol redesign outside the completed `/Sequences` HBK1
+  workflow.
+- Verification: planning-thread check confirmed the commit stack exists on
+  `codex/sequencer-feature-flag-shell`, the implementation worktree is at
+  `7414ec8`, and `origin/codex/sequencer-feature-flag-shell` currently points
+  at `6b061e6`, leaving the local branch one commit ahead for the hold-clear
+  menu hint removal. An untracked `scripts/__pycache__/` directory is present in
+  the implementation checkout and was ignored for this ledger update. No compile
+  or manual hardware verification was found in the ledger for these specific
+  commits, so this entry does not claim build or device testing.
+- Review notes: planning-thread read-only check confirmed commit `15525cd` as
+  `16 files changed, 2823 insertions(+), 10 deletions(-)`, commit `e742409` as
+  `11 files changed, 48 insertions(+), 46 deletions(-)`, commit `6b061e6` as
+  `1 file changed, 3 insertions(+)`, and commit `7414ec8` as
+  `1 file changed, 6 deletions(-)`. No PR was opened.
 - Next: no follow-up implementation slice has been selected yet.
 
 ### Physical menu shortcut buttons

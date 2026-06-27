@@ -1,6 +1,6 @@
 # HexBoard Upstream Port Coordination
 
-Last updated: 2026-06-25 7:59PM EDT
+Last updated: 2026-06-27 2:06PM EDT
 
 This document is the planning ledger for selectively porting useful work from
 the old `hexboard-sequencer` branch into the current upstream HexBoard
@@ -160,7 +160,6 @@ already include equivalent or stronger behavior.
 
 - Sequencer feature port. See the sequencer roadmap below.
 - Full sequencer manuals, layouts, and requirements docs.
-- Sequencer USB backup and backup GUI tools.
 - TB-303 pattern decoder skill.
 - Repo-owned Codex skill updates and old AGENTS/process-only changes.
 - Old compile-helper tweaks unless a new concrete need appears.
@@ -251,13 +250,12 @@ Local implementation slices for the aggregate sequencer PR:
    - Sequencer storage remains separate from normal Keyboard settings except
      for profile-backed sequencer preferences.
 5. Advanced sequencer features and bug fixes.
-   - Remaining deferred candidates include USB Backup and desktop backup tools
-     as separate reviewable slices. Sequencer step light color refinements, Step
-     Tools/playback semantics, monophonic/Play Type routing, selected-step blink,
-     persistence/file management v1, external MIDI clock receive, MIDI sync send,
-     the performance monitor overlay, the sequencer overview screen,
-     played-note overlay integration, and the follow-up sequencer display-state
-     fixes are complete and recorded below.
+   - Sequencer step light color refinements, Step Tools/playback semantics,
+     monophonic/Play Type routing, selected-step blink, persistence/file
+     management v1, external MIDI clock receive, MIDI sync send, the performance
+     monitor overlay, the sequencer overview screen, played-note overlay
+     integration, the follow-up sequencer display-state fixes, USB Backup, and
+     the follow-up USB/realtime/menu fixes are complete and recorded below.
 6. Sequencer documentation pass.
    - Update sequencer user docs, requirements, and layouts once enough behavior
      is present to document accurately.
@@ -267,9 +265,9 @@ Local implementation slices for the aggregate sequencer PR:
 - None currently selected. Sequencer monophonic note entry and Play Type
   routing, the selected-step blink fix, sequencer persistence/file management
   v1, external MIDI clock receive, MIDI sync send, the performance monitor
-  overlay, the sequencer overview screen, played-note overlay integration, and
-  the follow-up sequencer display-state fixes have been completed and recorded
-  below.
+  overlay, the sequencer overview screen, played-note overlay integration, the
+  follow-up sequencer display-state fixes, USB Backup, and the follow-up
+  USB/realtime/menu fixes have been completed and recorded below.
 
 ## Completed Infrastructure
 
@@ -301,6 +299,10 @@ Local implementation slices for the aggregate sequencer PR:
 | Sequencer played-note overlay integration | Complete on branch; planning-thread checked against `2bcb4c3`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer close-edit blank display fix | Complete on branch; planning-thread checked against `6d7c191`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 | Sequencer audition overlay blank-state preservation | Complete on branch; planning-thread checked against `94b758e`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer USB backup workflow | Complete on branch; planning-thread checked against `15525cd`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer MIDI realtime bridge consolidation | Complete on branch; planning-thread checked against `e742409`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer USB backup PUT payload parsing fix | Complete on branch; planning-thread checked against `6b061e6`; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
+| Sequencer hold-clear menu hint removal | Complete locally; planning-thread checked against `7414ec8`; not pushed to `origin` yet; build/manual verification not yet recorded | Held for aggregate PR | `codex/sequencer-feature-flag-shell` |
 
 ## Completed Port Details
 
